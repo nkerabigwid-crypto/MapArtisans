@@ -7,14 +7,17 @@ fois, dont une bonne partie à attendre la propagation DNS.
 
 ## 1. Le serveur
 
-Un VPS suffit largement au démarrage : **2 vCPU, 4 Go de RAM, 40 Go de disque**,
-sous Debian 12 ou Ubuntu 24.04. Chez Infomaniak (Suisse), Hetzner ou DigitalOcean,
-c'est entre 10 et 20 CHF par mois.
+Le serveur en place est un **KVM 2 chez Hostinger** : 2 vCPU, 8 Go de RAM,
+100 Go de disque, à Paris. C'est confortable — le double de la mémoire
+nécessaire au démarrage.
 
-Un hébergeur suisse est un argument commercial réel auprès d'artisans romands,
-et il simplifie le discours sur la localisation des données.
+Une remarque commerciale, sans urgence : les données sont hébergées **en
+France**, pas en Suisse. C'est sans difficulté juridique (la France offre un
+niveau de protection reconnu), mais cela retire un argument de vente auprès
+d'artisans romands, qui y sont sensibles. Une migration vers Infomaniak reste
+possible plus tard ; ce n'est pas un sujet pour le lancement.
 
-Sur le serveur, une fois connecté en SSH :
+Sur le serveur, une fois connecté en SSH (`ssh root@89.116.38.42`) :
 
 ```bash
 curl -fsSL https://get.docker.com | sh
@@ -40,6 +43,51 @@ configuration Docker, et le pare-feu est la seconde barrière.
 ```bash
 ufw allow 22 && ufw allow 80 && ufw allow 443 && ufw enable
 ```
+
+---
+
+## 1 bis. Cohabitation avec n8n — À VÉRIFIER EN PREMIER
+
+Le VPS a été livré avec le modèle Hostinger **« Ubuntu 24.04 with n8n »**. Ce
+modèle installe n8n derrière un reverse proxy (Caddy ou Traefik selon les
+versions) qui occupe les ports **80 et 443** — exactement ceux dont notre Caddy
+a besoin.
+
+Deux services ne peuvent pas écouter sur le même port. Si n8n tourne, notre
+conteneur Caddy s'arrêtera immédiatement avec `address already in use`.
+
+Lancez d'abord le diagnostic, qui ne modifie rien :
+
+```bash
+bash deploy/diagnostic.sh
+```
+
+### Si les ports sont libres
+
+Rien à faire, passez à l'étape suivante.
+
+### Si les ports sont occupés
+
+Trois options, de la plus propre à la plus rapide.
+
+**a) Vous n'utilisez pas n8n — arrêtez-le.** C'est le cas le plus fréquent : le
+modèle a été choisi sans intention particulière. Repérez sa pile puis :
+
+```bash
+cd /root/n8n && docker compose down
+```
+
+Adaptez le chemin selon ce que le diagnostic a affiché. `down` sans `-v`
+conserve les données : n8n peut être relancé plus tard.
+
+**b) Vous utilisez n8n et voulez le garder.** Il faut alors un seul frontal
+pour les deux. Le plus simple est de le placer sur un sous-domaine
+(`n8n.mapartisans.com`) servi par NOTRE Caddy, et de retirer le sien. C'est une
+demi-heure de travail — dites-le moi et je vous écris la configuration.
+
+**c) Repartir d'une image propre.** Depuis le panneau Hostinger, réinstaller en
+Ubuntu 24.04 nu. C'est le plus net pour une machine de production, mais cela
+efface tout le serveur — à ne faire que si rien n'y est encore utile.
 
 ---
 
