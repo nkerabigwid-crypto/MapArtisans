@@ -37,7 +37,7 @@ const FEATURES = [
   {
     n: "01",
     t: "Réponses aux avis par l'IA",
-    d: "Dès qu'un avis arrive, l'IA rédige une réponse ancrée dans votre métier et votre ville, puis la publie sur votre fiche. Vous pouvez la relire avant, ou laisser faire — c'est vous qui décidez du réglage.",
+    d: "Un avis à 4 ou 5 étoiles reçoit sa réponse tout seul, ancrée dans votre métier et votre ville. En dessous, rien n'est publié : l'IA prépare un brouillon et vous laisse décider. On ne répond jamais à un client mécontent en votre nom sans votre accord.",
   },
   {
     n: "02",
@@ -51,8 +51,8 @@ const FEATURES = [
   },
   {
     n: "04",
-    t: "Le QR code intelligent",
-    d: "Sur votre camionnette ou vos factures. Un client satisfait est dirigé vers Google ; un client mécontent vers un formulaire privé, qui vous alerte avant que l'avis ne soit public.",
+    t: "Le QR code de collecte d'avis",
+    d: "Sur votre camionnette, vos devis, vos factures. Le client scanne, il arrive sur votre formulaire d'avis Google. Présenté à tout le monde, sans tri : c'est la seule méthode que Google autorise, et celle qui ne met jamais votre fiche en danger.",
   },
 ];
 
@@ -119,15 +119,16 @@ export default function LandingPage() {
         </BlurFade>
         <BlurFade delay={0.12} inView>
           <h1 className="lp-h1">
-            Votre visibilité Google Maps,
+            Vous êtes le meilleur sur le terrain.
             <br />
-            en <span className="lp-accent">pilote automatique</span>.
+            Encore faut-il qu&apos;on vous <span className="lp-accent">trouve</span>.
           </h1>
         </BlurFade>
         <BlurFade delay={0.2} inView>
           <p className="lp-sub">
-            Conçu pour les artisans et les professionnels du transport. MapArtisans répond à vos
-            avis, publie vos actualités et suit votre position — pendant que vous travaillez.
+            Le marketing ne devrait pas être un devoir du dimanche soir. Pendant que vous êtes
+            en intervention, MapArtisans répond à vos avis et suit votre position sur la carte.
+            Aucune configuration technique, aucune connaissance du référencement.
           </p>
         </BlurFade>
         <BlurFade delay={0.28} inView>

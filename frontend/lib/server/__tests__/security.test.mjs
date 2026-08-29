@@ -423,6 +423,45 @@ describe("QR code de collecte d'avis", () => {
   });
 });
 
+describe("Conformité : aucune promesse de tri des avis", () => {
+  test("aucun fichier de l'interface ne décrit de filtrage d'avis", async () => {
+    // Le test précédent ne couvrait que PLANS. Une description de filtrage est
+    // pourtant restée en page d'accueil pendant plusieurs jours (« un client
+    // mécontent vers un formulaire privé »). Le balayage porte désormais sur
+    // TOUTE l'interface : c'est là que la promesse est faite au prospect, et
+    // c'est elle qui exposerait la fiche de l'artisan à une sanction Google.
+    const { readdir, readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const { join, extname } = await import("node:path");
+
+    const racine = fileURLToPath(new URL("../../../", import.meta.url));
+    const motifs = [
+      /anti[- ]avis/i,
+      /formulaire priv[ée]/i,
+      /avant que l'avis ne soit public/i,
+      /client m[ée]content vers/i,
+      /(trie|filtre)r? les clients/i,
+    ];
+    const fautifs = [];
+
+    async function parcourir(dossier) {
+      for (const e of await readdir(join(racine, dossier), { withFileTypes: true })) {
+        const rel = join(dossier, e.name);
+        if (e.isDirectory()) {
+          if (e.name === "node_modules" || e.name === ".next" || e.name === "__tests__") continue;
+          await parcourir(rel);
+        } else if ([".ts", ".tsx"].includes(extname(e.name))) {
+          const contenu = await readFile(join(racine, rel), "utf8");
+          for (const m of motifs) if (m.test(contenu)) fautifs.push(`${rel} (${m})`);
+        }
+      }
+    }
+    for (const d of ["app", "lib", "components"]) await parcourir(d);
+
+    assert.deepEqual(fautifs, [], `promesses de filtrage :\n${fautifs.join("\n")}`);
+  });
+});
+
 describe("Autonomie de la marque", () => {
   test("aucun fichier du produit ne cite l'éditeur", async () => {
     // Décision du 29 août 2026 : MapArtisans se présente seule. Le nom de la
