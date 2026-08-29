@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------- SECRETS
+# En premier, et volontairement large. Des robots balaient GitHub en continu :
+# une clé OpenAI poussée par erreur est exploitée en quelques minutes, et la
+# retirer par un commit ultérieur NE SUFFIT PAS — elle reste dans l'historique.
+# La seule réponse à une clé publiée est de la révoquer.
+.env
+.env.*
+!.env.*.exemple
+*.pem
+*.key
+*.p12
+id_rsa*
+
+# ---------------------------------------------------------------- dépendances
+node_modules/
+.pnp
+.pnp.js
+
+# ---------------------------------------------------------------- build
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---------------------------------------------------------------- Prisma
+# Le client est régénéré à chaque build ; le versionner crée des conflits
+# permanents sur des fichiers que personne ne relit.
+frontend/prisma/generated/
+frontend/node_modules/.prisma/
+
+# ---------------------------------------------------------------- exécution
+*.log
+npm-debug.log*
+.cache/
+coverage/
+
+# ---------------------------------------------------------------- système
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

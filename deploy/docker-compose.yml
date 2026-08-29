@@ -1,0 +1,138 @@
+# MapArtisans — orchestration de production.
+#
+# Cinq services : Caddy en frontal, l'application Next.js, deux workers de
+# fond, PostgreSQL et Redis. Seul Caddy est exposé sur l'Internet ; tout le
+# reste ne communique que par le réseau interne.
+#
+# Lancement :  docker compose --env-file .env.production up -d --build
+
+name: mapartisans
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # Les deux seuls ports ouverts vers l'extérieur. 80 reste nécessaire :
+    # Let's Encrypt l'utilise pour valider les certificats, y compris ceux
+    # obtenus à la demande pour les domaines d'agences.
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Les certificats survivent aux redéploiements. Sans ce volume, chaque
+      # « up » redemanderait tous les certificats et épuiserait le quota
+      # Let's Encrypt (50 par domaine et par semaine) en quelques jours.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks: [interne]
+
+  app:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # AUCUN port publié : l'application n'est joignable que par Caddy. La
+    # publier exposerait le site en HTTP nu sur l'IP du serveur, contournant
+    # TLS et les en-têtes de sécurité.
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      FACTURATION_RAISON_SOCIALE: ${FACTURATION_RAISON_SOCIALE}
+      FACTURATION_ADRESSE: ${FACTURATION_ADRESSE}
+      FACTURATION_EMAIL: ${FACTURATION_EMAIL}
+      # Laissée vide tant que le chiffre d'affaires reste sous 100 000 CHF.
+      FACTURATION_IDE: ${FACTURATION_IDE:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [interne]
+
+  worker-avis:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    command: ["npm", "run", "worker:reviews:prod"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [interne]
+
+  worker-rapports:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    command: ["npm", "run", "worker:reports:prod"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [interne]
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Aucun port publié : la base n'est JAMAIS jointe depuis l'Internet. Pour
+    # s'y connecter, passer par un tunnel SSH.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [interne]
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # Persistance activée : à un redémarrage, les jobs en file ne doivent pas
+    # disparaître — un rapport hebdomadaire perdu ne se rattrape pas.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [interne]
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+
+networks:
+  interne:
+    driver: bridge

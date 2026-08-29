@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MapArtisan — Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="company-name" id="company-name">—</span>
+      <span class="sub-badge" id="sub-badge">—</span>
+    </div>
+    <button class="gear-btn" id="gear-btn" aria-label="Réglages" data-view-target="settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path>
+      </svg>
+    </button>
+  </header>
+
+  <main>
+
+    <!-- ================= ACCUEIL ================= -->
+    <section class="view active" id="view-home" aria-label="Accueil">
+      <div class="section-label">Visibilité locale</div>
+      <div class="card">
+        <div class="grid-keyword" id="grid-keyword">—</div>
+        <div class="geo-grid" id="geo-grid"></div>
+        <div class="geo-legend">
+          <span><i class="legend-dot" style="background:var(--status-good)"></i>Visible</span>
+          <span><i class="legend-dot" style="background:var(--status-warn)"></i>Peu visible</span>
+          <span><i class="legend-dot" style="background:var(--status-bad)"></i>Invisible</span>
+        </div>
+      </div>
+
+      <div class="card rank-hero">
+        <div class="num" id="rank-num">—</div>
+        <div class="label" id="rank-label">—</div>
+      </div>
+
+      <div class="section-label">Cette semaine</div>
+      <div class="stat-row">
+        <div class="stat-tile"><div class="num" id="stat-calls">—</div><div class="lbl">Appels</div></div>
+        <div class="stat-tile"><div class="num" id="stat-directions">—</div><div class="lbl">Itinéraires</div></div>
+      </div>
+    </section>
+
+    <!-- ================= AVIS ================= -->
+    <section class="view" id="view-reviews" aria-label="Avis">
+      <div class="filter-row" role="tablist" aria-label="Filtrer les avis">
+        <button class="pill active" data-filter="all">Tous</button>
+        <button class="pill" data-filter="needs_review">À valider <span id="needs-review-count"></span></button>
+      </div>
+      <div class="card" id="reviews-list"></div>
+    </section>
+
+    <!-- ================= POSTS ================= -->
+    <section class="view" id="view-posts" aria-label="Posts">
+      <div class="section-label">Ce mois-ci</div>
+      <div class="card" id="posts-list"></div>
+    </section>
+
+    <!-- ================= CLIENTS (QR) ================= -->
+    <section class="view" id="view-clients" aria-label="Avis clients">
+      <div class="section-label">Votre QR code</div>
+      <div class="card qr-card">
+        <div class="qr-visual" aria-hidden="true"></div>
+        <div class="qr-label" id="qr-label">—</div>
+        <div class="qr-scans" id="qr-scans">—</div>
+        <button class="btn">Télécharger le QR code</button>
+      </div>
+
+      <div class="section-label">Réclamations privées</div>
+      <div class="card" id="feedback-list"></div>
+    </section>
+
+    <!-- ================= RÉGLAGES ================= -->
+    <section class="view" id="view-settings" aria-label="Réglages">
+      <div class="section-label">Fiche Google</div>
+      <div class="card">
+        <div class="settings-row">
+          <div>
+            <div class="row-title" id="google-status">—</div>
+            <div class="row-sub">Connexion Google Business Profile</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="row-title">Réponse auto IA</div>
+            <div class="row-sub">ai_auto_reply</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="ai-toggle" checked>
+            <span class="track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section-label">Abonnement</div>
+      <div class="card">
+        <div class="settings-row">
+          <div>
+            <div class="row-title" id="plan-label">—</div>
+            <div class="row-sub" id="plan-status">—</div>
+          </div>
+          <button class="btn secondary">Gérer</button>
+        </div>
+      </div>
+
+      <div class="section-label">Avancé</div>
+      <div class="card">
+        <button class="advanced-toggle" id="advanced-toggle" aria-expanded="false">
+          <div>
+            <div class="row-title">Fiches concurrentes suspectes</div>
+            <div class="row-sub" id="flags-count">—</div>
+          </div>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div class="advanced-body" id="advanced-body"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottomnav" aria-label="Navigation principale">
+    <button class="navitem active" data-view-target="home">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"></path><path d="M5 10v9h14v-9"></path><path d="M9 19v-6h6v6"></path></svg></span>
+      Accueil
+    </button>
+    <button class="navitem" data-view-target="reviews">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1L6.6 19.3l1.3-6L3.3 9.2l6.1-.6z"></path></svg></span>
+      Avis
+    </button>
+    <button class="navitem" data-view-target="posts">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.4"></circle><path d="M21 16l-5-5-4 4-3-3-6 6"></path></svg></span>
+      Posts
+    </button>
+    <button class="navitem" data-view-target="clients">
+      <span class="nav-ic"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="3" height="3"></rect><rect x="18" y="18" width="3" height="3"></rect></svg></span>
+      Clients
+    </button>
+  </nav>
+
+</div>
+
+<div class="modal-overlay hidden" id="review-modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div>
+      <div class="modal-stars" id="modal-stars"></div>
+      <div class="modal-title" id="modal-title">Avis</div>
+    </div>
+    <div class="modal-comment" id="modal-comment"></div>
+    <div>
+      <div class="modal-draft-label">Brouillon généré par l'IA</div>
+      <textarea id="modal-draft"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="modal-cancel">Annuler</button>
+      <button class="btn" id="modal-publish">Publier</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

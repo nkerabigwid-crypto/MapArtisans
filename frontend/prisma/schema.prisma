@@ -1,0 +1,348 @@
+// =============================================================================
+// MapArtisan — schéma Prisma
+// =============================================================================
+// Traduction du schéma PostgreSQL v1.4 et des migrations 001 à 003
+// (voir db/schema-v1.4.sql et db/migrations/).
+//
+// Le SQL reste la référence : c'est lui qui porte les index partiels et les
+// contraintes CHECK que Prisma ne sait pas exprimer. Ce fichier sert au client
+// typé côté application, pas à créer la base — d'où `prisma db pull` plutôt que
+// `prisma migrate` si les deux venaient à diverger.
+//
+// Les valeurs contraintes (statuts, raisons) sont des enums côté Prisma et des
+// CHECK côté PostgreSQL : les deux doivent rester alignés.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Depuis Prisma 7, l'URL de connexion ne vit plus ici : elle est déclarée dans
+// prisma.config.ts (pour les migrations) et passée à l'adaptateur du client.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Énumérations
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  artisan
+  agency
+  admin
+}
+
+enum SubscriptionStatus {
+  incomplete
+  trialing
+  active
+  past_due
+  canceled
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  failed
+}
+
+enum PostStatus {
+  draft
+  scheduled
+  published
+  failed
+}
+
+enum FeedbackStatus {
+  open
+  resolved
+}
+
+enum FlagReason {
+  keyword_stuffing
+  duplicate
+  fake_address
+}
+
+enum FlagStatus {
+  detected
+  pending_review
+  submitted
+  rejected
+}
+
+// ---------------------------------------------------------------------------
+// Comptes
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  firstName    String?  @map("first_name") @db.VarChar(100)
+  lastName     String?  @map("last_name") @db.VarChar(100)
+  /// Destinataire du rapport SMS hebdomadaire.
+  phoneNumber  String   @map("phone_number") @db.VarChar(20)
+  role         UserRole @default(artisan)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  companies      Company[]
+  agencySettings AgencySettings?
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Marque blanche
+// ---------------------------------------------------------------------------
+
+/// Réglages de marque blanche d'une agence.
+///
+/// Rattachés à l'UTILISATEUR (rôle `agency`), pas à `Company` : une Company est
+/// l'entreprise d'un artisan (« Dupont Plomberie »), et une agence en gère
+/// plusieurs. Poser `customDomain` sur Company donnerait un domaine par
+/// artisan — l'inverse de ce qu'on veut.
+///
+/// SÉCURITÉ — ces réglages ne pilotent QUE l'apparence. Ils ne doivent jamais
+/// servir à décider de ce qu'un utilisateur a le droit de voir : le domaine
+/// vient de l'en-tête `Host`, contrôlable par le client, et fonder une
+/// autorisation dessus offrirait une élévation de privilège par simple
+/// falsification d'en-tête.
+model AgencySettings {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  /// Domaine de l'agence, ex. « seo.monagence.ch ». Toujours en minuscules,
+  /// sans port ni protocole — voir normalizeHost() côté application.
+  customDomain String?  @unique @map("custom_domain") @db.VarChar(253)
+  brandName    String?  @map("brand_name") @db.VarChar(120)
+  logoUrl      String?  @map("logo_url")
+  /// Couleur hexadécimale (#RRGGBB). Validée AVANT toute injection en CSS :
+  /// une valeur libre insérée dans une balise <style> serait une injection CSS.
+  primaryColor String   @default("#123F6D") @map("primary_color") @db.VarChar(7)
+  supportEmail String?  @map("support_email") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("agency_settings")
+}
+
+model Company {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  companyName        String             @map("company_name") @db.VarChar(255)
+  /// Catégorie Google Business Profile : 'plombier', 'electricien', …
+  tradeType          String?            @map("trade_type") @db.VarChar(50)
+  /// CH par défaut : la migration 004 a fait de la Suisse le marché principal.
+  /// La contrainte SQL autorise CH, FR, BE, LU, CA, MC — Prisma ne sait pas
+  /// exprimer un CHECK, la base reste donc seule garante de la liste.
+  country            String             @default("CH") @db.Char(2)
+  /// CHF uniquement, quel que soit le pays du client : l'éditeur est suisse et
+  /// facture dans sa devise (migration 004, contrainte `currency = 'CHF'`).
+  currency           String             @default("CHF") @db.Char(3)
+  /// Montant mensuel exprimé dans `currency`.
+  planAmount         Decimal?           @map("plan_amount") @db.Decimal(8, 2)
+  stripeCustomerId   String?            @map("stripe_customer_id") @db.VarChar(255)
+  subscriptionStatus SubscriptionStatus @default(incomplete) @map("subscription_status")
+  /// Dates issues de Stripe — alimentent le bandeau past_due et l'écran de résiliation.
+  paymentFailedAt    DateTime?          @map("payment_failed_at") @db.Timestamptz(6)
+  gracePeriodEndsAt  DateTime?          @map("grace_period_ends_at") @db.Timestamptz(6)
+  canceledAt         DateTime?          @map("canceled_at") @db.Timestamptz(6)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleProfiles GoogleProfile[]
+
+  @@index([userId])
+  @@map("companies")
+}
+
+// ---------------------------------------------------------------------------
+// Fiche Google
+// ---------------------------------------------------------------------------
+
+/// SÉCURITÉ : googleAccessToken et googleRefreshToken doivent être chiffrés
+/// applicativement (AES-256-GCM) AVANT écriture. Prisma ne chiffre rien de
+/// lui-même — une fuite de la base en clair donnerait le contrôle des fiches
+/// Google de tous les clients.
+model GoogleProfile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  companyId          String   @map("company_id") @db.Uuid
+  googleLocationId   String   @unique @map("google_location_id") @db.VarChar(255)
+  /// place_id Places API — DISTINCT de google_location_id, qui vient de l'API
+  /// Business Profile. Les deux désignent le même établissement mais ne sont
+  /// pas interchangeables : seul le place_id construit le lien vers le
+  /// formulaire d'avis Google, donc le QR code de collecte (lib/server/qr.ts).
+  /// Nullable : il est résolu après la connexion OAuth, pas à la création.
+  placeId            String?  @map("place_id") @db.VarChar(255)
+  businessName       String   @map("business_name") @db.VarChar(255)
+  /// Ville ou zone d'intervention. Injectée dans le prompt de génération des
+  /// réponses aux avis : c'est elle qui ancre le texte localement, et un avis
+  /// court (« Nickel, merci ! ») ne la contient jamais.
+  city               String?  @db.VarChar(120)
+  address            String?
+  /// Centre de la Geo-Grid.
+  latitude           Decimal  @db.Decimal(10, 8)
+  longitude          Decimal  @db.Decimal(11, 8)
+  googleAccessToken  String?  @map("google_access_token")
+  googleRefreshToken String?  @map("google_refresh_token")
+  aiAutoReply        Boolean  @default(true) @map("ai_auto_reply")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reviews          Review[]
+  posts            Post[]
+  rankTrackings    RankTracking[]
+  qrCodes          QrCode[]
+  reviewFeedback   ReviewFeedback[]
+  competitorFlags  CompetitorFlag[]
+
+  @@index([companyId])
+  @@map("google_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// Avis
+// ---------------------------------------------------------------------------
+
+model Review {
+  id              String       @id @default(uuid()) @db.Uuid
+  googleProfileId String       @map("google_profile_id") @db.Uuid
+  googleReviewId  String       @unique @map("google_review_id") @db.VarChar(255)
+  reviewerName    String?      @map("reviewer_name") @db.VarChar(255)
+  /// 1 à 5 — la borne est un CHECK côté PostgreSQL.
+  rating          Int          @db.SmallInt
+  comment         String?
+  /// Brouillon proposé à l'artisan, jamais publié tel quel sans validation.
+  aiReplyDraft    String?      @map("ai_reply_draft")
+  /// Réponse réellement publiée sur Google.
+  replyText       String?      @map("reply_text")
+  status          ReviewStatus @default(pending)
+  reviewDate      DateTime?    @map("review_date") @db.Timestamptz(6)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  googleProfile GoogleProfile @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+
+  @@index([googleProfileId])
+  @@index([googleProfileId, reviewDate])
+  @@map("reviews")
+}
+
+// ---------------------------------------------------------------------------
+// Publications
+// ---------------------------------------------------------------------------
+
+model Post {
+  id              String     @id @default(uuid()) @db.Uuid
+  googleProfileId String     @map("google_profile_id") @db.Uuid
+  content         String
+  /// Thématique utilisée par la génération IA : 'saison_hiver', 'urgence_weekend', …
+  topicTag        String?    @map("topic_tag") @db.VarChar(50)
+  imageUrl        String?    @map("image_url")
+  scheduledAt     DateTime   @map("scheduled_at") @db.Timestamptz(6)
+  status          PostStatus @default(draft)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  googleProfile GoogleProfile @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+
+  @@index([googleProfileId])
+  @@index([scheduledAt])
+  @@map("posts")
+}
+
+// ---------------------------------------------------------------------------
+// Suivi de position (Geo-Grid)
+// ---------------------------------------------------------------------------
+
+/// gridPoints : un objet par point de la grille —
+///   [{ label, area, lat, lng, position, top_competitor_place_id }, …]
+///   · position = null → fiche introuvable dans les résultats
+///   · top_competitor_place_id = null → l'artisan est lui-même 1er à ce point
+///
+/// CONFORMITÉ : on stocke le place_id, jamais le nom de l'établissement. Les
+/// conditions de la Google Maps Platform n'exemptent des restrictions de mise
+/// en cache que le place_id ; noms, notes et avis doivent être demandés en
+/// direct à l'affichage. Voir db/migrations/005_conformite_places.sql.
+///
+/// La couleur est dérivée côté application (lib/data.ts, getGridStatus) :
+/// 1 → vert profond · 2-3 → vert · 4-10 → ambre · > 10 ou null → rouge.
+/// Le seuil de 3 vient du Local Pack, qui n'affiche que trois résultats.
+model RankTracking {
+  id                  String   @id @default(uuid()) @db.Uuid
+  googleProfileId     String   @map("google_profile_id") @db.Uuid
+  keyword             String   @db.VarChar(255)
+  gridPoints          Json     @map("grid_points")
+  callsGenerated      Int      @default(0) @map("calls_generated")
+  directionsGenerated Int      @default(0) @map("directions_generated")
+  trackedAt           DateTime @default(now()) @map("tracked_at") @db.Timestamptz(6)
+
+  googleProfile GoogleProfile @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+
+  @@index([googleProfileId])
+  @@index([googleProfileId, keyword, trackedAt])
+  @@map("rank_trackings")
+}
+
+// ---------------------------------------------------------------------------
+// Collecte d'avis clients
+// ---------------------------------------------------------------------------
+
+model QrCode {
+  id              String   @id @default(uuid()) @db.Uuid
+  googleProfileId String   @map("google_profile_id") @db.Uuid
+  /// 'Camionnette', 'Comptoir', 'Facture', …
+  label           String   @db.VarChar(100)
+  /// Segment d'URL publique vers le formulaire de tri.
+  codeSlug        String   @unique @map("code_slug") @db.VarChar(120)
+  scansCount      Int      @default(0) @map("scans_count")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  googleProfile  GoogleProfile    @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+  reviewFeedback ReviewFeedback[]
+
+  @@index([googleProfileId])
+  @@map("qr_codes")
+}
+
+/// Réclamation privée — ne quitte jamais MapArtisan et n'est jamais publiée
+/// sur Google. C'est le canal qui capte l'insatisfaction avant qu'elle
+/// n'atteigne la note publique.
+model ReviewFeedback {
+  id              String         @id @default(uuid()) @db.Uuid
+  googleProfileId String         @map("google_profile_id") @db.Uuid
+  /// QR d'origine, si identifiable.
+  qrCodeId        String?        @map("qr_code_id") @db.Uuid
+  clientName      String?        @map("client_name") @db.VarChar(255)
+  message         String
+  status          FeedbackStatus @default(open)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt      DateTime?      @map("resolved_at") @db.Timestamptz(6)
+
+  googleProfile GoogleProfile @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+  qrCode        QrCode?       @relation(fields: [qrCodeId], references: [id], onDelete: SetNull)
+
+  @@index([googleProfileId])
+  @@index([googleProfileId, createdAt])
+  @@map("review_feedback")
+}
+
+// ---------------------------------------------------------------------------
+// Veille concurrentielle
+// ---------------------------------------------------------------------------
+
+model CompetitorFlag {
+  id              String     @id @default(uuid()) @db.Uuid
+  googleProfileId String     @map("google_profile_id") @db.Uuid
+  flaggedName     String     @map("flagged_name")
+  /// place_id Google de la fiche signalée, si résolu.
+  flaggedPlaceId  String?    @map("flagged_place_id") @db.VarChar(255)
+  reason          FlagReason
+  status          FlagStatus @default(detected)
+  detectedAt      DateTime   @default(now()) @map("detected_at") @db.Timestamptz(6)
+
+  googleProfile GoogleProfile @relation(fields: [googleProfileId], references: [id], onDelete: Cascade)
+
+  @@index([googleProfileId])
+  @@map("competitor_flags")
+}

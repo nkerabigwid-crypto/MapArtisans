@@ -1,0 +1,515 @@
+// PAS de `import "server-only"` ici, volontairement : ce module est aussi
+// importé par workers/reviewWorker.ts, qui tourne comme un processus Node
+// autonome, hors du bundler de Next. Le paquet `server-only` lève de façon
+// INCONDITIONNELLE dès qu'il est chargé ailleurs que sous le bundler de Next
+// (c'est ce dernier, et lui seul, qui sait le neutraliser) — l'ajouter ici
+// ferait planter le worker au démarrage. La frontière réelle est déjà tenue
+// autrement : rien sous lib/server/ n'est importé par un composant "use
+// client" (vérifié), et chaque route Next qui l'utilise déclare elle-même
+// `export const runtime = "nodejs"`.
+import type { MagicLinkRecord } from "./magicLink";
+import { hashPassword } from "./password";
+import type { AgencyBrandingRecord } from "./branding";
+
+/**
+ * Accès aux données, derrière une interface.
+ *
+ * Les routes HTTP ne parlent jamais à Prisma directement. Ce découplage sert
+ * trois choses concrètes :
+ *
+ * · Les règles d'autorisation se testent sans base de données — c'est le cas
+ *   aujourd'hui, PostgreSQL n'étant pas encore déployé.
+ * · Le jour où Prisma remplace l'implémentation mémoire, aucune route ne bouge.
+ * · Les requêtes restent groupées à un seul endroit, ce qui rend visible d'un
+ *   coup d'œil si l'une d'elles oublie de filtrer par propriétaire.
+ *
+ * L'implémentation en mémoire ci-dessous n'est PAS un simulacre de confort :
+ * elle applique exactement les mêmes règles de propriété que devra appliquer la
+ * version Prisma. Un test qui passe ici doit passer là.
+ */
+
+export interface UserRecord {
+  id: string;
+  email: string;
+  passwordHash: string;
+  role: "artisan" | "agency" | "admin";
+  /** Destinataire du rapport SMS — users.phone_number au schéma. */
+  phoneNumber: string | null;
+}
+
+export interface CompanyRecord {
+  id: string;
+  userId: string;
+  companyName: string;
+  tradeType: string;
+}
+
+export interface GoogleProfileRecord {
+  id: string;
+  companyId: string;
+  businessName: string;
+  city: string;
+  aiAutoReply: boolean;
+  /**
+   * Chiffré au repos — voir lib/server/crypto.ts.
+   * Correspond à la colonne `google_access_token` du schéma ; le suffixe `Enc`
+   * n'existe que côté application, pour rappeler à la lecture que la valeur
+   * n'est jamais en clair.
+   */
+  googleAccessTokenEnc: string | null;
+
+  // --- Champs DÉRIVÉS, pas des colonnes de google_profiles.
+  // Ils résument le dernier relevé et proviennent de `rank_trackings`. La
+  // version Prisma devra les calculer par jointure sur le scan le plus récent,
+  // et non ajouter ces colonnes à la table — les dupliquer créerait deux
+  // sources de vérité pour la même position.
+  bestPosition: number | null;
+  previousPosition: number | null;
+  callsGenerated: number;
+  directionsGenerated: number;
+}
+
+/** Ce qu'il faut pour composer le rapport SMS d'une fiche. */
+export interface WeeklyStatsRecord {
+  googleProfileId: string;
+  businessName: string;
+  /** Destinataire — users.phone_number du propriétaire de la fiche. */
+  phoneNumber: string;
+  bestPosition: number | null;
+  previousPosition: number | null;
+  callsGenerated: number;
+  directionsGenerated: number;
+  pendingReviews: number;
+  /**
+   * Marque à faire figurer dans le SMS. `null` pour les clients directs, qui
+   * reçoivent « MapArtisans » ; renseigné quand la fiche appartient à une
+   * agence en marque blanche — l'artisan ne doit alors jamais voir notre nom.
+   */
+  brandName: string | null;
+}
+
+export interface ReviewRecord {
+  id: string;
+  googleProfileId: string;
+  googleReviewId: string;
+  reviewerName: string | null;
+  rating: 1 | 2 | 3 | 4 | 5;
+  /**
+   * `null` pour un avis « étoiles seules » : Google autorise une note sans
+   * texte, et ces avis-là arrivent bel et bien par l'API. Les traiter comme
+   * une chaîne vide ferait passer `Avis : ""` au modèle, qui inventerait un
+   * contenu inexistant pour avoir quelque chose à quoi répondre.
+   */
+  comment: string | null;
+  aiReplyDraft: string | null;
+  replyText: string | null;
+  status: "pending" | "approved" | "failed";
+}
+
+export interface Repo {
+  findUserByEmail(email: string): Promise<UserRecord | null>;
+  findUserById(id: string): Promise<UserRecord | null>;
+  createUser(email: string, password: string): Promise<UserRecord>;
+  /** Fiches accessibles à cet utilisateur — jamais toutes les fiches. */
+  listProfilesForUser(userId: string): Promise<GoogleProfileRecord[]>;
+  /**
+   * Renvoie la fiche UNIQUEMENT si elle appartient à cet utilisateur.
+   * Le filtre est dans la requête, pas dans l'appelant : c'est la seule façon
+   * de garantir qu'aucune route ne puisse l'oublier.
+   */
+  findProfileForUser(userId: string, profileId: string): Promise<GoogleProfileRecord | null>;
+  /**
+   * Nombre de fiches déjà rattachées à cet utilisateur.
+   *
+   * Sert au contrôle de plafond avant création (`peutAjouterFiche`). Compte
+   * bien les fiches de TOUTES ses entreprises : une agence en détient
+   * plusieurs, et le plafond porte sur le total, pas sur chaque entreprise.
+   */
+  countProfilesForUser(userId: string): Promise<number>;
+
+  // --- Réservé au worker : traversée interne, pas de notion de propriétaire.
+  // Un worker de fond n'agit pas « au nom » d'une requête HTTP authentifiée —
+  // il balaie l'ensemble des fiches pour lesquelles le travail est dû. Séparer
+  // ces méthodes des méthodes ci-dessus rend visible, à la lecture d'une route
+  // HTTP, qu'aucune d'elles ne devrait jamais appeler celles-ci directement.
+  listProfilesWithAutoReplyEnabled(): Promise<GoogleProfileRecord[]>;
+  listPendingReviews(profileId: string): Promise<ReviewRecord[]>;
+  getReviewById(reviewId: string): Promise<ReviewRecord | null>;
+  getProfileById(profileId: string): Promise<GoogleProfileRecord | null>;
+  getCompanyForProfile(profileId: string): Promise<CompanyRecord | null>;
+  /** Publication effective : le brouillon devient la réponse en ligne. */
+  saveReviewReply(reviewId: string, replyText: string): Promise<void>;
+  /**
+   * Enregistre une proposition SANS la publier : le statut reste `pending`.
+   * C'est le chemin des avis négatifs, où l'artisan valide avant mise en ligne.
+   */
+  saveReviewDraft(reviewId: string, draft: string): Promise<void>;
+  markReviewFailed(reviewId: string): Promise<void>;
+  // --- Liens magiques (connexion sans mot de passe).
+  saveMagicLink(record: MagicLinkRecord): Promise<void>;
+  /**
+   * Teste ET marque comme utilisé en UNE SEULE opération, puis renvoie
+   * l'enregistrement tel qu'il était avant.
+   *
+   * L'atomicité n'est pas un raffinement : les prévisualiseurs de lien (Gmail,
+   * WhatsApp, Outlook) ouvrent les URL avant l'utilisateur, et une vérification
+   * en deux temps laisserait passer deux consommations du même jeton. En SQL,
+   * c'est un `UPDATE … WHERE token_hash = $1 AND used_at IS NULL RETURNING *`.
+   *
+   * Renvoie `null` si le jeton est inconnu ; renvoie l'enregistrement avec son
+   * `usedAt` d'origine s'il était déjà consommé, pour que l'appelant puisse
+   * distinguer les cas.
+   */
+  consumeMagicLink(tokenHash: string, now?: number): Promise<MagicLinkRecord | null>;
+
+  /** Fiches à qui envoyer le rapport hebdomadaire, avec leurs chiffres. */
+  listWeeklyStats(): Promise<WeeklyStatsRecord[]>;
+  /**
+   * Réglages de marque blanche associés à un domaine personnalisé.
+   * Renvoie `null` pour le domaine principal ou un domaine inconnu — c'est le
+   * cas nominal, pas une erreur.
+   */
+  findAgencyByDomain(domain: string): Promise<AgencyBrandingRecord | null>;
+}
+
+// --------------------------------------------------------------------------
+// Implémentation en mémoire — remplacée par Prisma quand la base existera.
+// --------------------------------------------------------------------------
+
+const users = new Map<string, UserRecord>();
+const companies = new Map<string, CompanyRecord>();
+const profiles = new Map<string, GoogleProfileRecord>();
+const reviews = new Map<string, ReviewRecord>();
+const magicLinks = new Map<string, MagicLinkRecord>();
+const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
+let seeded = false;
+
+/** Normalise une adresse : la casse ne doit pas créer deux comptes distincts. */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+async function seed() {
+  if (seeded) return;
+  seeded = true;
+  const u: UserRecord = {
+    id: "u-001",
+    email: "demo@mapartisan.ch",
+    passwordHash: await hashPassword("demonstration-2026"),
+    role: "artisan",
+    phoneNumber: "+41791234567",
+  };
+  users.set(u.id, u);
+  companies.set("c-001", {
+    id: "c-001",
+    userId: u.id,
+    companyName: "Dupont Plomberie",
+    tradeType: "plombier",
+  });
+  profiles.set("g-001", {
+    id: "g-001",
+    companyId: "c-001",
+    businessName: "Dupont Plomberie",
+    city: "Lyon",
+    aiAutoReply: true,
+    googleAccessTokenEnc: null,
+    bestPosition: 2,
+    previousPosition: 4,
+    callsGenerated: 14,
+    directionsGenerated: 4,
+  });
+  // Un second locataire, présent uniquement pour que les tests d'isolation
+  // aient quelque chose à ne PAS pouvoir atteindre.
+  const other: UserRecord = {
+    id: "u-002",
+    email: "autre@exemple.ch",
+    passwordHash: await hashPassword("autre-compte-2026"),
+    role: "artisan",
+    phoneNumber: null, // sans mobile : doit être ignoré par le rapport
+  };
+  users.set(other.id, other);
+  companies.set("c-002", {
+    id: "c-002",
+    userId: other.id,
+    companyName: "Autre Plomberie",
+    tradeType: "plombier",
+  });
+  profiles.set("g-002", {
+    id: "g-002",
+    companyId: "c-002",
+    businessName: "Autre Plomberie",
+    city: "Genève",
+    aiAutoReply: false,
+    googleAccessTokenEnc: null,
+    bestPosition: 7,
+    previousPosition: null,
+    callsGenerated: 3,
+    directionsGenerated: 1,
+  });
+
+  // Une agence en marque blanche, pour que les tests aient un cas réel.
+  const agence: UserRecord = {
+    id: "u-003",
+    email: "contact@monagence.ch",
+    passwordHash: await hashPassword("agence-demo-2026"),
+    role: "agency",
+    phoneNumber: "+41780000000",
+  };
+  users.set(agence.id, agence);
+  agencies.set("seo.monagence.ch", {
+    userId: agence.id,
+    customDomain: "seo.monagence.ch",
+    brandName: "MonAgence SEO",
+    logoUrl: "https://monagence.ch/logo.svg",
+    primaryColor: "#8B1E3F",
+    supportEmail: "support@monagence.ch",
+  });
+  companies.set("c-003", {
+    id: "c-003",
+    userId: agence.id,
+    companyName: "Bornand Electricite",
+    tradeType: "electricien",
+  });
+  profiles.set("g-003", {
+    id: "g-003",
+    companyId: "c-003",
+    businessName: "Bornand Electricite",
+    city: "Lausanne",
+    aiAutoReply: true,
+    googleAccessTokenEnc: null,
+    bestPosition: 5,
+    previousPosition: 9,
+    callsGenerated: 6,
+    directionsGenerated: 2,
+  });
+
+  reviews.set("r-001", {
+    id: "r-001",
+    googleProfileId: "g-001",
+    googleReviewId: "gr-001",
+    reviewerName: "Camille R.",
+    rating: 2,
+    comment: "Devis final plus élevé que ce qui avait été annoncé au téléphone.",
+    aiReplyDraft: null,
+    replyText: null,
+    status: "pending",
+  });
+  // Avis positif sur la meme fiche que r-001 : c'est lui qui emprunte le
+  // chemin de la publication automatique. Avoir les deux notes sur g-001 est
+  // volontaire — c'est ce qui rend visible, dans les tests, que la separation
+  // se fait bien sur la note et non sur la fiche.
+  reviews.set("r-003", {
+    id: "r-003",
+    googleProfileId: "g-001",
+    googleReviewId: "gr-003",
+    reviewerName: "Sophie L.",
+    rating: 5,
+    comment: "Intervention rapide et propre, je recommande.",
+    aiReplyDraft: null,
+    replyText: null,
+    status: "pending",
+  });
+  // Avis « etoiles seules » : Google autorise la note sans texte, et ce cas
+  // n'est pas marginal. Le garder dans les donnees de depart evite qu'une
+  // regression le fasse disparaitre des chemins testes.
+  reviews.set("r-004", {
+    id: "r-004",
+    googleProfileId: "g-001",
+    googleReviewId: "gr-004",
+    reviewerName: null,
+    rating: 5,
+    comment: null,
+    aiReplyDraft: null,
+    replyText: null,
+    status: "pending",
+  });
+  reviews.set("r-002", {
+    id: "r-002",
+    googleProfileId: "g-002", // aiAutoReply désactivé — le worker doit l'ignorer
+    googleReviewId: "gr-002",
+    reviewerName: "Marc T.",
+    rating: 5,
+    comment: "Parfait, comme d'habitude.",
+    aiReplyDraft: null,
+    replyText: null,
+    status: "pending",
+  });
+}
+
+export const memoryRepo: Repo = {
+  async findUserByEmail(email) {
+    await seed();
+    const n = normalizeEmail(email);
+    for (const u of users.values()) if (u.email === n) return u;
+    return null;
+  },
+
+  async findUserById(id) {
+    await seed();
+    return users.get(id) ?? null;
+  },
+
+  async createUser(email, password) {
+    await seed();
+    const n = normalizeEmail(email);
+    for (const u of users.values()) {
+      if (u.email === n) throw new Error("EMAIL_DEJA_UTILISE");
+    }
+    const user: UserRecord = {
+      id: `u-${crypto.randomUUID()}`,
+      email: n,
+      passwordHash: await hashPassword(password),
+      role: "artisan",
+      phoneNumber: null,
+    };
+    users.set(user.id, user);
+    return user;
+  },
+
+  async listProfilesForUser(userId) {
+    await seed();
+    const owned = new Set(
+      [...companies.values()].filter((c) => c.userId === userId).map((c) => c.id),
+    );
+    return [...profiles.values()].filter((p) => owned.has(p.companyId));
+  },
+
+  async countProfilesForUser(userId) {
+    await seed();
+    return (await memoryRepo.listProfilesForUser(userId)).length;
+  },
+  async findProfileForUser(userId, profileId) {
+    await seed();
+    const p = profiles.get(profileId);
+    if (!p) return null;
+    const company = companies.get(p.companyId);
+    // La jointure sur le propriétaire fait partie de la lecture. Charger la
+    // fiche puis comparer dans l'appelant serait la même chose « en apparence »,
+    // mais laisserait à chaque route la responsabilité de ne pas l'oublier.
+    if (!company || company.userId !== userId) return null;
+    return p;
+  },
+
+  async listProfilesWithAutoReplyEnabled() {
+    await seed();
+    return [...profiles.values()].filter((p) => p.aiAutoReply);
+  },
+
+  async listPendingReviews(profileId) {
+    await seed();
+    return [...reviews.values()].filter(
+      (r) => r.googleProfileId === profileId && r.status === "pending",
+    );
+  },
+
+  async getReviewById(reviewId) {
+    await seed();
+    return reviews.get(reviewId) ?? null;
+  },
+
+  async getProfileById(profileId) {
+    await seed();
+    return profiles.get(profileId) ?? null;
+  },
+
+  async getCompanyForProfile(profileId) {
+    await seed();
+    const p = profiles.get(profileId);
+    if (!p) return null;
+    return companies.get(p.companyId) ?? null;
+  },
+
+  async saveReviewReply(reviewId, replyText) {
+    await seed();
+    const r = reviews.get(reviewId);
+    if (!r) throw new Error(`Avis introuvable : ${reviewId}`);
+    r.aiReplyDraft = replyText;
+    r.replyText = replyText;
+    r.status = "approved";
+  },
+
+  async findAgencyByDomain(domain) {
+    await seed();
+    return agencies.get(domain) ?? null;
+  },
+
+  async saveMagicLink(record) {
+    await seed();
+    magicLinks.set(record.tokenHash, { ...record });
+  },
+  async consumeMagicLink(tokenHash, now = Date.now()) {
+    await seed();
+    const r = magicLinks.get(tokenHash);
+    if (!r) return null;
+    // Copie de l'état AVANT modification : c'est elle qu'on renvoie, pour que
+    // l'appelant voie « déjà utilisé » plutôt que l'état qu'on vient d'écrire.
+    const avant = { ...r };
+    if (r.usedAt === null) r.usedAt = now;
+    return avant;
+  },
+  async listWeeklyStats() {
+    await seed();
+    const out: WeeklyStatsRecord[] = [];
+    for (const p of profiles.values()) {
+      const company = companies.get(p.companyId);
+      if (!company) continue;
+      const user = users.get(company.userId);
+      // Sans numéro, pas de rapport : on saute plutôt que d'échouer, un
+      // artisan sans mobile enregistré ne devant pas bloquer la tournée des
+      // autres.
+      if (!user?.phoneNumber) continue;
+
+      const pending = [...reviews.values()].filter(
+        (r) => r.googleProfileId === p.id && r.status === "pending",
+      ).length;
+
+      // Si le propriétaire est une agence en marque blanche, c'est SA marque
+      // qui doit figurer dans le SMS, jamais la nôtre.
+      const agence = [...agencies.values()].find((a) => a.userId === company.userId);
+
+      out.push({
+        googleProfileId: p.id,
+        businessName: p.businessName,
+        phoneNumber: user.phoneNumber,
+        bestPosition: p.bestPosition,
+        previousPosition: p.previousPosition,
+        callsGenerated: p.callsGenerated,
+        directionsGenerated: p.directionsGenerated,
+        pendingReviews: pending,
+        brandName: agence?.brandName ?? null,
+      });
+    }
+    return out;
+  },
+
+  async saveReviewDraft(reviewId, draft) {
+    await seed();
+    const r = reviews.get(reviewId);
+    if (!r) throw new Error(`Avis introuvable : ${reviewId}`);
+    r.aiReplyDraft = draft;
+    // `replyText` et `status` restent intacts : rien n'est publié, et l'avis
+    // doit continuer d'apparaître dans « à valider » sur le tableau de bord.
+    r.status = "pending";
+  },
+  async markReviewFailed(reviewId) {
+    await seed();
+    const r = reviews.get(reviewId);
+    if (!r) throw new Error(`Avis introuvable : ${reviewId}`);
+    r.status = "failed";
+  },
+};
+
+export function getRepo(): Repo {
+  return memoryRepo;
+}
+
+/** Réservé aux tests. */
+export function __resetRepo() {
+  users.clear();
+  companies.clear();
+  profiles.clear();
+  reviews.clear();
+  agencies.clear();
+  magicLinks.clear();
+  seeded = false;
+}

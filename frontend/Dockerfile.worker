@@ -1,0 +1,30 @@
+# MapArtisans — image des workers de fond (avis IA, rapports SMS).
+#
+# Image distincte du serveur web, pour une raison de fond : ce sont des
+# processus au cycle de vie différent. Le serveur web se redéploie sans
+# interrompre un job en cours ; un worker doit finir ce qu'il traite avant de
+# s'arrêter. Les mélanger obligerait à redémarrer les deux ensemble.
+#
+# Les sources TypeScript sont conservées ici : les workers sont exécutés par
+# tsx, qui les transpile au démarrage. C'est aussi pourquoi tsx est une
+# dépendance de production et non de développement.
+
+FROM node:24-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY lib ./lib
+COPY workers ./workers
+COPY tsconfig.json ./
+
+RUN addgroup -g 1001 -S nodejs && adduser -S worker -u 1001 && chown -R worker:nodejs /app
+USER worker
+
+# Surchargé par docker-compose selon le worker voulu.
+CMD ["npm", "run", "worker:reviews:prod"]

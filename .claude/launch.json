@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maparisan-frontend",
+      "runtimeExecutable": "/Users/nkerabigwideo/Claude code/Document/code/MapsBusiness/.claude/run-dev.sh",
+      "runtimeArgs": [],
+      "port": 3000
+    }
+  ]
+}
