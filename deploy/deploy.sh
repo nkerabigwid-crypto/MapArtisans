@@ -38,11 +38,19 @@ for VARIABLE in SESSION_SECRET TOKEN_ENCRYPTION_KEY POSTGRES_PASSWORD; do
 done
 
 echo "==> Récupération du code"
-# La version actuellement en ligne, notée AVANT le pull : c'est elle qu'il
-# faudra restaurer si le déploiement se passe mal.
-PRECEDENTE="$(git rev-parse --short HEAD)"
-git pull --ff-only
-echo "    $PRECEDENTE -> $(git rev-parse --short HEAD)"
+# Le dépôt distant n'est pas obligatoire : un premier déploiement peut se faire
+# par transfert direct des fichiers, avant même que GitHub ne soit configuré.
+# Dans ce cas il n'y a rien à tirer, et le script continue.
+if git rev-parse --git-dir >/dev/null 2>&1 && git remote | grep -q .; then
+    # La version en ligne AVANT le pull : c'est elle qu'il faudra restaurer si
+    # le déploiement se passe mal.
+    PRECEDENTE="$(git rev-parse --short HEAD)"
+    git pull --ff-only
+    echo "    $PRECEDENTE -> $(git rev-parse --short HEAD)"
+else
+    PRECEDENTE=""
+    echo "    aucun dépôt distant : déploiement des fichiers présents sur le serveur."
+fi
 
 echo "==> Construction et démarrage"
 $COMPOSE up -d --build
@@ -65,6 +73,8 @@ done
 echo >&2
 echo "ERREUR : l'application ne répond pas après 60 secondes." >&2
 echo "  Journaux :  $COMPOSE logs --tail=50 app" >&2
-echo "  Retour arrière :" >&2
-echo "    git reset --hard $PRECEDENTE && ./deploy/deploy.sh" >&2
+if [ -n "$PRECEDENTE" ]; then
+    echo "  Retour arrière :" >&2
+    echo "    git reset --hard $PRECEDENTE && ./deploy/deploy.sh" >&2
+fi
 exit 1
