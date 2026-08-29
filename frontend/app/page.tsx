@@ -119,16 +119,15 @@ export default function LandingPage() {
         </BlurFade>
         <BlurFade delay={0.12} inView>
           <h1 className="lp-h1">
-            Vous êtes le meilleur sur le terrain.
+            Votre visibilité Google Maps,
             <br />
-            Encore faut-il qu&apos;on vous <span className="lp-accent">trouve</span>.
+            en <span className="lp-accent">pilote automatique</span>.
           </h1>
         </BlurFade>
         <BlurFade delay={0.2} inView>
           <p className="lp-sub">
-            Le marketing ne devrait pas être un devoir du dimanche soir. Pendant que vous êtes
-            en intervention, MapArtisans répond à vos avis et suit votre position sur la carte.
-            Aucune configuration technique, aucune connaissance du référencement.
+            Conçu pour les artisans et les professionnels du transport. MapArtisans répond à vos
+            avis et suit votre position — pendant que vous travaillez.
           </p>
         </BlurFade>
         <BlurFade delay={0.28} inView>
