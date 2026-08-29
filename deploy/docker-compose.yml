@@ -19,7 +19,10 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Bascule entre la configuration de première mise en ligne et celle de
+      # production : CADDYFILE=./Caddyfile.etape1 tant que le DNS n'est pas
+      # basculé. Voir README-deploiement.md.
+      - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
       # Les certificats survivent aux redéploiements. Sans ce volume, chaque
       # « up » redemanderait tous les certificats et épuiserait le quota
       # Let's Encrypt (50 par domaine et par semaine) en quelques jours.

@@ -43,7 +43,40 @@ ufw allow 22 && ufw allow 80 && ufw allow 443 && ufw enable
 
 ---
 
-## 2. Le DNS chez Hostinger
+## 2. Première mise en ligne, AVANT le DNS
+
+Votre VPS répond déjà sur le nom d'hôte fourni par Hostinger :
+**`srv846053.hstgr.cloud`**. Il résout vers `89.116.38.42`, ce qui permet de
+déployer et de tout vérifier **sans attendre la propagation DNS**.
+
+C'est aussi la seule manière sûre de commencer. Au 29 août 2026, les domaines
+`mapartisans.*` pointent encore vers `2.57.91.91` (le parking Hostinger).
+Démarrer directement avec la configuration complète ferait échouer cinq
+validations Let's Encrypt à chaque lancement — la limite est de **cinq échecs
+par heure et par domaine**, et deux ou trois redémarrages suffisent à se
+bloquer pour la journée.
+
+Premier démarrage, avec la configuration réduite au seul nom d'hôte :
+
+```bash
+CADDYFILE=./Caddyfile.etape1 ./deploy/deploy.sh
+```
+
+Puis vérifiez, depuis votre machine :
+
+```bash
+curl -I https://srv846053.hstgr.cloud
+```
+
+Un `200` signifie que tout fonctionne : conteneurs, certificat, application.
+Ouvrez l'adresse dans votre navigateur — c'est votre SaaS, en ligne.
+
+À ce stade vous pouvez déjà faire une démonstration commerciale. Le nom d'hôte
+est configuré en `noindex` : Google ne le référencera pas.
+
+---
+
+## 3. Le DNS chez Hostinger
 
 L'adresse IP publique de votre VPS Hostinger est **`89.116.38.42`**. C'est
 elle qui figure dans tous les enregistrements ci-dessous.
@@ -62,9 +95,9 @@ L'enregistrement `cname` est la cible vers laquelle les agences feront pointer
 leur propre sous-domaine, plus tard. Il ne sert à rien aujourd'hui et ne coûte
 rien.
 
-**Supprimez les enregistrements A ou CNAME préexistants** sur `@` et `www` —
-Hostinger en crée automatiquement vers ses pages de parking, et ils entreraient
-en conflit avec les vôtres.
+**Supprimez les enregistrements A ou CNAME préexistants** sur `@` et `www`.
+Vérifié le 29 août 2026 : ils pointent vers `2.57.91.91`, le parking Hostinger.
+Tant qu'ils sont là, Caddy ne peut obtenir aucun certificat pour ces domaines.
 
 ### Pour les quatre autres domaines
 
@@ -95,7 +128,11 @@ quota Let's Encrypt de cinq échecs par heure.
 
 ---
 
-## 3. Le démarrage
+## 4. Bascule en production
+
+Une fois `dig +short mapartisans.com` renvoyant `89.116.38.42`, repassez à la
+configuration complète — sans variable, c'est le Caddyfile de production qui
+est utilisé :
 
 ```bash
 ./deploy/deploy.sh

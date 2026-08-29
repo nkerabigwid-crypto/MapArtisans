@@ -44,6 +44,23 @@
 	}
 }
 
+# --------------------------------------------------------------- nom d'hôte du VPS
+# Adresse technique fournie par Hostinger. Elle résout vers le serveur AVANT
+# que les domaines ne soient configurés, ce qui en fait le seul moyen de
+# vérifier un déploiement sans dépendre de la propagation DNS. Elle reste
+# ensuite utile pour diagnostiquer en contournant tout cache DNS.
+srv846053.hstgr.cloud {
+	import securite
+	encode zstd gzip
+	# Interdit l'indexation : sans cette ligne, Google référencerait le site
+	# sous cette adresse technique, créant un doublon de mapartisans.com et
+	# exposant publiquement une version de préproduction.
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy app:3000 {
+		header_up X-Real-IP {remote_host}
+	}
+}
+
 # --------------------------------------------------------------- domaine principal
 mapartisans.com {
 	import securite

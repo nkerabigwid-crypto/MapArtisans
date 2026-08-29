@@ -1,0 +1,37 @@
+# MapArtisans — configuration de PREMIÈRE MISE EN LIGNE.
+#
+# À utiliser tant que les domaines mapartisans.* pointent encore ailleurs
+# (au 29 août 2026 : vers 2.57.91.91, le parking Hostinger).
+#
+# POURQUOI UN FICHIER SÉPARÉ
+#
+# Le Caddyfile de production déclare les cinq domaines. Démarrer avec lui alors
+# qu'ils répondent sur une autre IP fait échouer cinq validations Let's Encrypt
+# à chaque lancement. La limite est de cinq échecs par heure et par domaine :
+# deux ou trois redémarrages suffisent à se bloquer, et il n'y a alors plus
+# qu'à attendre.
+#
+# Ce fichier ne demande qu'un seul certificat, pour un nom qui résout déjà.
+# Une fois le DNS basculé, on repasse au Caddyfile complet.
+
+{
+	email {$ADMIN_EMAIL}
+}
+
+srv846053.hstgr.cloud {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+		# Rien de ce qui est servi ici ne doit se retrouver dans Google.
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		health_uri /api/sante
+		health_interval 15s
+		header_up X-Real-IP {remote_host}
+	}
+}
