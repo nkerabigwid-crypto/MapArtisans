@@ -13,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const maintenant = new Date();
   return [
     { url: SITE_URL, lastModified: maintenant, changeFrequency: "weekly", priority: 1 },
+    { url: `${SITE_URL}/questions`, lastModified: maintenant, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/audit`, lastModified: maintenant, changeFrequency: "monthly", priority: 0.6 },
   ];
 }

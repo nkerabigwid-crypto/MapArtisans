@@ -465,6 +465,11 @@ describe("Conformité : aucune promesse de tri des avis", () => {
           if (e.name === "node_modules" || e.name === ".next" || e.name === "__tests__") continue;
           await parcourir(rel);
         } else if ([".ts", ".tsx"].includes(extname(e.name))) {
+          // faqPublique.ts DÉCRIT le filtrage d'avis pour en avertir : « les
+          // outils qui proposent de filtrer les clients font courir un risque
+          // à votre fiche ». C'est le contraire d'une promesse, et un test
+          // dédié vérifie plus bas que cette page dit bien « interdit ».
+          if (rel.endsWith("faqPublique.ts")) continue;
           const contenu = await readFile(join(racine, rel), "utf8");
           for (const m of motifs) if (m.test(contenu)) fautifs.push(`${rel} (${m})`);
         }
@@ -899,5 +904,61 @@ describe("Balisage Schema.org du site artisan", () => {
     const relu = JSON.parse(schema.serialiserJsonLd(ld).replace(/\\u003c/g, "<"));
     assert.equal(relu["@context"], "https://schema.org");
     assert.equal(relu.name, "Dupont Plomberie");
+  });
+});
+
+describe("Page publique de questions fréquentes", () => {
+  let faqp;
+  before(async () => { faqp = await import("../../faqPublique.ts"); });
+
+  test("aucune réponse ne promet une position ou un résultat", () => {
+    // C'est ce que vend le secteur, et c'est invérifiable : le classement
+    // dépend de l'algorithme, des concurrents et du lieu de la recherche.
+    const interdits = [
+      /\bgarantit?\b(?!.{0,40}\bmesure\b)/i,
+      /\btop 1 garanti\b/i,
+      /\bpremière place assurée\b/i,
+      /\bvous serez (premier|1er)\b/i,
+    ];
+    for (const q of faqp.toutesLesQuestions()) {
+      for (const motif of interdits) {
+        assert.doesNotMatch(q.reponse, motif, `« ${q.question} »`);
+      }
+    }
+  });
+
+  test("la question sur le tri des avis dit clairement que c'est interdit", () => {
+    // C'est la réponse qui différencie le produit : les concurrents vendent
+    // ce filtrage, et il fait sanctionner la fiche du client.
+    const q = faqp
+      .toutesLesQuestions()
+      .find((x) => /clients satisfaits/.test(x.question));
+    assert.ok(q, "la question doit exister");
+    assert.match(q.reponse, /interdit/i);
+  });
+
+  test("chaque réponse tient en HTML léger, sans script ni style", () => {
+    // Le contenu est inséré tel quel dans la page.
+    for (const q of faqp.toutesLesQuestions()) {
+      assert.doesNotMatch(q.reponse, /<script|<style|onerror=|javascript:/i, q.question);
+      assert.match(q.reponse, /^<p>/, `« ${q.question} » doit commencer par un paragraphe`);
+    }
+  });
+
+  test("texteBrut retire le balisage pour le Schema.org", () => {
+    // Le balisage FAQPage attend du texte, pas du HTML.
+    const brut = faqp.texteBrut("<p>Trois. <strong>C'est</strong> le Local Pack.</p>");
+    assert.equal(brut, "Trois. C'est le Local Pack.");
+  });
+
+  test("assez de questions pour justifier une page", () => {
+    // Une page de trois questions ne capte rien et dilue le reste du site.
+    assert.ok(faqp.toutesLesQuestions().length >= 12);
+    assert.ok(faqp.FAQ_PUBLIQUE.length >= 3, "regroupées en sections lisibles");
+  });
+
+  test("aucune question n'est posée deux fois", () => {
+    const qs = faqp.toutesLesQuestions().map((q) => q.question);
+    assert.equal(new Set(qs).size, qs.length);
   });
 });
