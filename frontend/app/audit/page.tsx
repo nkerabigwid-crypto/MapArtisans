@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Logo from "@/components/Logo";
 import { geoGrid, getGridStatus, googleProfile, company, resolveCompetitorName } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -70,7 +71,7 @@ export default function AuditPage() {
           </div>
         </div>
         <div className="audit-brand">
-          MapArtisan<span className="audit-brand-s">s</span>
+          <Logo taille={1.1} />
         </div>
       </header>
 

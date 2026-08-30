@@ -1564,3 +1564,15 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+/* --- Logo ------------------------------------------------------------- */
+.logo {
+  display: inline-flex; align-items: center; gap: 0.42em;
+  color: var(--accent);
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700; letter-spacing: -0.01em; line-height: 1;
+}
+/* Le nom reprend la couleur du texte : un bloc entierement bleu se lirait
+   comme un lien, et perdrait la lisibilite d'un titre. */
+.logo-nom { color: var(--ink); }
+.logo-s { opacity: 0.65; }

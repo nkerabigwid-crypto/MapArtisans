@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import Logo from "@/components/Logo";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { DotPattern } from "@/components/ui/dot-pattern";
@@ -86,9 +87,7 @@ export default function LandingPage() {
     <div className="lp">
       {/* ---------------- 1. En-tête ---------------- */}
       <header className="lp-nav">
-        <span className="lp-logo">
-          MapArtisan<span className="lp-logo-s">s</span>
-        </span>
+        <Logo className="lp-logo" taille={1.25} />
         <nav className="lp-nav-links">
           <Link href="#fonctionnalites">Fonctionnalités</Link>
           <Link href="#tarifs">Tarifs</Link>
