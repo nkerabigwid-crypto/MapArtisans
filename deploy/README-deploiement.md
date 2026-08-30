@@ -278,3 +278,42 @@ réactivé un jour.
 - Sauvegarder la clé privée `~/.ssh/id_ed25519_mapartisans` : **elle est
   désormais le seul moyen d'entrer par SSH.** Sans elle, il ne reste que la
   Console Web du panneau.
+
+
+---
+
+## Mettre à jour la production
+
+Le serveur est raccordé au dépôt GitHub par une clé de déploiement **en
+lecture seule** : il récupère ce qui a été validé, il ne pousse jamais. Une clé
+en écriture sur une machine exposée en permanence permettrait, en cas de
+compromission, de réécrire l'historique du dépôt.
+
+Depuis votre Mac :
+
+```bash
+git push
+```
+
+Puis sur le serveur :
+
+```bash
+ssh mapartisans-vps 'cd /opt/mapartisans && git pull && ./deploy/deploy.sh'
+```
+
+`deploy.sh` enchaîne seul : récupération, construction, migrations SQL,
+attente de la sonde de santé, vérification de Caddy, ménage du cache Docker.
+Il refuse de démarrer si un secret manque.
+
+### Ce que `git pull` ne touchera jamais
+
+`deploy/.env.production` est ignoré par git : il vit sur le serveur, et nulle
+part ailleurs. Une copie de secours est conservée dans
+`/root/.env.production.sauvegarde`.
+
+### Piège rencontré
+
+`rsync -a` conserve la propriété des fichiers : tout `/opt/mapartisans`
+appartenait à l'UID 501, celui du Mac, inexistant sur le serveur. Git refusait
+d'y travailler (« dubious ownership »). Le répertoire appartient désormais à
+root — utilisez `git pull` plutôt que rsync pour éviter que cela se reproduise.
