@@ -227,3 +227,54 @@ d'être configurés :
 
 L'application démarre sans ces éléments. Elle sert le site public et permet la
 démonstration, ce qui est exactement ce qu'il faut pour débloquer la suite.
+
+---
+
+## Sécurité du serveur — appliquée le 30 août 2026
+
+### Pare-feu
+
+`ufw` actif, politique par défaut « tout refuser en entrée ». Trois ports
+ouverts : 22 (SSH), 80 (HTTP et validation ACME), 443 (HTTPS).
+
+Le port 80 est **nécessaire** : Let's Encrypt l'utilise pour valider les
+renouvellements. Le fermer ferait expirer tous les certificats en trois mois,
+silencieusement.
+
+**Réserve importante :** Docker écrit ses propres règles iptables et
+court-circuite ufw pour les ports qu'il publie. Ufw protège donc les services
+de l'hôte, pas ceux des conteneurs. C'est sans conséquence ici : PostgreSQL et
+Redis ne publient aucun port et ne sont joignables que par le réseau interne
+— mais il ne faut jamais compter sur ufw pour masquer un port publié par
+Docker.
+
+### SSH
+
+Fichier `/etc/ssh/sshd_config.d/01-mapartisans-durcissement.conf` :
+
+```
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin prohibit-password
+```
+
+**Le préfixe « 01 » n'est pas décoratif.** sshd retient la PREMIÈRE valeur
+rencontrée pour chaque directive, et lit `sshd_config.d/` dans l'ordre
+lexical. Le serveur contenait déjà `50-cloud-init.conf` avec
+`PasswordAuthentication yes` : un fichier nommé « 99- » aurait été purement
+ignoré, en donnant l'illusion d'un durcissement.
+
+Vérifié après rechargement : la connexion par clé fonctionne, et le serveur
+n'annonce plus que `publickey`.
+
+**fail2ban n'a pas été installé** : sans authentification par mot de passe, il
+n'y a plus rien à forcer. Il redeviendrait utile si le mot de passe était
+réactivé un jour.
+
+### Reste à faire
+
+- Réinitialiser le mot de passe root dans le panneau Hostinger (il n'ouvre
+  plus SSH, mais sert encore à la Console Web).
+- Sauvegarder la clé privée `~/.ssh/id_ed25519_mapartisans` : **elle est
+  désormais le seul moyen d'entrer par SSH.** Sans elle, il ne reste que la
+  Console Web du panneau.
