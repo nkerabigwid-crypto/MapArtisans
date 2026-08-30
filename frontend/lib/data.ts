@@ -93,7 +93,8 @@ export const PLANS: Plan[] = [
       "L'indépendant qui veut être trouvé sans y passer de temps. Un seul établissement.",
     features: [
       "1 établissement",
-      "Réponses aux avis par l'IA, en illimité",
+      "Chaque avis reçoit sa réponse, dans le vocabulaire de votre métier et de votre ville",
+      "Un avis mitigé ? Rien n'est publié sans votre accord",
       "Suivi Geo-Grid : 1 mot-clé",
       "Rapport SMS chaque semaine",
     ],
@@ -106,17 +107,19 @@ export const PLANS: Plan[] = [
     name: "Pro",
     amount: 89,
     audience:
-      "L'artisan qui se bat sur plusieurs quartiers et veut suivre chaque secteur de près.",
+      "L'artisan qui veut récolter des avis après chaque intervention et suivre chaque quartier de près.",
     features: [
+      // Formulation surveillée : ne jamais réintroduire l'idée d'un QR code
+      // qui trierait les clients selon leur satisfaction. La conformité est
+      // ici portée par `highlight`, où elle devient un argument plutôt qu'une
+      // réserve noyée au milieu de la liste.
+      "QR code à présenter après chaque intervention : l'avis en dix secondes",
       "Suivi Geo-Grid : 5 mots-clés",
       "Historique des positions sur 12 mois",
-      // Formulation surveillée : voir la note sous PLANS. Ne jamais réintroduire
-      // l'idée d'un QR code qui trierait les clients selon leur satisfaction.
-      "QR code de collecte d'avis, présenté à tous les clients",
       "Support prioritaire",
       "Tout ce que contient Essentiel",
     ],
-    highlight: null,
+    highlight: "Présenté à tous vos clients, sans tri : la seule méthode que Google autorise.",
     recommended: true,
     maxProfiles: 1,
   },
@@ -127,9 +130,9 @@ export const PLANS: Plan[] = [
     audience:
       "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
     features: [
-      "Assistant sur votre site : répond aux questions de vos visiteurs",
-      "Prise de rendez-vous directement dans votre agenda",
-      "Réponses aux questions fréquentes, 24 h sur 24",
+      "Un assistant répond à vos visiteurs pendant que vous êtes en intervention",
+      "Il note le rendez-vous et vous alerte par SMS",
+      "Il connaît les questions courantes de votre métier",
       "Tout ce que contient Pro",
     ],
     highlight: "Vous ne ratez plus une demande pendant un chantier.",
