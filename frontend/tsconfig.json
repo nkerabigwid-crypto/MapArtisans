@@ -11,6 +11,22 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Refuse toute syntaxe TypeScript qui ne disparaît pas par simple retrait
+    // des types : propriétés de paramètre (`constructor(readonly x: T)`),
+    // `enum`, `namespace`, décorateurs.
+    //
+    // POURQUOI CETTE CONTRAINTE EST VOULUE
+    //
+    // Toute la suite de tests tourne avec `node --experimental-strip-types`,
+    // qui EFFACE les types sans transformer le code. Une propriété de
+    // paramètre est une transformation : elle fait échouer le chargement du
+    // module, et Node annule alors tous les tests du fichier avec le message
+    // « test did not finish before its parent » — qui ne dit rien de la vraie
+    // cause. Le piège s'est présenté deux fois dans ce projet.
+    //
+    // Avec cette option, `tsc --noEmit` le signale immédiatement, en nommant
+    // la ligne fautive.
+    "erasableSyntaxOnly": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

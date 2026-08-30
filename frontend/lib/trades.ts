@@ -73,11 +73,9 @@ export function isKnownTrade(value: string): boolean {
 
 /** Métier absent du catalogue. Se traduit par un 400 côté route HTTP. */
 export class InvalidBusinessTypeError extends Error {
-  // Assigné dans le corps, PAS en propriété de paramètre : le mode
-  // `--experimental-strip-types` de Node, qui fait tourner toute notre suite
-  // de tests, refuse `constructor(readonly slug: string)`. Il retire les types
-  // sans transformer le code, et une propriété de paramètre est une
-  // transformation.
+  // Assigné dans le corps, PAS en propriété de paramètre. Le garde-fou est
+  // désormais `erasableSyntaxOnly` dans tsconfig.json, qui refuse cette
+  // syntaxe au typecheck plutôt que de la laisser casser les tests.
   readonly slug: string;
 
   constructor(slug: string) {
