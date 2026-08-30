@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Garde-fou avant `git push`.
+#
+# POURQUOI ICI, ET PAS DANS UNE COMMANDE `make test`
+#
+# Une commande qu'il faut penser à taper protège les jours où l'on y pense.
+# Ce contrôle-ci s'exécute tout seul, au moment exact où le code quitte la
+# machine — donc avant qu'il puisse atteindre GitHub, puis le serveur.
+#
+# Ce qu'il vérifie, dans l'ordre du plus rapide au plus lent :
+#   1. typecheck  — attrape aussi la syntaxe non effaçable (erasableSyntaxOnly),
+#                   qui casserait toute la suite de tests avec un message
+#                   incompréhensible ;
+#   2. lint       — règles du projet ;
+#   3. tests      — 173 vérifications, dont l'unicité des identifiants métier,
+#                   leur format, et le refus de tout métier hors catalogue ;
+#   4. build      — c'est lui qui échoue en production quand tout le reste
+#                   passe : une page peut compiler chez soi et pas au build.
+#
+# Pour passer outre en cas d'urgence réelle :  git push --no-verify
+# À n'utiliser qu'en connaissance de cause : le serveur, lui, ne revérifie rien.
+set -euo pipefail
+
+RACINE="$(git rev-parse --show-toplevel)"
+cd "$RACINE/frontend"
+
+echo "→ Vérifications avant envoi"
+
+etape() {
+    printf "  %-28s" "$1"
+    if OUT=$(eval "$2" 2>&1); then
+        echo "ok"
+    else
+        echo "ECHEC"
+        echo
+        echo "$OUT" | tail -25
+        echo
+        echo "Envoi annulé. Corrigez, puis relancez git push."
+        exit 1
+    fi
+}
+
+etape "typage"            "npx tsc --noEmit"
+etape "règles de style"   "npx eslint ."
+etape "tests"             "npm test"
+etape "construction"      "npm run build"
+
+echo "→ Tout est vert, envoi en cours."
