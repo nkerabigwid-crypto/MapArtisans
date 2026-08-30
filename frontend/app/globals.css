@@ -984,12 +984,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   padding: 5rem 1.5rem 4rem; text-align: center;
 }
 .lp-dots { color: var(--line-strong); opacity: 0.5; }
-.lp-eyebrow {
-  position: relative;
-  font-family: var(--font-mono), monospace; font-size: 0.7rem;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
-  margin: 0 0 1.2rem;
-}
+/* .lp-eyebrow retiré : le surtitre « Visibilité Google Maps · Suisse romande »
+   répétait mot pour mot le début du H1 juste en dessous. « Suisse romande » a
+   rejoint le sous-titre, où le signal géographique compte autant sans redire
+   ce que le titre annonce déjà. */
 .lp-h1 {
   position: relative;
   font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700;
@@ -1019,10 +1017,20 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   border: 1px solid var(--line-strong); border-radius: 10px;
   color: var(--ink); text-decoration: none;
 }
+/* Cette ligne lève la dernière hésitation avant le clic : « est-ce qu'on va me
+   demander ma carte ? ». En 0.68rem et en gris pâle, elle se devinait plutôt
+   qu'elle ne se lisait. Agrandie, assombrie, et les deux promesses en gras. */
 .lp-reassure {
   position: relative;
-  font-family: var(--font-mono), monospace; font-size: 0.68rem;
-  color: var(--ink-faint); margin: 1.1rem 0 0;
+  font-family: var(--font-mono), monospace; font-size: 0.78rem;
+  color: var(--ink-soft); margin: 1.1rem 0 0; letter-spacing: 0.01em;
+}
+.lp-reassure strong {
+  color: var(--ink); font-weight: 700;
+  /* Souligné discret plutôt qu'une couleur d'accent : le bleu se lirait comme
+     un lien, et un lien qui ne mène nulle part agace. */
+  border-bottom: 1.5px solid var(--accent);
+  padding-bottom: 1px;
 }
 
 /* Titres de section */

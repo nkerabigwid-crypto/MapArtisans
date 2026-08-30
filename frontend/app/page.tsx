@@ -110,9 +110,6 @@ export default function LandingPage() {
           height={22}
           cr={1}
         />
-        <BlurFade delay={0.05} inView>
-          <p className="lp-eyebrow">Visibilité Google Maps · Suisse romande</p>
-        </BlurFade>
         <BlurFade delay={0.12} inView>
           <h1 className="lp-h1">
             Votre visibilité Google Maps,
@@ -122,8 +119,8 @@ export default function LandingPage() {
         </BlurFade>
         <BlurFade delay={0.2} inView>
           <p className="lp-sub">
-            Conçu pour les artisans et les professionnels du transport. MapArtisans répond à vos
-            avis et suit votre position — pendant que vous travaillez.
+            Conçu pour les artisans et les professionnels du transport en Suisse romande.
+            MapArtisans répond à vos avis et suit votre position — pendant que vous travaillez.
           </p>
         </BlurFade>
         <BlurFade delay={0.28} inView>
@@ -143,7 +140,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="lp-reassure">
-            Aucune carte bancaire requise · Résiliable en un clic
+            <strong>Aucune carte bancaire</strong> requise · <strong>Résiliable</strong> en un clic
           </p>
         </BlurFade>
       </section>
@@ -350,7 +347,9 @@ export default function LandingPage() {
               Activer mon essai gratuit de 7 jours
             </ShimmerButton>
           </Link>
-          <p className="lp-reassure">Aucune carte bancaire requise</p>
+          <p className="lp-reassure">
+            <strong>Aucune carte bancaire</strong> requise
+          </p>
         </BlurFade>
       </section>
 
