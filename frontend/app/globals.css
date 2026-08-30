@@ -1000,9 +1000,15 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-size: clamp(1rem, 2.2vw, 1.12rem); line-height: 1.55; color: var(--ink-soft);
   max-width: 56ch; margin: 0 auto 2rem;
 }
+/* Écart unique entre les éléments du bloc d'appel à l'action : entre les deux
+   boutons, et entre le second bouton et la ligne de réassurance. Deux valeurs
+   séparées avaient dérivé (0.8rem contre 1.1rem), ce qui se voyait dès que les
+   boutons s'empilaient en colonne sur mobile. */
+:root { --espace-cta: 0.8rem; }
+
 .lp-cta-row {
   position: relative;
-  display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;
+  display: flex; gap: var(--espace-cta); justify-content: center; flex-wrap: wrap;
 }
 .lp-shimmer {
   font-family: var(--font-barlow-condensed), sans-serif;
@@ -1023,7 +1029,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-reassure {
   position: relative;
   font-family: var(--font-mono), monospace; font-size: 0.78rem;
-  color: var(--ink-soft); margin: 1.1rem 0 0; letter-spacing: 0.01em;
+  color: var(--ink-soft); margin: var(--espace-cta) 0 0; letter-spacing: 0.01em;
 }
 .lp-reassure strong {
   color: var(--ink); font-weight: 700;
