@@ -14,10 +14,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
+# Voir la note du Dockerfile web : postinstall de redis-memory-server desactive.
+ENV REDISMS_DISABLE_POSTINSTALL=1
 RUN npm ci --omit=dev
-
-COPY prisma ./prisma
-RUN npx prisma generate
 
 COPY lib ./lib
 COPY workers ./workers

@@ -28,6 +28,12 @@ services:
       # Let's Encrypt (50 par domaine et par semaine) en quelques jours.
       - caddy_data:/data
       - caddy_config:/config
+    environment:
+      # Substitue dans le Caddyfile via {$ADMIN_EMAIL}. Caddy lit
+      # l'environnement DU CONTENEUR, pas le fichier --env-file de
+      # Compose : sans cette ligne, la directive `email` se retrouve sans
+      # argument et Caddy refuse de demarrer en boucle.
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
     depends_on:
       - app
     networks: [interne]

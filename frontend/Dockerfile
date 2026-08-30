@@ -10,6 +10,11 @@ WORKDIR /app
 # Seuls les manifestes sont copiés à cette étape : tant qu'ils ne changent pas,
 # Docker réutilise le cache et l'installation n'est pas rejouée à chaque build.
 COPY package.json package-lock.json ./
+# redis-memory-server (dependance de TEST) telecharge et compile un binaire
+# Redis dans son postinstall. Alpine n'a pas `make`, et aucun test ne tourne
+# dans une image de production : on desactive ce telechargement plutot que
+# d'alourdir l'image d'une chaine de compilation complete.
+ENV REDISMS_DISABLE_POSTINSTALL=1
 RUN npm ci
 
 # ------------------------------------------------------------------ build
@@ -17,9 +22,11 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Le client Prisma est généré avant le build : les routes qui l'importent
-# échoueraient à la compilation sans lui.
-RUN npx prisma generate
+# PAS de `prisma generate` : verifie, @prisma/client n'est importe nulle part.
+# L'application lit ses donnees par l'interface `Repo`. Le schema Prisma sert
+# de reference et de source aux migrations SQL, pas de client a l'execution.
+# L'appeler ici telechargeait une version « release candidate » depuis le
+# registre, pour generer du code que rien n'utilise.
 # Les variables d'exécution NE SONT PAS nécessaires ici : elles sont lues au
 # démarrage, pas à la compilation. Les injecter au build les figerait dans
 # l'image — un secret dans une couche Docker est un secret publié.

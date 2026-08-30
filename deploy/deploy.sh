@@ -58,23 +58,45 @@ $COMPOSE up -d --build
 echo "==> Attente de la sonde de santé"
 # Le conteneur peut être « démarré » sans que Next ait fini de s'initialiser.
 # On interroge le serveur lui-même, pas l'état Docker.
+PRET=0
 for TENTATIVE in $(seq 1 30); do
     if $COMPOSE exec -T app node -e \
         "fetch('http://127.0.0.1:3000/api/sante').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
         2>/dev/null; then
-        echo "    en ligne après ${TENTATIVE} tentative(s)"
-        echo
-        echo "Déploiement terminé. Version $(git rev-parse --short HEAD)."
-        exit 0
+        echo "    application en ligne après ${TENTATIVE} tentative(s)"
+        PRET=1
+        break
     fi
     sleep 2
 done
 
-echo >&2
-echo "ERREUR : l'application ne répond pas après 60 secondes." >&2
-echo "  Journaux :  $COMPOSE logs --tail=50 app" >&2
-if [ -n "$PRECEDENTE" ]; then
-    echo "  Retour arrière :" >&2
-    echo "    git reset --hard $PRECEDENTE && ./deploy/deploy.sh" >&2
+if [ "$PRET" -ne 1 ]; then
+    echo >&2
+    echo "ERREUR : l'application ne répond pas après 60 secondes." >&2
+    echo "  Journaux :  $COMPOSE logs --tail=50 app" >&2
+    if [ -n "$PRECEDENTE" ]; then
+        echo "  Retour arrière :  git reset --hard $PRECEDENTE && ./deploy/deploy.sh" >&2
+    fi
+    exit 1
 fi
-exit 1
+
+echo "==> Vérification de l'entrée publique"
+# Contrôle indispensable, appris à la dure : l'application peut répondre
+# parfaitement pendant que Caddy refuse de démarrer — une variable absente dans
+# le Caddyfile suffit. Sans ce test, le script annonçait « déploiement terminé »
+# sur un site totalement injoignable de l'extérieur.
+sleep 3
+if ! $COMPOSE ps caddy --format '{{.State}}' 2>/dev/null | grep -q running; then
+    echo >&2
+    echo "ERREUR : Caddy ne tourne pas. Le site est injoignable depuis l'Internet." >&2
+    echo "  Journaux :  $COMPOSE logs --tail=30 caddy" >&2
+    exit 1
+fi
+echo "    Caddy en marche"
+
+echo
+if [ -n "$PRECEDENTE" ]; then
+    echo "Déploiement terminé. Version $(git rev-parse --short HEAD)."
+else
+    echo "Déploiement terminé."
+fi
