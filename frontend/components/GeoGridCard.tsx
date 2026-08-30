@@ -52,14 +52,32 @@ export default function GeoGridCard({ geoGrid }: GeoGridCardProps) {
                     className={`geo-dot ${status}`}
                     aria-label={`${point.area} — ${positionText(point)}`}
                   >
-                    {/* Le rang est LISIBLE sans toucher. Une pastille de
-                        couleur seule oblige à taper chaque point pour savoir
-                        où l'on en est — or c'est précisément la lecture d'un
-                        coup d'oeil qui fait l'intérêt d'une Geo-Grid. Le clic
-                        reste utile : il révèle le concurrent qui devance. */}
-                    <span className="geo-dot-rang" aria-hidden="true">
-                      {point.position === null ? "—" : point.position}
-                    </span>
+                    {/* Un repère de carte plutôt qu'un rond : la forme dit
+                        elle-même « position sur la carte », et reprend le
+                        symbole du logo. Le rang est LISIBLE sans toucher —
+                        devoir taper les neuf points pour savoir où l'on en est
+                        annule l'intérêt d'une Geo-Grid. Le clic garde son rôle :
+                        il révèle le concurrent qui devance. */}
+                    <svg className="geo-pin" viewBox="0 0 40 48" aria-hidden="true">
+                      <path
+                        d="M20 1.5C10.6 1.5 3 9.1 3 18.5c0 12.4 17 28 17 28s17-15.6 17-28c0-9.4-7.6-17-17-17z"
+                        fill="currentColor"
+                      />
+                      {/* Disque clair dans la tête : il porte le chiffre et
+                          garantit son contraste sur les quatre couleurs de
+                          statut, y compris l'ambre, la plus claire. */}
+                      <circle cx="20" cy="18.5" r="11.5" fill="var(--paper)" />
+                      <text
+                        x="20"
+                        y="18.5"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="geo-pin-rang"
+                        fill="currentColor"
+                      >
+                        {point.position === null ? "—" : point.position}
+                      </text>
+                    </svg>
                   </Popover.Trigger>
                   <Popover.Portal>
                     <Popover.Positioner sideOffset={8} className="geo-positioner">

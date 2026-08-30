@@ -214,30 +214,32 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem;
   max-width: 300px; margin: 0 auto;
 }
+/* Le bouton reste carré et transparent : c'est la CIBLE TACTILE. Le repère
+   dessiné à l'intérieur est plus étroit qu'elle, et réduire le bouton à la
+   silhouette du repère rendrait les bords difficiles à atteindre au doigt. */
 .geo-dot {
-  aspect-ratio: 1; border-radius: 50%;
+  aspect-ratio: 1;
   border: none; padding: 0; cursor: pointer;
-  width: 100%;
-  /* 88 px : bien au-delà des 44 px recommandés pour une cible tactile, et
-     assez petit pour que la grille se lise d'un seul regard. */
-  max-width: 88px;
+  background: none;
+  width: 100%; max-width: 88px;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.12s ease;
 }
-.geo-dot-rang {
+/* La couleur du statut est portée par `color`, dont héritent le corps du
+   repère et le chiffre — une seule déclaration par statut au lieu de deux. */
+.geo-dot.top1 { background: none; color: var(--rank-top1); }
+.geo-dot.top3 { background: none; color: var(--status-good); }
+.geo-dot.warn { background: none; color: var(--status-warn); }
+.geo-dot.bad  { background: none; color: var(--status-bad); }
+
+.geo-pin { width: 100%; height: 100%; display: block; }
+.geo-pin-rang {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 1.35rem; line-height: 1;
-  /* Blanc sur les quatre fonds de statut : contraste vérifié sur le plus
-     clair des quatre, l'ambre. */
-  color: #fff;
+  font-weight: 700; font-size: 15px;
 }
 .geo-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .geo-dot[data-popup-open] { transform: scale(0.94); }
 /* Position 1 : vert profond, distinct des 2e-3e. */
-.geo-dot.top1 { background: var(--rank-top1); }
-.geo-dot.top3 { background: var(--status-good); }
-.geo-dot.warn { background: var(--status-warn); }
-.geo-dot.bad  { background: var(--status-bad); }
 
 /* Détail d'un point */
 .geo-positioner { z-index: 30; }
