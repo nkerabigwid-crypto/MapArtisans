@@ -60,7 +60,7 @@ export default function SubscriptionPage() {
       <main className="ob-main">
         <h1 className="ob-title">Votre abonnement</h1>
         <p className="ob-lede">
-          Deux formules, sans engagement. Tarifs en francs suisses, quel que soit votre pays.
+          Trois formules, sans engagement. Tarifs en francs suisses, quel que soit votre pays.
         </p>
 
         <div className="plans">

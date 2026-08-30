@@ -298,16 +298,24 @@ describe("Grille tarifaire", () => {
   let data;
   before(async () => { data = await import("../../data.ts"); });
 
-  test("deux paliers, à 49 et 89 CHF, tous deux achetables en ligne", () => {
-    assert.deepEqual(data.PLANS.map((p) => p.id), ["essentiel", "pro"]);
-    assert.deepEqual(data.PLANS.map((p) => p.amount), [49, 89]);
+  test("trois paliers, à 49, 89 et 129 CHF", () => {
+    assert.deepEqual(data.PLANS.map((p) => p.id), ["essentiel", "pro", "complet"]);
+    assert.deepEqual(data.PLANS.map((p) => p.amount), [49, 89, 129]);
+  });
+
+  test("les prix montent : un palier plus cher doit offrir davantage", () => {
+    // Un ordre décroissant ou une égalité rendrait la grille incompréhensible.
+    const montants = data.PLANS.map((p) => p.amount);
+    for (let i = 1; i < montants.length; i++) {
+      assert.ok(montants[i] > montants[i - 1], `${montants[i]} doit dépasser ${montants[i - 1]}`);
+    }
   });
 
   test("aucun palier revendeur : un seul prix public, le même pour tous", () => {
     // Retiré le 29 août 2026. Revendu avec la marge d'une agence, le même
     // logiciel arrivait plus cher chez l'artisan que sur notre page de tarifs.
     // Ce test empêche qu'un palier à tarif négocié revienne sans décision.
-    assert.equal(data.PLANS.length, 2);
+    assert.equal(data.PLANS.length, 3);
     for (const plan of data.PLANS) {
       assert.equal(typeof plan.amount, "number");
       assert.ok(plan.amount > 0, "tout palier affiche un prix ferme");

@@ -49,7 +49,7 @@ export function formatPlanLabel(company: Pick<Company, "plan_amount">) {
  * clients souscrit désormais cinq abonnements au prix affiché — un seul prix
  * public, vérifiable par tout le monde.
  */
-export type PlanId = "essentiel" | "pro";
+export type PlanId = "essentiel" | "pro" | "complet";
 
 export interface Plan {
   id: PlanId;
@@ -119,8 +119,23 @@ export const PLANS: Plan[] = [
     highlight: null,
     recommended: true,
     maxProfiles: 1,
-  }
-
+  },
+  {
+    id: "complet",
+    name: "Complet",
+    amount: 129,
+    audience:
+      "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
+    features: [
+      "Assistant sur votre site : répond aux questions de vos visiteurs",
+      "Prise de rendez-vous directement dans votre agenda",
+      "Réponses aux questions fréquentes, 24 h sur 24",
+      "Tout ce que contient Pro",
+    ],
+    highlight: "Vous ne ratez plus une demande pendant un chantier.",
+    recommended: false,
+    maxProfiles: 1,
+  },
 ];
 
 /**

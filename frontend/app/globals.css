@@ -1437,11 +1437,11 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 
 /* Deux paliers au lieu de trois */
-.lp-plans-2 { grid-template-columns: repeat(2, 1fr); max-width: 760px; margin: 0 auto; }
+/* .lp-plans-2 retiré : la grille est passée à trois paliers, et `.lp-plans`
+   déclare déjà trois colonnes. */
 
 @media (max-width: 820px) {
   .lp-pains { grid-template-columns: 1fr; }
-  .lp-plans-2 { grid-template-columns: 1fr; }
   .lp-sim-row, .sim-row { grid-template-columns: 1fr; }
   .lp-feature { flex-direction: column; gap: 0.6rem; }
 }
