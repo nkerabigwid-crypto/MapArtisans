@@ -103,6 +103,20 @@ if ! $COMPOSE ps caddy --format '{{.State}}' 2>/dev/null | grep -q running; then
 fi
 echo "    Caddy en marche"
 
+# Menage du cache de construction.
+#
+# Chaque deploiement laisse derriere lui les couches de l'ancienne image et le
+# cache de build. Constate le 30 aout 2026 : le disque etait passe de 4,7 a
+# 14 Go en une seule apres-midi de deploiements. A ce rythme, un VPS de 100 Go
+# sature en quelques semaines — et un disque plein arrete PostgreSQL.
+#
+# `--filter until=24h` epargne le cache recent : le prochain deploiement de la
+# journee reste rapide, seul le vieux cache est libere.
+echo "==> Menage du cache de construction"
+docker builder prune -f --filter until=24h >/dev/null 2>&1 || true
+docker image prune -f >/dev/null 2>&1 || true
+echo "    disque : $(df -h / | awk 'NR==2{print $3" / "$2" ("$5")"}')"
+
 echo
 if [ -n "$PRECEDENTE" ]; then
     echo "Déploiement terminé. Version $(git rev-parse --short HEAD)."
