@@ -353,3 +353,39 @@ describe("Classification Geo-Grid (règle du Local Pack)", () => {
     assert.equal(summary.bestPosition, 1);
   });
 });
+
+describe("Le travail de l'IA n'est jamais perdu", () => {
+  test("publication en échec : le brouillon reste enregistré", async () => {
+    // Chaque generation coute un appel OpenAI facture. La jeter parce que la
+    // publication echoue fait repayer au rejeu — constate en production, ou
+    // l'acces Google n'est pas encore accorde et TOUS les avis positifs
+    // echouent a la publication.
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+
+    await assert.rejects(
+      workerMod.processReviewReplyJob(
+        { reviewId: "r-003" }, // 5 etoiles : passe par la publication
+        {
+          repo,
+          generator: { async generateReply() { return "Merci pour votre confiance !"; } },
+          publisher: {
+            async publishReviewReply() {
+              throw new Error("GOOGLE_BUSINESS_PROFILE_NOT_APPROVED");
+            },
+          },
+        },
+      ),
+      /NOT_APPROVED/,
+    );
+
+    const avis = await repo.getReviewById("r-003");
+    assert.equal(avis.status, "failed", "l'echec doit rester visible");
+    assert.equal(
+      avis.aiReplyDraft,
+      "Merci pour votre confiance !",
+      "le texte genere doit survivre a l'echec de publication",
+    );
+    assert.equal(avis.replyText, null, "mais rien ne doit etre marque comme publie");
+  });
+});

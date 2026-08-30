@@ -94,11 +94,20 @@ export async function processReviewReplyJob(
       businessName: profile.businessName,
     });
 
+    // Le brouillon est enregistré AVANT toute tentative de publication.
+    //
+    // Constaté en production le 30 août 2026 : un avis dont la publication
+    // échouait — accès Google pas encore accordé — repartait en échec avec
+    // `ai_reply_draft` vide. L'appel OpenAI avait pourtant eu lieu et été
+    // facturé ; son résultat était simplement jeté. Au rejeu, on repayait.
+    //
+    // Écrire d'abord ne compromet rien : `saveReviewDraft` laisse le statut à
+    // `pending` et ne touche pas `reply_text`. Un avis n'est donc jamais
+    // affiché comme publié tant qu'il ne l'est pas réellement.
+    await repo.saveReviewDraft(data.reviewId, replyText);
+
     // Décision de publication : la note, et elle seule.
-    if (!estAvisPositif(review.rating)) {
-      await repo.saveReviewDraft(data.reviewId, replyText);
-      return;
-    }
+    if (!estAvisPositif(review.rating)) return;
 
     const publisher = deps.publisher ?? (await resolvePublisher(profile.googleAccessTokenEnc));
     await publisher.publishReviewReply(review.googleReviewId, replyText);
