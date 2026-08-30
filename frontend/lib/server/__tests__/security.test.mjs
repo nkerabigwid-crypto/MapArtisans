@@ -508,7 +508,7 @@ describe("Comptes de démonstration", () => {
     process.env.NODE_ENV = "production";
     delete process.env.DEMO_DATA;
     repoMod4.__resetRepo();
-    const repo = repoMod4.getRepo();
+    const repo = repoMod4.memoryRepo;
     assert.equal(await repo.findUserByEmail("demo@mapartisan.ch"), null);
     process.env.NODE_ENV = avant;
     repoMod4.__resetRepo();
@@ -518,7 +518,7 @@ describe("Comptes de démonstration", () => {
     const avant = process.env.NODE_ENV;
     process.env.NODE_ENV = "test";
     repoMod4.__resetRepo();
-    const repo = repoMod4.getRepo();
+    const repo = repoMod4.memoryRepo;
     assert.ok(await repo.findUserByEmail("demo@mapartisan.ch"));
     process.env.NODE_ENV = avant;
     repoMod4.__resetRepo();
@@ -529,9 +529,37 @@ describe("Comptes de démonstration", () => {
     process.env.NODE_ENV = "production";
     process.env.DEMO_DATA = "1";
     repoMod4.__resetRepo();
-    assert.ok(await repoMod4.getRepo().findUserByEmail("demo@mapartisan.ch"));
+    assert.ok(await repoMod4.memoryRepo.findUserByEmail("demo@mapartisan.ch"));
     delete process.env.DEMO_DATA;
     process.env.NODE_ENV = avant;
     repoMod4.__resetRepo();
+  });
+});
+
+describe("Choix du dépôt", () => {
+  let repoMod5;
+  before(async () => { repoMod5 = await import("../repo.ts"); });
+
+  test("en production SANS DATABASE_URL, l'application refuse de démarrer", () => {
+    // Le pire scénario possible est le repli silencieux sur la mémoire : tout
+    // répond, on crée des comptes, et le premier redémarrage les efface. C'est
+    // l'état dans lequel ce SaaS a réellement tourné le 30 août 2026.
+    const env = process.env.NODE_ENV;
+    const db = process.env.DATABASE_URL;
+    process.env.NODE_ENV = "production";
+    delete process.env.DATABASE_URL;
+    assert.throws(() => repoMod5.getRepo(), /DATABASE_URL absente en production/);
+    process.env.NODE_ENV = env;
+    if (db) process.env.DATABASE_URL = db;
+  });
+
+  test("hors production sans DATABASE_URL, le dépôt en mémoire est utilisé", () => {
+    const env = process.env.NODE_ENV;
+    const db = process.env.DATABASE_URL;
+    process.env.NODE_ENV = "test";
+    delete process.env.DATABASE_URL;
+    assert.equal(repoMod5.getRepo(), repoMod5.memoryRepo);
+    process.env.NODE_ENV = env;
+    if (db) process.env.DATABASE_URL = db;
   });
 });

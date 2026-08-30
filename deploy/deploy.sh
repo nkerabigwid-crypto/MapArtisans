@@ -55,6 +55,15 @@ fi
 echo "==> Construction et démarrage"
 $COMPOSE up -d --build
 
+echo "==> Migrations de base de données"
+# APRÈS le démarrage de PostgreSQL, AVANT de considérer le déploiement réussi.
+# Une application qui démarre sur un schéma périmé échoue au premier accès aux
+# données, à un moment où le déploiement est déjà annoncé comme terminé.
+# Le script est rejouable : il n'applique que ce qui manque.
+if ! "$RACINE/db/migrate.sh" 2>&1 | grep -vE "^NOTICE|^WARNING" | grep -E "^  [+~]|^ERROR"; then
+    true  # aucune migration à appliquer : rien à afficher
+fi
+
 echo "==> Attente de la sonde de santé"
 # Le conteneur peut être « démarré » sans que Next ait fini de s'initialiser.
 # On interroge le serveur lui-même, pas l'état Docker.

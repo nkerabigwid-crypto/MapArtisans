@@ -10,6 +10,7 @@
 import type { MagicLinkRecord } from "./magicLink";
 import { hashPassword } from "./password";
 import type { AgencyBrandingRecord } from "./branding";
+import { pgRepo } from "./pgRepo";
 
 /**
  * Accès aux données, derrière une interface.
@@ -519,7 +520,34 @@ export const memoryRepo: Repo = {
   },
 };
 
+/**
+ * Choisit l'implémentation du dépôt.
+ *
+ * `DATABASE_URL` présente → PostgreSQL. Absente → mémoire.
+ *
+ * LE CAS DANGEREUX EST « PRODUCTION SANS DATABASE_URL »
+ *
+ * Retomber silencieusement sur la mémoire donnerait une application qui semble
+ * marcher : on crée un compte, on se connecte, tout répond — et le premier
+ * redémarrage efface le client. C'est exactement l'état dans lequel ce SaaS a
+ * tourné en production le 30 août 2026, base PostgreSQL vide à côté. On échoue
+ * donc bruyamment plutôt que de laisser croire.
+ *
+ * L'import de pgRepo est STATIQUE. Un `require()` conditionnel a été essayé
+ * d'abord, pour éviter d'embarquer le pilote `pg` quand il ne sert pas : sous
+ * le bundler de Next, il renvoie `undefined` — la connexion échouait en
+ * production sur « Cannot read properties of undefined ». Le pilote pèse peu,
+ * et toutes les routes concernées déclarent déjà `runtime = "nodejs"`.
+ */
 export function getRepo(): Repo {
+  if (process.env.DATABASE_URL) return pgRepo;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "DATABASE_URL absente en production. Le dépôt en mémoire perdrait tous " +
+        "les comptes, sessions et avis au premier redémarrage — un client créé " +
+        "aujourd'hui aurait disparu demain. Configurez DATABASE_URL.",
+    );
+  }
   return memoryRepo;
 }
 
