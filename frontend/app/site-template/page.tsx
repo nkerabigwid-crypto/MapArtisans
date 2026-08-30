@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import styles from "./page.module.css";
-import { siteConfig, SCHEMA_TYPE, GBP_PRIMARY_CATEGORY } from "./site.config";
+import { siteConfig, GBP_PRIMARY_CATEGORY } from "./site.config";
+import { buildLocalBusinessJsonLd, serialiserJsonLd } from "@/lib/server/schemaOrg";
 import { SERVICE_ICONS } from "./icons";
 
 const primaryCategory = GBP_PRIMARY_CATEGORY[siteConfig.tradeType];
@@ -28,60 +29,36 @@ function stars(rating: number) {
   return "★".repeat(rating) + "☆".repeat(5 - rating);
 }
 
+/**
+ * Balisage de la page.
+ *
+ * Délégué à lib/server/schemaOrg.ts. Le gabarit construisait auparavant son
+ * propre JSON-LD, avec `aggregateRating` et `review` — des avis Google
+ * republiés sur le site de l'entreprise qu'ils notent. Google est explicite :
+ * « If the entity that's being reviewed controls the reviews about itself,
+ * their pages that use LocalBusiness […] are ineligible for star review
+ * feature », et cite nommément ce cas. Non seulement les étoiles
+ * n'apparaissaient pas, mais la page s'exposait à une action manuelle.
+ *
+ * La note reste affichée dans la page et dans la description : c'est du texte,
+ * pas du balisage structuré, et rien ne l'interdit.
+ */
 function jsonLd() {
-  return {
-    "@context": "https://schema.org",
-    "@type": SCHEMA_TYPE[siteConfig.tradeType],
-    name: siteConfig.businessName,
-    image: `https://example.com/${siteConfig.tradeType}-hero.jpg`,
-    telephone: siteConfig.phoneDisplay,
+  return buildLocalBusinessJsonLd({
+    businessName: siteConfig.businessName,
+    tradeType: siteConfig.tradeType,
+    city: siteConfig.city,
+    streetAddress: siteConfig.addressLine,
+    postalCode: siteConfig.postalCode,
+    country: "CH",
+    latitude: siteConfig.latitude,
+    longitude: siteConfig.longitude,
+    phone: siteConfig.phoneDisplay,
     email: siteConfig.email,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: siteConfig.addressLine,
-      addressLocality: siteConfig.city,
-      postalCode: siteConfig.postalCode,
-      addressCountry: "FR",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: siteConfig.latitude,
-      longitude: siteConfig.longitude,
-    },
-    url: "https://example.com/site-template",
-    hasMap: siteConfig.googlePlaceUrl,
-    areaServed: siteConfig.neighborhoods.map((n) => ({ "@type": "City", name: n })),
-    openingHoursSpecification: [
-      {
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        opens: "07:30",
-        closes: "19:00",
-      },
-      {
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Saturday"],
-        opens: "08:00",
-        closes: "12:00",
-      },
-    ],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: siteConfig.aggregateRating.value,
-      reviewCount: siteConfig.aggregateRating.count,
-    },
-    review: siteConfig.reviews.map((r) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.author },
-      datePublished: r.date,
-      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
-      reviewBody: r.text,
-    })),
-    makesOffer: siteConfig.services.map((s) => ({
-      "@type": "Offer",
-      itemOffered: { "@type": "Service", name: s.name, description: s.description },
-    })),
-  };
+    googleMapsUrl: siteConfig.googlePlaceUrl,
+    areaServed: siteConfig.neighborhoods,
+    services: siteConfig.services.map((s) => ({ name: s.name, description: s.description })),
+  });
 }
 
 export default function SiteTemplatePage() {
@@ -89,7 +66,7 @@ export default function SiteTemplatePage() {
     <div className={styles.page}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd()) }}
+        dangerouslySetInnerHTML={{ __html: serialiserJsonLd(jsonLd()) }}
       />
 
       <a href="#main" className={styles.skipLink}>

@@ -808,3 +808,96 @@ describe("Ordinal français", () => {
     assert.equal(pin.ordinalFr(null), "—");
   });
 });
+
+describe("Balisage Schema.org du site artisan", () => {
+  let schema, trades;
+  before(async () => {
+    schema = await import("../schemaOrg.ts");
+    trades = await import("../../trades.ts");
+  });
+
+  const base = { businessName: "Dupont Plomberie", tradeType: "plombier", city: "Lausanne" };
+
+  test("AUCUN avis ni note globale — la page en deviendrait inéligible", () => {
+    // Google : « If the entity that's being reviewed controls the reviews about
+    // itself, their pages that use LocalBusiness […] are ineligible for star
+    // review feature », et cite nommément les avis Google republiés sur son
+    // propre site. Le gabarit précédent le faisait.
+    const ld = schema.buildLocalBusinessJsonLd({
+      ...base,
+      phone: "+41791234567",
+      areaServed: ["Ouchy"],
+    });
+    assert.equal(ld.aggregateRating, undefined);
+    assert.equal(ld.review, undefined);
+    assert.doesNotMatch(JSON.stringify(ld), /rating|Review/i);
+  });
+
+  test("aucun champ n'est inventé : ce qu'on n'a pas est absent", () => {
+    // Un balisage qui affirme des horaires ou une adresse faux est pire que
+    // pas de balisage : Google le confronte au reste du web.
+    const ld = schema.buildLocalBusinessJsonLd(base);
+    for (const cle of ["telephone", "email", "geo", "openingHoursSpecification", "makesOffer"]) {
+      assert.equal(ld[cle], undefined, `${cle} ne doit pas apparaître`);
+    }
+  });
+
+  test("les 20 métiers ont un type Schema.org valide", () => {
+    // Un type inventé rend tout le balisage invalide. Ceux-ci existent tous
+    // dans le vocabulaire schema.org.
+    const valides = new Set([
+      "Plumber", "Electrician", "HVACBusiness", "Locksmith", "RoofingContractor",
+      "HousePainter", "GeneralContractor", "TaxiService", "AutoRepair",
+      "AutoBodyShop", "HairSalon", "BeautySalon", "LocalBusiness",
+    ]);
+    for (const t of trades.TRADES) {
+      const ld = schema.buildLocalBusinessJsonLd({ ...base, tradeType: t.value });
+      assert.ok(valides.has(ld["@type"]), `${t.value} → « ${ld["@type"]} » inconnu`);
+    }
+  });
+
+  test("le type est le plus précis disponible, jamais LocalBusiness par défaut", () => {
+    // « Plumber » dit à un robot ce que « LocalBusiness » le laisse deviner.
+    assert.equal(schema.buildLocalBusinessJsonLd({ ...base, tradeType: "taxi" })["@type"], "TaxiService");
+    assert.equal(schema.buildLocalBusinessJsonLd({ ...base, tradeType: "garage" })["@type"], "AutoRepair");
+    assert.equal(schema.buildLocalBusinessJsonLd({ ...base, tradeType: "coiffeur" })["@type"], "HairSalon");
+  });
+
+  test("les données présentes sont bien émises", () => {
+    const ld = schema.buildLocalBusinessJsonLd({
+      ...base,
+      streetAddress: "Rue du Lac 4",
+      postalCode: "1003",
+      latitude: 46.5197,
+      longitude: 6.6323,
+      phone: "+41791234567",
+      googleMapsUrl: "https://maps.google.com/?cid=123",
+      areaServed: ["Ouchy", "Chailly"],
+      openingHours: [{ days: ["Monday"], opens: "08:00", closes: "18:00" }],
+    });
+    assert.equal(ld.address.streetAddress, "Rue du Lac 4");
+    assert.equal(ld.address.addressCountry, "CH");
+    assert.equal(ld.geo.latitude, 46.5197);
+    assert.equal(ld.areaServed.length, 2);
+    assert.deepEqual(ld.sameAs, ["https://maps.google.com/?cid=123"]);
+  });
+
+  test("une raison sociale piégée ne peut pas casser la balise script", () => {
+    // Sans échappement, « </script> » dans un nom d'entreprise ferme la balise
+    // et injecte du HTML dans la page.
+    const ld = schema.buildLocalBusinessJsonLd({
+      ...base,
+      businessName: 'Dupont</script><img src=x onerror=alert(1)>',
+    });
+    const serialise = schema.serialiserJsonLd(ld);
+    assert.doesNotMatch(serialise, /<\/script>/i);
+    assert.doesNotMatch(serialise, /<img/i);
+  });
+
+  test("le JSON produit reste analysable", () => {
+    const ld = schema.buildLocalBusinessJsonLd({ ...base, phone: "+41791234567" });
+    const relu = JSON.parse(schema.serialiserJsonLd(ld).replace(/\\u003c/g, "<"));
+    assert.equal(relu["@context"], "https://schema.org");
+    assert.equal(relu.name, "Dupont Plomberie");
+  });
+});
