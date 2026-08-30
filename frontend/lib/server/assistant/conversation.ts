@@ -1,6 +1,7 @@
 // PAS de `import "server-only"` : même raison que les autres modules de
 // lib/server/ — voir la note détaillée dans ai/openai.ts.
 import { resolveTradeOrDefault } from "@/lib/trades";
+import { faqParDefaut, formaterFaqPourPrompt } from "@/lib/faq";
 import { LONGUEUR_MAX_MESSAGE } from "./access";
 
 /**
@@ -114,10 +115,23 @@ export function buildSystemPrompt(ctx: ContexteAssistant): string {
     "- Quand tu les as, appelle l'outil enregistrer_rendez_vous. N'invente aucune valeur.",
   ];
 
+  // Base de départ propre au métier : l'artisan n'écrira jamais la sienne, et
+  // un assistant qui répond « je ne sais pas » à tout dès le premier jour ne
+  // vaut pas 129 CHF. Elle ne contient ni prix ni délai — uniquement la façon
+  // de répondre et le renvoi vers l'entreprise pour ce qui l'engage.
+  lignes.push(
+    "",
+    "QUESTIONS COURANTES DE CE MÉTIER, ET FAÇON D'Y RÉPONDRE",
+    formaterFaqPourPrompt(faqParDefaut(ctx.tradeType)),
+  );
+
   if (ctx.faqContext?.trim()) {
     lignes.push(
       "",
       "BASE DE CONNAISSANCES DE L'ENTREPRISE",
+      // Placée APRÈS la base générique : ce que l'artisan a écrit lui-même
+      // prime sur les consignes par défaut, y compris s'il les contredit.
+      "Ces informations viennent de l'entreprise et priment sur ce qui précède.",
       // Encadrée par un délimiteur : elle est saisie par l'artisan, donc de
       // confiance, mais la frontière doit rester nette pour le modèle.
       "<<<",

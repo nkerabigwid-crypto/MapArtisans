@@ -255,3 +255,73 @@ describe("Alerte SMS de rendez-vous", () => {
     assert.match(corps, /MonAgence SEO/);
   });
 });
+
+describe("Base de connaissances par métier", () => {
+  let faq;
+  before(async () => { faq = await import("../../../faq.ts"); });
+
+  test("les 20 métiers du catalogue ont une base", async () => {
+    const trades = await import("../../../trades.ts");
+    for (const t of trades.TRADES) {
+      const q = faq.faqParDefaut(t.value);
+      assert.ok(q.length >= 4, `« ${t.value} » n'a que ${q.length} question(s)`);
+    }
+  });
+
+  test("AUCUNE réponse ne contient de prix, de délai ou de promesse", () => {
+    // Ces consignes partent au nom de l'artisan, sans qu'il les ait relues.
+    // Un tarif ou un délai inventé engagerait quelqu'un qui n'a rien signé.
+    const interdits = [
+      /\d+\s*(CHF|EUR|€|francs)/i,
+      /\bdans les \d+ (minutes|heures|jours)\b/i,
+      /\bgratuit\b/i,
+      /\bnous garantissons\b/i,
+    ];
+    for (const [slug, questions] of Object.entries(faq.QUESTIONS_PAR_METIER)) {
+      for (const q of [...questions, ...faq.QUESTIONS_COMMUNES]) {
+        for (const motif of interdits) {
+          assert.doesNotMatch(q.reponse, motif, `${slug} : « ${q.reponse.slice(0, 60)}… »`);
+        }
+      }
+    }
+  });
+
+  test("un métier inconnu retombe sur les questions communes", () => {
+    // Le catalogue peut changer ; l'assistant ne doit pas devenir muet.
+    const q = faq.faqParDefaut("metier-inexistant");
+    assert.deepEqual(q, faq.QUESTIONS_COMMUNES);
+  });
+
+  test("les urgences sont traitées comme telles", () => {
+    // Un serrurier appelé par quelqu'un d'enfermé dehors, ou un dépanneur
+    // appelé au bord de la route : la consigne doit dire de ne pas faire
+    // patienter par des questions secondaires.
+    const serrurier = faq.faqParDefaut("serrurier").find((q) => /enfermé/.test(q.question));
+    assert.match(serrurier.reponse, /urgence|immédiatement/i);
+    const depannage = faq.faqParDefaut("depannage_auto").find((q) => /panne/.test(q.question));
+    assert.match(depannage.reponse, /localisation|urgence/i);
+  });
+
+  test("la base de l'artisan prime sur la base générique", () => {
+    // Ce qu'il a écrit lui-même doit l'emporter, y compris s'il contredit une
+    // consigne par défaut : il connaît son entreprise, pas nous.
+    const p = conv.buildSystemPrompt({
+      businessName: "Taxi Léman",
+      city: "Genève",
+      tradeType: "taxi",
+      faqContext: "Paiement carte accepté. Zone : canton de Genève.",
+    });
+    const posGenerique = p.indexOf("QUESTIONS COURANTES DE CE MÉTIER");
+    const posArtisan = p.indexOf("BASE DE CONNAISSANCES DE L'ENTREPRISE");
+    assert.ok(posGenerique < posArtisan, "la base de l'artisan doit venir en dernier");
+    assert.match(p, /priment sur ce qui précède/);
+  });
+
+  test("le prompt d'un taxi parle de courses, pas de chantiers", () => {
+    const p = conv.buildSystemPrompt({
+      businessName: "Taxi Léman", city: "Genève", tradeType: "taxi", faqContext: null,
+    });
+    assert.match(p, /aéroport|passagers|course/i);
+    assert.doesNotMatch(p, /chaudière|carrelage/i);
+  });
+});
