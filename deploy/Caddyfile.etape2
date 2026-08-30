@@ -1,0 +1,51 @@
+# MapArtisans — étape 2 : le domaine principal est en ligne.
+#
+# À utiliser quand mapartisans.com pointe vers le serveur mais que les domaines
+# secondaires (.ch, .fr, .online, .org) sont encore ailleurs.
+#
+# Les déclarer trop tôt ferait échouer une validation Let's Encrypt par domaine
+# à chaque démarrage. On ne sert donc QUE ce qui résout réellement.
+#
+# Une fois les quatre autres basculés, passer au Caddyfile complet :
+#   ./deploy/deploy.sh          (sans variable CADDYFILE)
+
+{
+	email {$ADMIN_EMAIL}
+}
+
+(securite) {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+		-Server
+	}
+}
+
+# --- Domaine principal.
+mapartisans.com {
+	import securite
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		health_uri /api/sante
+		health_interval 15s
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+# --- www redirige vers l'apex : une seule adresse indexée, pas deux.
+www.mapartisans.com {
+	import securite
+	redir https://mapartisans.com{uri} permanent
+}
+
+# --- Nom d'hôte technique : conservé pour diagnostiquer en contournant le DNS.
+srv846053.hstgr.cloud {
+	import securite
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy app:3000 {
+		header_up X-Real-IP {remote_host}
+	}
+}
