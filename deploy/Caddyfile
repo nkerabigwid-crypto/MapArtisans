@@ -75,7 +75,15 @@ mapartisans.com {
 		header_up X-Real-IP {remote_host}
 	}
 	log {
-		output file /data/logs/mapartisans.log
+		output file /data/logs/mapartisans.log {
+			# Sans ces bornes, le journal grossit indefiniment dans un volume
+			# Docker que personne ne surveille. Mesure le 30 aout 2026 : 872 Ko
+			# en cinq heures, soit environ 4 Mo par jour. Un disque plein arrete
+			# PostgreSQL, et le site avec.
+			roll_size     20MiB
+			roll_keep     5
+			roll_keep_for 720h
+		}
 		format json
 	}
 }
