@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Field } from "@base-ui/react/field";
+import Link from "next/link";
 import { Form } from "@base-ui/react/form";
+import Logo from "@/components/Logo";
 import { useQueryParam } from "@/lib/useQueryParam";
 
 export default function LoginPage() {
@@ -39,6 +41,13 @@ export default function LoginPage() {
 
   return (
     <div className="app ob-app">
+      {/* Le logo est aussi le retour vers le site. Une page de connexion sans
+          issue enferme celui qui s'y est trompé de porte. */}
+      <header className="auth-tete">
+        <Link href="/" aria-label="Retour à l'accueil MapArtisans">
+          <Logo taille={1.15} />
+        </Link>
+      </header>
       <main className="ob-main">
         <Form className="ob-form" onSubmit={handleSubmit}>
           <h1 className="ob-title">Connexion</h1>
@@ -79,6 +88,12 @@ export default function LoginPage() {
           <button type="submit" className="btn ob-next" disabled={pending}>
             {pending ? "Connexion…" : "Se connecter"}
           </button>
+
+          {/* Sans cette ligne, un visiteur sans compte est dans une impasse —
+              y compris celui que le middleware vient de rediriger ici. */}
+          <p className="auth-bascule">
+            Pas encore de compte ? <Link href="/onboarding">Créer mon compte gratuitement</Link>
+          </p>
         </Form>
       </main>
     </div>

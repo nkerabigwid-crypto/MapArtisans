@@ -1576,3 +1576,24 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    comme un lien, et perdrait la lisibilite d'un titre. */
 .logo-nom { color: var(--ink); }
 .logo-s { opacity: 0.65; }
+
+/* --- En-tetes des pages de compte ------------------------------------- */
+.auth-tete {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.auth-tete a { text-decoration: none; }
+.auth-lien {
+  font-size: 0.85rem; color: var(--ink-soft); text-decoration: none;
+  border-bottom: 1px solid var(--line); padding-bottom: 1px;
+}
+.auth-lien:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Bascule connexion <-> inscription. Sans elle, chaque page est une impasse
+   pour qui s'est trompe de porte. */
+.auth-bascule {
+  margin: 1.1rem 0 0; text-align: center;
+  font-size: 0.88rem; color: var(--ink-soft);
+}
+.auth-bascule a { color: var(--accent); font-weight: 600; }
