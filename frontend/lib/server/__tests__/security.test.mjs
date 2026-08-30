@@ -16,12 +16,18 @@ import { pathToFileURL } from "node:url";
 //   · `server-only` est remplacé par un module vide — cette garde vise les
 //     composants client et n'a pas d'objet ici ;
 //   · les imports relatifs sans extension (`./password`) reçoivent `.ts`, que
-//     TypeScript accepte mais que le résolveur ESM de Node exige.
+//     TypeScript accepte mais que le résolveur ESM de Node exige ;
+//   · `@/...` est l'alias du projet, et `next/server` doit recevoir son
+//     extension — Next l'expose sans, ce que son propre bundler résout mais
+//     pas Node. Sans cela, une route d'API ne peut pas être testée du tout.
 register(
   "data:text/javascript," +
     encodeURIComponent(`
+      const ROOT = ${JSON.stringify(pathToFileURL(process.cwd() + "/").href)};
       export async function resolve(spec, ctx, next) {
         if (spec === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
+        if (spec === "next/server") return next("next/server.js", ctx);
+        if (spec.startsWith("@/")) return next(new URL(spec.slice(2) + ".ts", ROOT).href, ctx);
         if (spec.startsWith(".") && !/\\.[cm]?[jt]s$/.test(spec)) {
           try { return await next(spec + ".ts", ctx); } catch {}
         }
@@ -561,5 +567,105 @@ describe("Choix du dépôt", () => {
     assert.equal(repoMod5.getRepo(), repoMod5.memoryRepo);
     process.env.NODE_ENV = env;
     if (db) process.env.DATABASE_URL = db;
+  });
+});
+
+describe("Inscription", () => {
+  let route, repoMod6;
+  before(async () => {
+    process.env.NODE_ENV = "test";
+    delete process.env.DATABASE_URL;
+    repoMod6 = await import("../repo.ts");
+    route = await import("../../../app/api/auth/register/route.ts");
+  });
+
+  // Chaque appel vient d'une IP differente : la limitation par IP est
+  // volontairement stricte, et la partager entre les tests les ferait echouer
+  // les uns a cause des autres.
+  let n = 0;
+  const poster = (donnees, ip = `10.0.0.${++n}`) =>
+    route.POST(
+      new Request("https://mapartisans.com/api/auth/register", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": ip },
+        body: JSON.stringify(donnees),
+      }),
+    );
+
+  test("une inscription valide crée le compte et ouvre la session", async () => {
+    repoMod6.__resetRepo();
+    const r = await poster({ email: "Nouveau@Exemple.CH", password: "phrase-de-passe-solide" });
+    assert.equal(r.status, 201);
+
+    // La casse ne doit pas creer un second compte distinct.
+    const u = await repoMod6.memoryRepo.findUserByEmail("nouveau@exemple.ch");
+    assert.ok(u, "le compte doit exister en base");
+
+    const cookie = r.headers.get("set-cookie") ?? "";
+    assert.match(cookie, /ma_session=/, "une session doit etre ouverte");
+    assert.match(cookie, /HttpOnly/i, "le cookie doit etre hors de portee du JavaScript");
+    assert.match(cookie, /SameSite=lax/i);
+  });
+
+  test("le mot de passe n'est jamais stocké en clair", async () => {
+    repoMod6.__resetRepo();
+    await poster({ email: "clair@exemple.ch", password: "phrase-de-passe-solide" });
+    const u = await repoMod6.memoryRepo.findUserByEmail("clair@exemple.ch");
+    assert.doesNotMatch(u.passwordHash, /phrase-de-passe-solide/);
+    assert.match(u.passwordHash, /^scrypt\$/);
+  });
+
+  test("un mot de passe trop court est refusé", async () => {
+    repoMod6.__resetRepo();
+    const r = await poster({ email: "court@exemple.ch", password: "court" });
+    assert.equal(r.status, 400);
+    assert.match((await r.json()).error, /12 caractères/);
+  });
+
+  test("un mot de passe démesuré est refusé — scrypt travaille sur toute sa longueur", async () => {
+    // Sans plafond, un mot de passe d'un megaoctet occupe le processeur du
+    // serveur pendant que les autres requetes attendent.
+    repoMod6.__resetRepo();
+    const r = await poster({ email: "long@exemple.ch", password: "x".repeat(50_000) });
+    assert.equal(r.status, 400);
+  });
+
+  test("une adresse invalide est refusée", async () => {
+    repoMod6.__resetRepo();
+    for (const email of ["pas-une-adresse", "a@b", "@exemple.ch", "a b@exemple.ch"]) {
+      assert.equal((await poster({ email, password: "phrase-de-passe-solide" })).status, 400, email);
+    }
+  });
+
+  test("une adresse déjà inscrite renvoie 409, pas un doublon", async () => {
+    repoMod6.__resetRepo();
+    const ident = { email: "double@exemple.ch", password: "phrase-de-passe-solide" };
+    assert.equal((await poster(ident)).status, 201);
+    assert.equal((await poster(ident)).status, 409);
+  });
+
+  test("un corps illisible ou incomplet ne fait pas planter la route", async () => {
+    repoMod6.__resetRepo();
+    assert.equal((await poster({ email: "seul@exemple.ch" })).status, 400);
+    assert.equal((await poster({ password: "phrase-de-passe-solide" })).status, 400);
+    const brut = await route.POST(
+      new Request("https://mapartisans.com/api/auth/register", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": "10.9.9.9" },
+        body: "{ceci n'est pas du JSON",
+      }),
+    );
+    assert.equal(brut.status, 400);
+  });
+
+  test("la création massive depuis une même IP est freinée", async () => {
+    repoMod6.__resetRepo();
+    const ip = "10.5.5.5";
+    let refuse = 0;
+    for (let i = 0; i < 8; i++) {
+      const r = await poster({ email: `masse${i}@exemple.ch`, password: "phrase-de-passe-solide" }, ip);
+      if (r.status === 429) refuse++;
+    }
+    assert.ok(refuse > 0, "au-dela du plafond horaire, les créations doivent être refusées");
   });
 });
