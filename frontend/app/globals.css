@@ -1062,25 +1062,41 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-mono), monospace; font-size: 0.82rem;
   color: var(--ink-soft); margin-bottom: 1rem;
 }
-.lp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
-.lp-dot {
-  aspect-ratio: 1; border-radius: 14px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 0.2rem; padding: 0.5rem; text-align: center;
+/* Grille bornée et centrée. Sans plafond, chaque case s'étirait à la largeur
+   de sa colonne — jusqu'à 300 px de pavé coloré sur grand écran, pour un
+   chiffre de deux caractères. */
+.lp-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem;
+  max-width: 340px; margin: 0 auto;
 }
-.lp-dot.top1 { background: var(--rank-top1); }
-.lp-dot.top3 { background: var(--status-good); }
-.lp-dot.warn { background: var(--status-warn); }
-.lp-dot.bad  { background: var(--status-bad); }
+.lp-dot {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.15rem; text-align: center;
+}
+/* Le nom du quartier est sous le repère, sur le fond de la page : il n'a plus
+   à ressortir sur une couleur pleine, donc il retrouve une couleur de texte
+   normale et un contraste franc. */
 .lp-dot-area {
-  font-family: var(--font-mono), monospace; font-size: 0.58rem;
+  font-family: var(--font-mono), monospace; font-size: 0.56rem;
   text-transform: uppercase; letter-spacing: 0.04em;
-  color: rgba(255,255,255,0.82); line-height: 1.2;
+  color: var(--ink-faint); line-height: 1.2;
 }
 .lp-dot-rank {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 1.5rem; color: #fff; line-height: 1;
+  font-weight: 700; font-size: 0.95rem; line-height: 1.1;
 }
+.lp-dot-rank.top1 { color: var(--rank-top1); }
+.lp-dot-rank.top3 { color: var(--status-good); }
+.lp-dot-rank.warn { color: var(--status-warn); }
+.lp-dot-rank.bad  { color: var(--status-bad); }
+
+/* Le repère de la page d'accueil est purement illustratif : ni bouton, ni
+   cible tactile. Il peut donc être plus petit que celui du tableau de bord. */
+.lp-dot .geo-pin { width: 100%; max-width: 62px; height: auto; }
+.geo-pin.top1 { color: var(--rank-top1); }
+.geo-pin.top3 { color: var(--status-good); }
+.geo-pin.warn { color: var(--status-warn); }
+.geo-pin.bad  { color: var(--status-bad); }
 .lp-grid-legend {
   display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 1.1rem;
   font-family: var(--font-mono), monospace; font-size: 0.64rem; color: var(--ink-faint);
@@ -1255,7 +1271,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   .lp-cta-row > *, .lp-cta-row .lp-shimmer { width: 100%; }
   .lp-inline-cta { flex-direction: column; align-items: stretch; }
   .lp-inline-cta .lp-btn { width: 100%; }
-  .lp-dot-area { display: none; }
+  /* Le quartier reste affiché. Il était masqué du temps où chaque case
+     occupait toute la largeur de sa colonne et où le nom devait tenir DANS
+     une pastille colorée. Il est désormais sous le repère, sur le fond de la
+     page, dans une grille bornée à 340 px : la place existe. */
+  .lp-dot-area { font-size: 0.5rem; }
 }
 
 /* =========================================================================

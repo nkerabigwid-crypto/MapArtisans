@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Logo from "@/components/Logo";
+import GeoPin from "@/components/GeoPin";
+import { ordinalFr } from "@/lib/format";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { DotPattern } from "@/components/ui/dot-pattern";
@@ -177,10 +179,15 @@ export default function LandingPage() {
             <div className="lp-grid-kw">« {geoGrid.keyword} »</div>
             <div className="lp-grid">
               {geoGrid.points.map((p) => (
-                <div key={p.label} className={`lp-dot ${getGridStatus(p.position)}`}>
+                // Le quartier est SOUS le repère, pas dedans : la tête du
+                // repère n'a la place que d'un chiffre, et c'est ce chiffre
+                // qu'on vient lire. Le nom du lieu situe, il ne se déchiffre
+                // pas dans l'urgence.
+                <div key={p.label} className="lp-dot">
+                  <GeoPin position={p.position} status={getGridStatus(p.position)} />
                   <span className="lp-dot-area">{p.area}</span>
-                  <span className="lp-dot-rank">
-                    {p.position === null ? "—" : p.position + "e"}
+                  <span className={`lp-dot-rank ${getGridStatus(p.position)}`}>
+                    {ordinalFr(p.position)}
                   </span>
                 </div>
               ))}

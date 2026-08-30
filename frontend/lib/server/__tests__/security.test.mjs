@@ -777,3 +777,26 @@ describe("Inscription avec entreprise", () => {
     assert.equal(r.status, 201);
   });
 });
+
+describe("Ordinal français", () => {
+  let pin;
+  before(async () => { pin = await import("../../format.ts"); });
+
+  test("le premier s'écrit « 1re », pas « 1e »", () => {
+    // Seul ordinal irrégulier du français. « 1e » saute aux yeux d'un lecteur
+    // francophone — et la page d'accueil l'affichait, alors que le rapport SMS
+    // était correct depuis longtemps. D'où une fonction unique.
+    assert.equal(pin.ordinalFr(1), "1re");
+  });
+
+  test("les suivants prennent « e »", () => {
+    assert.equal(pin.ordinalFr(2), "2e");
+    assert.equal(pin.ordinalFr(14), "14e");
+  });
+
+  test("une fiche introuvable s'affiche par un tiret, pas par un zéro", () => {
+    // « 0e » se lirait comme une position, alors que la fiche n'apparaît nulle
+    // part dans les résultats.
+    assert.equal(pin.ordinalFr(null), "—");
+  });
+});
