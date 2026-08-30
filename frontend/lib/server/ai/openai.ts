@@ -10,6 +10,7 @@
 import OpenAI from "openai";
 import { RetryableError, withBackoff } from "@/lib/server/resilience";
 import { estAvisPositif } from "@/lib/server/reviewPolicy";
+import { resolveTradeOrDefault } from "@/lib/trades";
 
 /**
  * Génération des réponses aux avis — service OpenAI.
@@ -82,6 +83,11 @@ function getClient(): OpenAI {
  */
 export function buildPrompt(ctx: ReviewContext): { system: string; user: string } {
   const positif = estAvisPositif(ctx.rating);
+  // `ctx.tradeType` porte l'identifiant technique tel qu'il est en base
+  // (« taxi », « garage »). Le passer brut au modèle produisait des tournures
+  // du genre « notre taxi a répondu à vos attentes ». On lui donne désormais
+  // le libellé lisible et le vocabulaire du métier.
+  const metier = resolveTradeOrDefault(ctx.tradeType);
 
   const communes = [
     "Tu rédiges, au nom d'un artisan, la réponse publique à un avis Google.",
@@ -98,9 +104,12 @@ export function buildPrompt(ctx: ReviewContext): { system: string; user: string 
   const specifiques = positif
     ? [
         "- Ton chaleureux et reconnaissant, jamais obséquieux.",
-        `- Mentionne naturellement le métier (${ctx.tradeType}) et la ville (${ctx.city})`,
+        `- Mentionne naturellement le métier (${metier.label}) et la ville (${ctx.city})`,
         "  quand la phrase le porte sans sonner artificielle — c'est ce qui aide la",
         "  fiche à ressortir sur les recherches locales, pas un mot-clé plaqué.",
+        `- Vocabulaire de ce métier : ${metier.lexique}.`,
+        "  Emploie ces termes s'ils conviennent, jamais tous à la fois. Un client",
+        "  reconnaît immédiatement une réponse qui ne parle pas son métier.",
         "- Si le client n'a laissé qu'une note sans texte, remercie pour la note sans",
         "  jamais faire allusion a une prestation, un probleme ou un propos precis :",
         "  tu ne sais rien de son intervention, seulement combien d'etoiles il a mises.",
@@ -112,7 +121,7 @@ export function buildPrompt(ctx: ReviewContext): { system: string; user: string 
         "- Reconnais la gêne et invite à poursuivre en privé, sans inventer ni",
         "  numéro de téléphone ni adresse e-mail.",
         // La règle qui compte, et la raison d'être de cette branche.
-        `- N'écris NI le métier (${ctx.tradeType}) NI la ville (${ctx.city}). N'emploie`,
+        `- N'écris NI le métier (${metier.label}) NI la ville (${ctx.city}). N'emploie`,
         "  aucun terme de recherche locale. Google indexe la réponse du gérant avec",
         "  l'avis : y placer les mots-clés du métier reviendrait à renforcer la",
         "  visibilité de la fiche sur une critique publique.",
@@ -131,7 +140,7 @@ export function buildPrompt(ctx: ReviewContext): { system: string; user: string 
     // branche négative : le modèle doit savoir de quelle entreprise il parle
     // pour ne pas se tromper de registre. La consigne ci-dessus lui interdit
     // de les écrire, elle ne les lui cache pas.
-    `Entreprise : ${ctx.businessName} (${ctx.tradeType}, ${ctx.city})`,
+    `Entreprise : ${ctx.businessName} (${metier.label}, ${ctx.city})`,
     `Client : ${ctx.reviewerName ?? "anonyme"}`,
     `Note : ${ctx.rating}/5`,
     // Un avis sans texte est annoncé comme tel. Passer `Avis : ""` laisserait le

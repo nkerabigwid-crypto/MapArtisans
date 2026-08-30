@@ -108,8 +108,15 @@ describe("Ancrage SEO local : présent sur les avis positifs, absent sur les né
   test("avis positif : le prompt demande de citer le métier et la ville", () => {
     const { system } = openaiMod.buildPrompt({ ...base, rating: 5 });
     assert.match(system, /Mentionne naturellement le métier/);
-    assert.match(system, /plombier/);
+    // Le LIBELLE, pas l'identifiant technique : « Plombier », pas « plombier ».
+    // Le modele recevait l'identifiant brut et ecrivait « notre taxi a repondu
+    // a vos attentes ».
+    assert.match(system, /\(Plombier\)/);
     assert.match(system, /Lausanne/);
+    // Vocabulaire du metier injecte : c'est ce qui evite qu'un chauffeur de
+    // taxi recoive une reponse au vocabulaire d'artisan.
+    assert.match(system, /Vocabulaire de ce métier/);
+    assert.match(system, /fuite|sanitaire|dépannage/);
   });
 
   test("avis négatif : le prompt INTERDIT explicitement métier et ville", () => {
@@ -130,7 +137,7 @@ describe("Ancrage SEO local : présent sur les avis positifs, absent sur les né
     // La consigne interdit de l'écrire ; elle ne doit pas la cacher au modèle,
     // qui a besoin de savoir de quelle entreprise il parle.
     const { user } = openaiMod.buildPrompt({ ...base, rating: 1 });
-    assert.match(user, /Plomberie Dubois \(plombier, Lausanne\)/);
+    assert.match(user, /Plomberie Dubois \(Plombier, Lausanne\)/);
   });
 
   test("aucune branche ne laisse le modèle signer au nom de l'outil", () => {
