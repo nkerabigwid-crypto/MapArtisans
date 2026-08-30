@@ -5,6 +5,7 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { Marquee } from "@/components/ui/marquee";
 import { PLANS, geoGrid, getGridStatus } from "@/lib/data";
+import { TRADE_LABELS } from "@/lib/trades";
 import GainSimulator from "@/components/marketing/GainSimulator";
 
 export const metadata: Metadata = {
@@ -13,10 +14,6 @@ export const metadata: Metadata = {
     "Pour les artisans et professionnels du transport en Suisse romande. MapArtisans gère vos avis, publie vos posts et suit votre position sur Google Maps, sans que vous ayez à y penser.",
 };
 
-const TRADES = [
-  "Plombier", "Électricien", "Chauffagiste", "Serrurier", "Taxi",
-  "Menuisier", "Peintre", "Maçon", "Couvreur", "Vitrier",
-];
 
 const PAINS = [
   {
@@ -220,7 +217,7 @@ export default function LandingPage() {
       {/* ---------------- Métiers ---------------- */}
       <section className="lp-marquee-wrap">
         <Marquee pauseOnHover className="[--duration:32s]">
-          {TRADES.map((t) => (
+          {TRADE_LABELS.map((t) => (
             <span key={t} className="lp-trade">
               {t}
             </span>

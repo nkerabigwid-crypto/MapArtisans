@@ -1,5 +1,6 @@
 "use client";
 
+import { TRADES } from "@/lib/trades";
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import FormSelect from "./FormSelect";
@@ -16,18 +17,6 @@ interface StepBusinessProps {
   onNext: () => void;
 }
 
-// Métiers repris des catégories Google Business Profile — c'est ce libellé qui
-// décidera du vocabulaire des posts générés et des mots-clés suivis.
-const TRADES = [
-  { label: "Plombier", value: "plombier" },
-  { label: "Électricien", value: "electricien" },
-  { label: "Chauffagiste", value: "chauffagiste" },
-  { label: "Serrurier", value: "serrurier" },
-  { label: "Menuisier", value: "menuisier" },
-  { label: "Peintre en bâtiment", value: "peintre" },
-  { label: "Maçon", value: "macon" },
-  { label: "Couvreur", value: "couvreur" },
-];
 
 // Marché francophone, pas seulement France/Suisse. La facturation reste en CHF
 // quel que soit le pays — l'éditeur est suisse.

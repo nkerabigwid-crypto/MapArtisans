@@ -669,3 +669,46 @@ describe("Inscription", () => {
     assert.ok(refuse > 0, "au-dela du plafond horaire, les créations doivent être refusées");
   });
 });
+
+describe("Liste des métiers", () => {
+  let trades;
+  before(async () => { trades = await import("../../trades.ts"); });
+
+  test("le transport figure bien dans la liste", () => {
+    // La page d'accueil promet « artisans ET professionnels du transport ».
+    // Le formulaire ne proposait pas Taxi : un chauffeur convaincu par la page
+    // arrivait sur un choix qui ne le mentionnait nulle part.
+    for (const attendu of ["taxi", "vtc", "garage", "coiffeur"]) {
+      assert.ok(
+        trades.TRADES.some((t) => t.value === attendu),
+        `le métier « ${attendu} » doit être proposé`,
+      );
+    }
+  });
+
+  test("aucun identifiant en double", () => {
+    // Deux métiers partageant un `value` écriraient la même chose en base, et
+    // le prompt IA ne saurait plus de quel métier il parle.
+    const valeurs = trades.TRADES.map((t) => t.value);
+    assert.equal(new Set(valeurs).size, valeurs.length);
+  });
+
+  test("les identifiants sont stables : minuscules, sans accent ni espace", () => {
+    // Ils partent en base et dans le prompt de génération. Un accent ou une
+    // majuscule les rendrait fragiles au premier changement d'encodage.
+    for (const t of trades.TRADES) {
+      assert.match(t.value, /^[a-z_]+$/, `identifiant fragile : ${t.value}`);
+    }
+  });
+
+  test("isKnownTrade rejette ce qui n'est pas au catalogue", () => {
+    assert.equal(trades.isKnownTrade("taxi"), true);
+    assert.equal(trades.isKnownTrade("astronaute"), false);
+    assert.equal(trades.isKnownTrade(""), false);
+  });
+
+  test("le bandeau de la page d'accueil n'affiche pas « Autre »", () => {
+    assert.ok(!trades.TRADE_LABELS.includes("Autre"));
+    assert.ok(trades.TRADE_LABELS.includes("Taxi"));
+  });
+});
