@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { Barlow, Barlow_Condensed, IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -33,9 +34,34 @@ const jakarta = Plus_Jakarta_Sans({
 // composants client et ne peuvent pas exporter de metadata — ils reçoivent
 // donc celui-ci.
 export const metadata: Metadata = {
+  // metadataBase rend absolues toutes les URL relatives des balises de partage.
+  // Sans elle, Next émet un avertissement au build et les aperçus WhatsApp ou
+  // LinkedIn reçoivent des chemins relatifs, qu'ils ne savent pas résoudre.
+  metadataBase: new URL(SITE_URL),
   title: "MapArtisans — Visibilité Google Maps pour les artisans",
   description:
-    "Réponses aux avis, posts locaux et suivi de position sur Google Maps, pour les artisans francophones.",
+    "Réponses aux avis et suivi de position sur Google Maps, pour les artisans francophones.",
+  // Une adresse canonique unique : les quatre domaines secondaires redirigent
+  // vers celle-ci, et déclarer autre chose diluerait le référencement que le
+  // produit promet justement d'améliorer.
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "fr_CH",
+    siteName: "MapArtisans",
+    url: SITE_URL,
+    title: "MapArtisans — Votre visibilité Google Maps en pilote automatique",
+    description:
+      "Pour les artisans et professionnels du transport en Suisse romande. Réponses aux avis par l'IA, suivi de position, rapport SMS chaque semaine.",
+  },
+  // Vos clients partageront le lien par WhatsApp : sans ces balises, l'aperçu
+  // affiche une vignette vide, ce qui fait douter du sérieux du service.
+  twitter: {
+    card: "summary_large_image",
+    title: "MapArtisans — Visibilité Google Maps",
+    description: "Réponses aux avis par l'IA et suivi de position, pour les artisans romands.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

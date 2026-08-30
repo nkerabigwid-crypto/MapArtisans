@@ -189,9 +189,29 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * Les comptes de démonstration doivent-ils exister ?
+ *
+ * NON EN PRODUCTION, ET C'EST UNE RÈGLE DE SÉCURITÉ, PAS UNE PRÉFÉRENCE.
+ *
+ * Ces comptes ont un mot de passe écrit en clair dans ce fichier, versionné et
+ * lisible par quiconque accède au dépôt. Les laisser vivre sur le serveur de
+ * production ouvre le tableau de bord — fiches, avis, réglages — à toute
+ * personne qui a lu le code. Constaté en production le 30 août 2026 : la route
+ * de connexion répondait 200 sur demo@mapartisan.ch.
+ *
+ * `DEMO_DATA=1` permet de les réactiver délibérément, par exemple sur un
+ * environnement de démonstration commerciale distinct.
+ */
+function demoAutorisee(): boolean {
+  if (process.env.DEMO_DATA === "1") return true;
+  return process.env.NODE_ENV !== "production";
+}
+
 async function seed() {
   if (seeded) return;
   seeded = true;
+  if (!demoAutorisee()) return;
   const u: UserRecord = {
     id: "u-001",
     email: "demo@mapartisan.ch",

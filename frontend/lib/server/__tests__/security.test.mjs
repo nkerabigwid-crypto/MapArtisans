@@ -496,3 +496,42 @@ describe("Autonomie de la marque", () => {
     assert.deepEqual(fautifs, [], `mentions résiduelles : ${fautifs.join(", ")}`);
   });
 });
+
+describe("Comptes de démonstration", () => {
+  let repoMod4;
+  before(async () => { repoMod4 = await import("../repo.ts"); });
+
+  test("en production, AUCUN compte de démonstration n'existe", async () => {
+    // Leur mot de passe est en clair dans le dépôt : les laisser vivre en
+    // production ouvre le tableau de bord à quiconque a lu le code.
+    const avant = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    delete process.env.DEMO_DATA;
+    repoMod4.__resetRepo();
+    const repo = repoMod4.getRepo();
+    assert.equal(await repo.findUserByEmail("demo@mapartisan.ch"), null);
+    process.env.NODE_ENV = avant;
+    repoMod4.__resetRepo();
+  });
+
+  test("hors production, ils existent — sinon plus rien n'est testable", async () => {
+    const avant = process.env.NODE_ENV;
+    process.env.NODE_ENV = "test";
+    repoMod4.__resetRepo();
+    const repo = repoMod4.getRepo();
+    assert.ok(await repo.findUserByEmail("demo@mapartisan.ch"));
+    process.env.NODE_ENV = avant;
+    repoMod4.__resetRepo();
+  });
+
+  test("DEMO_DATA=1 les réactive délibérément en production", async () => {
+    const avant = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    process.env.DEMO_DATA = "1";
+    repoMod4.__resetRepo();
+    assert.ok(await repoMod4.getRepo().findUserByEmail("demo@mapartisan.ch"));
+    delete process.env.DEMO_DATA;
+    process.env.NODE_ENV = avant;
+    repoMod4.__resetRepo();
+  });
+});
