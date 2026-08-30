@@ -144,6 +144,27 @@ export const pgRepo: Repo = {
     return versUtilisateur(r[0]);
   },
 
+  async setUserPhone(userId, phoneNumber) {
+    const r = await q("UPDATE users SET phone_number = $2 WHERE id = $1 RETURNING id", [
+      userId,
+      phoneNumber,
+    ]);
+    if (r.length === 0) throw new Error(`Utilisateur introuvable : ${userId}`);
+  },
+
+  async createCompany(input) {
+    // `country` et `currency` sont contraints en base (migrations 004 et 009) :
+    // un pays hors liste ou une devise autre que CHF fait échouer l'insertion
+    // plutôt que d'enregistrer une facturation impossible.
+    const r = await q(
+      `INSERT INTO companies (user_id, company_name, trade_type, country, currency, plan_id)
+       VALUES ($1, $2, $3, $4, 'CHF', 'essentiel')
+       RETURNING *`,
+      [input.userId, input.companyName, input.tradeType, input.country],
+    );
+    return versEntreprise(r[0]);
+  },
+
   async listProfilesForUser(userId) {
     // La jointure porte le filtre : aucune fiche d'un autre utilisateur ne peut
     // remonter, même si l'appelant oublie de vérifier quoi que ce soit.

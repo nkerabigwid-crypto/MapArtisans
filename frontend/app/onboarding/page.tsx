@@ -17,8 +17,11 @@ const STEPS = ["Entreprise", "Contact", "Google"];
  * peut pas demander l'accès à une fiche Google avant de savoir quelle
  * entreprise on cherche.
  *
- * Aucun compte n'est créé : le brouillon reste en mémoire jusqu'à ce que les
- * routes d'inscription et l'OAuth Google existent côté backend.
+ * Le compte est créé à la fin de l'étape « Contact », par /api/auth/register.
+ * L'étape Google reste en attente : l'accès à l'API Business Profile n'est pas
+ * encore accordé. L'artisan atteint donc son tableau de bord sans avoir
+ * connecté sa fiche — mieux vaut un compte utilisable qu'un parcours bloqué
+ * sur une étape dont la date d'ouverture ne dépend pas de nous.
  */
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
@@ -28,7 +31,52 @@ export default function OnboardingPage() {
     trade_type: null,
     country: "CH",
   });
-  const [contact, setContact] = useState<ContactDraft>({ email: "", phone_number: "" });
+  const [contact, setContact] = useState<ContactDraft>({
+    email: "",
+    phone_number: "",
+    password: "",
+  });
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+
+  /**
+   * Crée le compte, puis passe à l'étape Google.
+   *
+   * La session est ouverte par la route elle-même (cookie httpOnly) : l'artisan
+   * est donc connecté dès la sortie de cette fonction, et peut atteindre son
+   * tableau de bord même s'il abandonne l'étape suivante.
+   */
+  async function creerLeCompte() {
+    setErreur(null);
+    setEnvoi(true);
+    try {
+      const reponse = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: contact.email,
+          password: contact.password,
+          phoneNumber: contact.phone_number,
+          companyName: business.company_name,
+          tradeType: business.trade_type,
+          country: business.country,
+        }),
+      });
+      if (reponse.ok) {
+        setStep(2);
+        return;
+      }
+      const donnees = await reponse.json().catch(() => ({}));
+      // Le message du serveur est repris tel quel : il dit précisément ce qui
+      // bloque (adresse déjà prise, mot de passe trop court), là où un message
+      // générique obligerait l'artisan à deviner.
+      setErreur(donnees.error ?? "La création du compte a échoué. Réessayez.");
+    } catch {
+      setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
+    } finally {
+      setEnvoi(false);
+    }
+  }
 
   if (done) {
     return (
@@ -67,8 +115,10 @@ export default function OnboardingPage() {
           <StepContact
             draft={contact}
             onChange={(patch) => setContact((prev) => ({ ...prev, ...patch }))}
-            onNext={() => setStep(2)}
+            onNext={creerLeCompte}
             onBack={() => setStep(0)}
+            erreur={erreur}
+            envoi={envoi}
           />
         )}
         {step === 2 && (

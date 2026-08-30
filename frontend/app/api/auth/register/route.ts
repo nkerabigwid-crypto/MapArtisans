@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRepo, normalizeEmail } from "@/lib/server/repo";
 import { createSession, sessionCookie } from "@/lib/server/session";
+import { InvalidBusinessTypeError, resolveTrade } from "@/lib/trades";
 
 /**
  * Inscription.
@@ -63,7 +64,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Requête illisible." }, { status: 400 });
   }
 
-  const { email, password } = (corps ?? {}) as { email?: unknown; password?: unknown };
+  const { email, password, companyName, tradeType, country, phoneNumber } = (corps ?? {}) as {
+    email?: unknown;
+    password?: unknown;
+    companyName?: unknown;
+    tradeType?: unknown;
+    country?: unknown;
+    phoneNumber?: unknown;
+  };
   if (typeof email !== "string" || typeof password !== "string") {
     return NextResponse.json({ error: "Champs manquants." }, { status: 400 });
   }
@@ -100,7 +108,49 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Le métier est validé AVANT toute écriture. C'est le seul endroit où cette
+  // vérification a du sens : un identifiant hors catalogue enregistré ici
+  // contamine tout ce qui suit — le prompt de génération des réponses, les
+  // statistiques, la catégorie Google.
+  let metierValide: string | null = null;
+  if (tradeType != null && tradeType !== "") {
+    if (typeof tradeType !== "string") {
+      return NextResponse.json({ error: "Métier invalide." }, { status: 400 });
+    }
+    try {
+      metierValide = resolveTrade(tradeType).value;
+    } catch (err) {
+      if (err instanceof InvalidBusinessTypeError) {
+        return NextResponse.json({ error: "Métier inconnu." }, { status: 400 });
+      }
+      throw err;
+    }
+  }
+
+  const PAYS = ["CH", "FR", "BE", "LU", "CA", "MC"];
+  const paysValide = typeof country === "string" && PAYS.includes(country) ? country : "CH";
+
   const utilisateur = await repo.createUser(adresse, password);
+
+  // L'entreprise n'est créée que si le formulaire l'a fournie. Une inscription
+  // par la seule API reste possible sans elle : l'artisan complétera plus tard.
+  if (metierValide && typeof companyName === "string" && companyName.trim()) {
+    await repo.createCompany({
+      userId: utilisateur.id,
+      companyName: companyName.trim().slice(0, 255),
+      tradeType: metierValide,
+      country: paysValide,
+    });
+  }
+
+  // Numéro au format E.164 uniquement : c'est ce qu'attend Twilio, et un
+  // numéro mal formé ne se découvrirait qu'au premier rapport SMS non délivré.
+  if (typeof phoneNumber === "string" && phoneNumber.trim()) {
+    const numero = phoneNumber.replace(/[\s.\-()]/g, "");
+    if (/^\+[1-9]\d{6,14}$/.test(numero)) {
+      await repo.setUserPhone(utilisateur.id, numero);
+    }
+  }
 
   // Session ouverte immédiatement : demander de se reconnecter juste après
   // s'être inscrit fait perdre des clients sans rien protéger.

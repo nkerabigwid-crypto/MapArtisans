@@ -111,6 +111,21 @@ export interface Repo {
   findUserByEmail(email: string): Promise<UserRecord | null>;
   findUserById(id: string): Promise<UserRecord | null>;
   createUser(email: string, password: string): Promise<UserRecord>;
+  /** Enregistre le numéro de mobile. Null efface — un artisan peut se raviser. */
+  setUserPhone(userId: string, phoneNumber: string | null): Promise<void>;
+  /**
+   * Crée l'entreprise d'un utilisateur.
+   *
+   * `tradeType` doit avoir été validé par `resolveTrade()` AVANT l'appel : un
+   * identifiant hors catalogue écrit ici contamine tout ce qui suit, à
+   * commencer par le prompt de génération des réponses aux avis.
+   */
+  createCompany(input: {
+    userId: string;
+    companyName: string;
+    tradeType: string;
+    country: string;
+  }): Promise<CompanyRecord>;
   /** Fiches accessibles à cet utilisateur — jamais toutes les fiches. */
   listProfilesForUser(userId: string): Promise<GoogleProfileRecord[]>;
   /**
@@ -387,6 +402,23 @@ export const memoryRepo: Repo = {
     return user;
   },
 
+  async setUserPhone(userId, phoneNumber) {
+    await seed();
+    const u = users.get(userId);
+    if (!u) throw new Error(`Utilisateur introuvable : ${userId}`);
+    u.phoneNumber = phoneNumber;
+  },
+  async createCompany(input) {
+    await seed();
+    const c: CompanyRecord = {
+      id: `c-${crypto.randomUUID()}`,
+      userId: input.userId,
+      companyName: input.companyName,
+      tradeType: input.tradeType,
+    };
+    companies.set(c.id, c);
+    return c;
+  },
   async listProfilesForUser(userId) {
     await seed();
     const owned = new Set(

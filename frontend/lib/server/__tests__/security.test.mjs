@@ -712,3 +712,68 @@ describe("Liste des métiers", () => {
     assert.ok(trades.TRADE_LABELS.includes("Taxi"));
   });
 });
+
+describe("Inscription avec entreprise", () => {
+  let route, repoMod7;
+  before(async () => {
+    process.env.NODE_ENV = "test";
+    delete process.env.DATABASE_URL;
+    repoMod7 = await import("../repo.ts");
+    route = await import("../../../app/api/auth/register/route.ts");
+  });
+
+  let n = 100;
+  const poster = (d) =>
+    route.POST(new Request("https://mapartisans.com/api/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": `10.1.0.${++n}` },
+      body: JSON.stringify(d),
+    }));
+
+  const base = { password: "phrase-de-passe-solide", companyName: "Valtransfer", country: "CH" };
+
+  test("un métier du catalogue crée l'entreprise", async () => {
+    repoMod7.__resetRepo();
+    const r = await poster({ ...base, email: "taxi@exemple.ch", tradeType: "taxi" });
+    assert.equal(r.status, 201);
+    const u = await repoMod7.memoryRepo.findUserByEmail("taxi@exemple.ch");
+    assert.ok(u);
+  });
+
+  test("un métier HORS catalogue est refusé avant toute écriture", async () => {
+    // C'est le seul endroit ou cette validation compte : un identifiant
+    // inconnu ecrit en base contamine le prompt de generation, les
+    // statistiques et la categorie Google.
+    repoMod7.__resetRepo();
+    for (const tradeType of ["boulanger", "Taxi_Genève", "Plombier Électricien", "../etc"]) {
+      const r = await poster({ ...base, email: `x${++n}@exemple.ch`, tradeType });
+      assert.equal(r.status, 400, `« ${tradeType} » doit être refusé`);
+      assert.match((await r.json()).error, /Métier inconnu/);
+    }
+  });
+
+  test("le numéro au bon format est enregistré, le mauvais est ignoré", async () => {
+    repoMod7.__resetRepo();
+    await poster({ ...base, email: "bon@exemple.ch", tradeType: "taxi", phoneNumber: "+41 79 123 45 67" });
+    const bon = await repoMod7.memoryRepo.findUserByEmail("bon@exemple.ch");
+    assert.equal(bon.phoneNumber, "+41791234567", "les espaces doivent être retirés");
+
+    await poster({ ...base, email: "mauvais@exemple.ch", tradeType: "taxi", phoneNumber: "079 pas un numero" });
+    const mauvais = await repoMod7.memoryRepo.findUserByEmail("mauvais@exemple.ch");
+    assert.equal(mauvais.phoneNumber, null, "un numéro invalide ne doit pas être enregistré");
+  });
+
+  test("un pays hors liste retombe sur la Suisse plutôt que d'échouer", async () => {
+    // La contrainte SQL n'accepte que six pays. Refuser l'inscription entiere
+    // pour un champ secondaire ferait perdre le client.
+    repoMod7.__resetRepo();
+    const r = await poster({ ...base, email: "pays@exemple.ch", tradeType: "taxi", country: "ZZ" });
+    assert.equal(r.status, 201);
+  });
+
+  test("l'inscription reste possible sans entreprise", async () => {
+    repoMod7.__resetRepo();
+    const r = await poster({ email: "seul@exemple.ch", password: "phrase-de-passe-solide" });
+    assert.equal(r.status, 201);
+  });
+});

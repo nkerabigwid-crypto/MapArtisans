@@ -6,6 +6,7 @@ import { Form } from "@base-ui/react/form";
 export interface ContactDraft {
   email: string;
   phone_number: string;
+  password: string;
 }
 
 interface StepContactProps {
@@ -13,10 +14,17 @@ interface StepContactProps {
   onChange: (patch: Partial<ContactDraft>) => void;
   onNext: () => void;
   onBack: () => void;
+  /** Message d'échec renvoyé par le serveur, affiché tel quel. */
+  erreur?: string | null;
+  /** Création en cours : le bouton doit être neutralisé. */
+  envoi?: boolean;
 }
 
-export default function StepContact({ draft, onChange, onNext, onBack }: StepContactProps) {
-  const complete = draft.email.trim() !== "" && draft.phone_number.trim() !== "";
+export default function StepContact({ draft, onChange, onNext, onBack, erreur, envoi }: StepContactProps) {
+  // Le minimum est aligné sur la route d'inscription (12 caractères). Le
+  // vérifier ici évite un aller-retour serveur pour un refus prévisible.
+  const complete =
+    draft.email.trim() !== "" && draft.phone_number.trim() !== "" && draft.password.length >= 12;
 
   return (
     <Form
@@ -51,6 +59,31 @@ export default function StepContact({ draft, onChange, onNext, onBack }: StepCon
         </Field.Error>
       </Field.Root>
 
+      <Field.Root name="password" className="field">
+        <Field.Label className="field-label">Mot de passe</Field.Label>
+        <Field.Control
+          type="password"
+          required
+          minLength={12}
+          autoComplete="new-password"
+          value={draft.password}
+          onChange={(e) => onChange({ password: e.target.value })}
+          placeholder="Au moins 12 caractères"
+          className="field-control"
+        />
+        {/* Une phrase plutot qu'un mot compliqué : la longueur protège mieux
+            que les symboles, et se retape sur un clavier de téléphone. */}
+        <Field.Description className="field-hint">
+          Une phrase facile à retenir fait un excellent mot de passe : « ma camionnette bleue 2019 ».
+        </Field.Description>
+        <Field.Error match="valueMissing" className="field-error">
+          Choisissez un mot de passe.
+        </Field.Error>
+        <Field.Error match="tooShort" className="field-error">
+          Au moins 12 caractères.
+        </Field.Error>
+      </Field.Root>
+
       <Field.Root name="phone_number" className="field">
         <Field.Label className="field-label">Téléphone mobile</Field.Label>
         <Field.Control
@@ -74,8 +107,13 @@ export default function StepContact({ draft, onChange, onNext, onBack }: StepCon
         <button type="button" className="btn secondary" onClick={onBack}>
           Retour
         </button>
-        <button type="submit" className="btn" disabled={!complete}>
-          Continuer
+        {erreur && (
+          <p className="ob-erreur" role="alert">
+            {erreur}
+          </p>
+        )}
+        <button type="submit" className="btn" disabled={!complete || envoi}>
+          {envoi ? "Création du compte…" : "Continuer"}
         </button>
       </div>
     </Form>

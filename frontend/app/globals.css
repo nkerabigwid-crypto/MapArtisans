@@ -1543,3 +1543,24 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    l'œil lit « MapArtisan » d'un bloc et perçoit le pluriel en second temps —
    ce qui est exactement l'effet recherché. */
 .lp-logo-s, .audit-brand-s { opacity: 0.65; }
+
+/* Message d'echec de creation de compte. Cadre rouge plein plutot que texte
+   seul : sur un telephone, une ligne rouge sous un bouton passe inapercue. */
+.ob-erreur {
+  background: var(--status-bad-bg);
+  color: var(--status-bad);
+  border: 1px solid var(--status-bad);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.88rem;
+  margin: 0 0 0.8rem;
+}
+
+/* La liste des metiers compte une vingtaine d'entrees : sans hauteur maximale,
+   le menu depasse l'ecran d'un telephone et les derniers metiers — dont Taxi
+   et Garage — deviennent inatteignables. */
+.select-popup, [role="listbox"] {
+  max-height: min(60vh, 22rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
