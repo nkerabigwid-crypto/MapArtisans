@@ -207,12 +207,29 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   color: var(--ink-soft);
   margin-bottom: 0.6rem;
 }
-.geo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+/* La grille est bornée et centrée. Sans plafond, chaque point s'étirait à la
+   largeur de sa colonne — jusqu'à 250 px sur un grand écran, ce qui donnait
+   des pastilles énormes sans plus d'information qu'une petite. */
+.geo-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem;
+  max-width: 300px; margin: 0 auto;
+}
 .geo-dot {
   aspect-ratio: 1; border-radius: 50%;
   border: none; padding: 0; cursor: pointer;
-  width: 100%; /* le point EST la cible tactile — largement au-dessus de 44px */
+  width: 100%;
+  /* 88 px : bien au-delà des 44 px recommandés pour une cible tactile, et
+     assez petit pour que la grille se lise d'un seul regard. */
+  max-width: 88px;
+  display: flex; align-items: center; justify-content: center;
   transition: transform 0.12s ease;
+}
+.geo-dot-rang {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700; font-size: 1.35rem; line-height: 1;
+  /* Blanc sur les quatre fonds de statut : contraste vérifié sur le plus
+     clair des quatre, l'ambre. */
+  color: #fff;
 }
 .geo-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .geo-dot[data-popup-open] { transform: scale(0.94); }
@@ -1597,3 +1614,13 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-size: 0.88rem; color: var(--ink-soft);
 }
 .auth-bascule a { color: var(--accent); font-weight: 600; }
+
+/* Retour a l'accueil depuis le tableau de bord. Le symbole seul, sans le nom :
+   la barre porte deja le nom de l'entreprise de l'artisan, et deux noms cote
+   a cote prêteraient a confusion — surtout en marque blanche. */
+.topbar-accueil {
+  display: inline-flex; align-items: center;
+  color: var(--accent); text-decoration: none;
+  margin-right: 0.7rem; flex-shrink: 0;
+}
+.topbar-accueil:hover { opacity: 0.75; }

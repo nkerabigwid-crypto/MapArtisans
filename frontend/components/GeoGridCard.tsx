@@ -51,7 +51,16 @@ export default function GeoGridCard({ geoGrid }: GeoGridCardProps) {
                   <Popover.Trigger
                     className={`geo-dot ${status}`}
                     aria-label={`${point.area} — ${positionText(point)}`}
-                  />
+                  >
+                    {/* Le rang est LISIBLE sans toucher. Une pastille de
+                        couleur seule oblige à taper chaque point pour savoir
+                        où l'on en est — or c'est précisément la lecture d'un
+                        coup d'oeil qui fait l'intérêt d'une Geo-Grid. Le clic
+                        reste utile : il révèle le concurrent qui devance. */}
+                    <span className="geo-dot-rang" aria-hidden="true">
+                      {point.position === null ? "—" : point.position}
+                    </span>
+                  </Popover.Trigger>
                   <Popover.Portal>
                     <Popover.Positioner sideOffset={8} className="geo-positioner">
                       <Popover.Popup className="geo-popup">
