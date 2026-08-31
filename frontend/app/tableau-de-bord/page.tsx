@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import HomeView from "@/components/HomeView";
@@ -17,6 +17,7 @@ import {
   SettingsSkeleton,
 } from "@/components/Skeleton";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
+import BandeauGoogle from "@/components/BandeauGoogle";
 import SubscriptionBlocked from "@/components/SubscriptionBlocked";
 import { useQueryParam } from "@/lib/useQueryParam";
 import type { ViewId } from "@/components/types";
@@ -101,6 +102,10 @@ export default function Page() {
         subTone={SUB_TONE[company.subscription_status] ?? "good"}
         onOpenSettings={() => setView("settings")}
       />
+
+      <Suspense fallback={null}>
+        <BandeauGoogle />
+      </Suspense>
 
       {isPastDue && (
         <SubscriptionBanner company={company} onFixPayment={() => setView("settings")} />

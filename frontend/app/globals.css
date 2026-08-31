@@ -1827,3 +1827,52 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5;
 }
 .da-regle strong { color: var(--ink); }
+
+/* --- Retour du rattachement de fiche Google -----------------------------
+   Le bandeau n'apparaît qu'au retour de l'écran de consentement Google, une
+   seule fois : le paramètre d'URL est effacé dès la lecture. Trois tons, car
+   « connecté », « annulé » et « refusé » n'appellent pas la même réaction et
+   ne doivent pas se ressembler au premier coup d'œil. */
+.bandeau-google {
+  position: relative;
+  padding: 0.9rem 2.4rem 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.bandeau-google--bon { background: var(--status-good-bg); }
+.bandeau-google--info { background: var(--accent-wash); }
+.bandeau-google--alerte { background: var(--status-warn-bg); }
+
+.bandeau-google-titre {
+  font-size: var(--t-sm);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.bandeau-google-corps {
+  margin: 0.25rem 0 0;
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.bandeau-google-fermer {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  /* 44 px : la cible tactile recommandée. Un artisan ferme ce bandeau d'une
+     main, sur un chantier, parfois avec des gants. */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  font-size: var(--t-lg);
+  line-height: 1;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.bandeau-google-fermer:hover { color: var(--ink); }
