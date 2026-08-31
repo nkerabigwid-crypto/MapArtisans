@@ -44,18 +44,39 @@ describe("Clé Stripe", () => {
     // Une clé publiable (pk_) ou un identifiant d'un autre service échouerait
     // sinon au premier appel API, avec un message que personne ne relie à la
     // configuration.
-    for (const fausse of ["pk_live_51PO4qC", "mk_1Thf9aCGPycoRGl3", "rk_live_abc", "abc"]) {
+    // Valeurs neutres : un fragment d'une vraie clé, même tronqué et même
+    // publiable, contient l'identifiant du compte Stripe. Il n'a rien à faire
+    // dans un dépôt.
+    for (const fausse of ["pk_live_EXEMPLE", "mk_EXEMPLE", "abc", ""]) {
       process.env.STRIPE_SECRET_KEY = fausse;
-      assert.throws(() => stripe.getStripe(), /sk_test_|sk_live_/, fausse);
+      assert.throws(() => stripe.getStripe(), /STRIPE_SECRET_KEY/, fausse);
     }
     delete process.env.STRIPE_SECRET_KEY;
   });
 
-  test("le mode test est reconnaissable", () => {
-    process.env.STRIPE_SECRET_KEY = "sk_test_abc";
-    assert.equal(stripe.estEnModeTest(), true);
-    process.env.STRIPE_SECRET_KEY = "sk_live_abc";
-    assert.equal(stripe.estEnModeTest(), false);
+  test("les clés RESTREINTES sont acceptées : c'est le moindre privilège", () => {
+    // Une clé restreinte est une clé secrète à permissions limitées, et la
+    // pratique recommandée par Stripe. La refuser poussait à utiliser une clé
+    // toute-puissante là où le minimum suffit.
+    for (const bonne of ["rk_test_abc", "rk_live_abc", "sk_test_abc", "sk_live_abc"]) {
+      process.env.STRIPE_SECRET_KEY = bonne;
+      assert.doesNotThrow(() => {
+        try { stripe.getStripe(); } catch (e) {
+          if (/préfixe/.test(e.message)) throw e;   // seul le préfixe nous intéresse
+        }
+      }, bonne);
+    }
+    delete process.env.STRIPE_SECRET_KEY;
+  });
+
+  test("le mode test couvre les quatre préfixes", () => {
+    for (const [cle, attendu] of [
+      ["sk_test_abc", true], ["rk_test_abc", true],
+      ["sk_live_abc", false], ["rk_live_abc", false],
+    ]) {
+      process.env.STRIPE_SECRET_KEY = cle;
+      assert.equal(stripe.estEnModeTest(), attendu, cle);
+    }
     delete process.env.STRIPE_SECRET_KEY;
   });
 });

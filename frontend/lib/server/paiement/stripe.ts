@@ -34,22 +34,43 @@ export function getStripe(): Stripe {
         "prélèvement ne suivrait.",
     );
   }
-  if (!/^sk_(test|live)_/.test(cle)) {
-    // Vérification volontaire : une clé au mauvais préfixe échoue ici, avec un
-    // message clair, plutôt qu'au premier appel API avec une erreur obscure.
+  // `rk_` est accepté au même titre que `sk_` : une clé restreinte est une
+  // clé secrète à permissions limitées, et c'est la pratique recommandée par
+  // Stripe. La refuser poussait à utiliser une clé toute-puissante là où le
+  // moindre privilège suffit.
+  //
+  // Elle doit porter au minimum, en écriture : Checkout Sessions, Customers,
+  // Subscriptions. Une permission manquante ne se voit qu'au premier appel —
+  // aucune vérification locale ne peut l'anticiper.
+  if (!/^(sk|rk)_(test|live)_/.test(cle)) {
     throw new Error(
-      `STRIPE_SECRET_KEY invalide : elle doit commencer par « sk_test_ » ou ` +
-        `« sk_live_ », pas par « ${cle.slice(0, 3)} ». Une clé publiable ` +
-        `(pk_) ou un identifiant d'un autre service ne fonctionnera pas.`,
+      `STRIPE_SECRET_KEY invalide : préfixe « ${cle.slice(0, 3)} » inconnu. ` +
+        `Attendu « sk_test_ », « sk_live_ », « rk_test_ » ou « rk_live_ ». ` +
+        `Une clé publiable (pk_) ne fonctionnera pas côté serveur.`,
+    );
+  }
+
+  if (!estEnModeTest()) {
+    // Pas un refus : c'est une décision d'exploitation, pas une erreur. Mais
+    // elle doit se voir dans les journaux — une clé réelle branchée par
+    // inadvertance prélève de vrais clients sur un tunnel jamais éprouvé.
+    console.warn(
+      "[stripe] CLÉ EN MODE RÉEL. Les paiements seront réellement prélevés. " +
+        "Utilisez une clé de test tant que le tunnel n'a pas été éprouvé de bout en bout.",
     );
   }
   client = new Stripe(cle, { apiVersion: "2026-08-26.dahlia" });
   return client;
 }
 
-/** La clé configurée est-elle une clé de test ? Affiché pour éviter les surprises. */
+/**
+ * La clé configurée est-elle une clé de test ?
+ *
+ * Couvre les quatre préfixes : `sk_test_`, `rk_test_` sont des clés d'essai ;
+ * `sk_live_`, `rk_live_` prélèvent réellement.
+ */
 export function estEnModeTest(): boolean {
-  return (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_test_");
+  return /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? "");
 }
 
 export interface DemandeCheckout {
