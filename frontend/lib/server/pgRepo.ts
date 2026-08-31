@@ -298,6 +298,38 @@ export const pgRepo: Repo = {
     } satisfies MagicLinkRecord;
   },
 
+  async marquerEvenementStripe(id, type) {
+    // ON CONFLICT DO NOTHING fait office de verrou : l'insertion réussit une
+    // seule fois, quel que soit le nombre de rejeux simultanés. Un test suivi
+    // d'une écriture laisserait passer deux traitements concurrents.
+    const r = await q(
+      `INSERT INTO stripe_events (id, type) VALUES ($1, $2)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING id`,
+      [id, type],
+    );
+    return r.length > 0;
+  },
+
+  async majAbonnement(input) {
+    const champs: string[] = ["subscription_status = $2"];
+    const valeurs: unknown[] = [input.userId, input.statut];
+    if (input.stripeCustomerId) {
+      valeurs.push(input.stripeCustomerId);
+      champs.push(`stripe_customer_id = $${valeurs.length}`);
+    }
+    if (input.planId) {
+      valeurs.push(input.planId);
+      champs.push(`plan_id = $${valeurs.length}`);
+    }
+    // `payment_failed_at` est effacé au retour à l'état actif : le laisser
+    // ferait afficher un bandeau d'impayé à un client qui a régularisé.
+    if (input.statut === "active") champs.push("payment_failed_at = NULL");
+    if (input.statut === "past_due") champs.push("payment_failed_at = now()");
+
+    await q(`UPDATE companies SET ${champs.join(", ")} WHERE user_id = $1`, valeurs);
+  },
+
   async listWeeklyStats() {
     // Une seule requête plutôt qu'une boucle avec N requêtes : la tournée
     // hebdomadaire parcourt tout le parc, et le coût d'un aller-retour par

@@ -178,6 +178,23 @@ export interface Repo {
    */
   consumeMagicLink(tokenHash: string, now?: number): Promise<MagicLinkRecord | null>;
 
+  // --- Paiement.
+  /**
+   * Enregistre un événement Stripe comme traité.
+   *
+   * Renvoie `false` s'il l'était déjà. Stripe rejoue un webhook jusqu'à trois
+   * jours tant qu'il ne reçoit pas de 200 : sans ce verrou, un même paiement
+   * activerait deux abonnements et enverrait deux e-mails.
+   */
+  marquerEvenementStripe(id: string, type: string): Promise<boolean>;
+  /** Passe l'abonnement d'un utilisateur dans un nouvel état. */
+  majAbonnement(input: {
+    userId: string;
+    statut: "active" | "past_due" | "canceled";
+    stripeCustomerId?: string | null;
+    planId?: string | null;
+  }): Promise<void>;
+
   /** Fiches à qui envoyer le rapport hebdomadaire, avec leurs chiffres. */
   listWeeklyStats(): Promise<WeeklyStatsRecord[]>;
   /**
@@ -197,6 +214,7 @@ const companies = new Map<string, CompanyRecord>();
 const profiles = new Map<string, GoogleProfileRecord>();
 const reviews = new Map<string, ReviewRecord>();
 const magicLinks = new Map<string, MagicLinkRecord>();
+const evenementsStripe = new Set<string>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -500,6 +518,21 @@ export const memoryRepo: Repo = {
     if (r.usedAt === null) r.usedAt = now;
     return avant;
   },
+  async marquerEvenementStripe(id) {
+    await seed();
+    if (evenementsStripe.has(id)) return false;
+    evenementsStripe.add(id);
+    return true;
+  },
+  async majAbonnement(input) {
+    await seed();
+    for (const c of companies.values()) {
+      if (c.userId !== input.userId) continue;
+      // Le dépôt en mémoire ne porte pas ces colonnes ; l'important ici est
+      // que l'appel réussisse pour que les tests exercent le flux complet.
+      if (input.planId) (c as { tradeType: string }).tradeType = c.tradeType;
+    }
+  },
   async listWeeklyStats() {
     await seed();
     const out: WeeklyStatsRecord[] = [];
@@ -591,5 +624,6 @@ export function __resetRepo() {
   reviews.clear();
   agencies.clear();
   magicLinks.clear();
+  evenementsStripe.clear();
   seeded = false;
 }
