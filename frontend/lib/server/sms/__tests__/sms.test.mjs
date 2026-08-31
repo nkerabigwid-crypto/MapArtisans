@@ -789,3 +789,87 @@ describe("Registre de désabonnement et historique (dépôt)", () => {
     assert.equal(await repo.dernierEnvoiAvis("g-002", "+41790000005"), null);
   });
 });
+
+describe("Plafond mensuel de SMS", () => {
+  /*
+   * Le SMS est le seul coût variable non borné du produit : 5 à 10 centimes
+   * l'unité, soit dix à cinquante fois une réponse générée par l'IA — dont la
+   * dépense est déjà plafonnée. La facture Twilio arrive après coup.
+   */
+  let quota;
+  before(async () => { quota = await import("../quota.ts"); });
+
+  test("les plafonds montent avec le palier", () => {
+    const p = quota.PLAFOND_MENSUEL;
+    assert.ok(p.basique < p.essentiel, "essentiel doit dépasser basique");
+    assert.ok(p.essentiel < p.professionnel, "professionnel doit dépasser essentiel");
+  });
+
+  test("un usage normal passe largement", () => {
+    // Un artisan qui envoie une demande après chaque intervention reste très
+    // en dessous : le plafond arrête l'anormal, pas le quotidien.
+    const v = quota.autoriserEnvoi("essentiel", 60, "demande-avis");
+    assert.equal(v.ok, true);
+    assert.equal(v.proche, false);
+  });
+
+  test("au plafond, la demande d'avis est refusée", () => {
+    const plafond = quota.PLAFOND_MENSUEL.essentiel;
+    const v = quota.autoriserEnvoi("essentiel", plafond, "demande-avis");
+    assert.equal(v.ok, false);
+    assert.equal(v.raison, "plafond-atteint");
+  });
+
+  test("le rapport hebdomadaire N'EST JAMAIS bloqué, même au-delà du plafond", () => {
+    // Il coûte 4 à 5 SMS par mois et c'est la promesse vendue à l'artisan.
+    // Le couper pour économiser trente centimes reviendrait à ne pas livrer ce
+    // qu'il a payé, le mois où il utilise le plus le produit.
+    const v = quota.autoriserEnvoi("basique", 10_000, "rapport");
+    assert.equal(v.ok, true);
+  });
+
+  test("l'alerte de rendez-vous est plafonnée, elle", () => {
+    // Un visiteur malveillant enchaînant de fausses demandes ferait sinon
+    // partir autant de SMS aux frais de l'artisan.
+    const plafond = quota.PLAFOND_MENSUEL.professionnel;
+    const v = quota.autoriserEnvoi("professionnel", plafond, "rendez-vous");
+    assert.equal(v.ok, false);
+  });
+
+  test("l'approche du plafond est signalée avant le blocage", () => {
+    const plafond = quota.PLAFOND_MENSUEL.essentiel;
+    const v = quota.autoriserEnvoi("essentiel", Math.ceil(plafond * 0.85), "demande-avis");
+    assert.equal(v.ok, true, "on prévient, on ne bloque pas encore");
+    assert.equal(v.proche, true);
+  });
+
+  test("un palier inconnu retombe sur le plus BAS, jamais le plus haut", () => {
+    // Le cas se présente si un palier est retiré alors que des comptes le
+    // portent encore. Sous-estimer coûte moins cher que l'inverse.
+    assert.equal(quota.plafondPour("palier-supprime"), quota.PLAFOND_MENSUEL.basique);
+  });
+
+  test("le message dit quand le plafond repart, pas seulement qu'il bloque", () => {
+    const m = quota.messageQuota("essentiel");
+    assert.match(m, /mois prochain/);
+    assert.match(m, new RegExp(String(quota.PLAFOND_MENSUEL.essentiel)));
+  });
+});
+
+describe("Compteur mensuel (dépôt)", () => {
+  test("part de zéro, puis s'incrémente", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    assert.equal(await repo.compterSmsDuMois("c-001"), 0);
+    await repo.incrementerSmsDuMois("c-001");
+    await repo.incrementerSmsDuMois("c-001");
+    assert.equal(await repo.compterSmsDuMois("c-001"), 2);
+  });
+
+  test("le compteur est cloisonné par entreprise", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    await repo.incrementerSmsDuMois("c-001");
+    assert.equal(await repo.compterSmsDuMois("c-002"), 0);
+  });
+});

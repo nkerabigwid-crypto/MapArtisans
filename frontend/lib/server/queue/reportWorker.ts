@@ -47,6 +47,26 @@ export async function processWeeklyReportJob(
   assertAffordable(body, 1);
 
   await sender.send(stats.phoneNumber, body);
+
+  /*
+   * Le rapport est COMPTÉ mais jamais bloqué — voir sms/quota.ts. Il coûte
+   * quatre à cinq SMS par mois, c'est prévisible, et c'est la promesse vendue
+   * à l'artisan : le couper pour économiser trente centimes reviendrait à ne
+   * pas livrer ce qu'il a payé, précisément le mois où il utilise le plus le
+   * produit. Il doit en revanche peser sur le compteur, sans quoi le plafond
+   * ne refléterait pas la dépense réelle.
+   *
+   * Le comptage n'échoue pas le job : le SMS est parti et facturé, faire
+   * échouer ici le ferait renvoyer au rejeu.
+   */
+  const entreprise = await repo.getCompanyForProfile(data.profileId);
+  if (entreprise) {
+    try {
+      await repo.incrementerSmsDuMois(entreprise.id);
+    } catch (err) {
+      console.error(`[report-worker] comptage SMS échoué pour ${entreprise.id} :`, err);
+    }
+  }
 }
 
 /** Démarre le worker BullMQ. Processus long, séparé du serveur web. */

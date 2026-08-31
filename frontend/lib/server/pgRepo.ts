@@ -537,6 +537,29 @@ export const pgRepo: Repo = {
     if (r.length === 0) throw new Error(`Facture introuvable : ${numero}`);
   },
 
+  async compterSmsDuMois(companyId) {
+    const r = await q<{ envoyes: string }>(
+      `SELECT envoyes::text AS envoyes FROM sms_usage
+        WHERE company_id = $1 AND mois = date_trunc('month', current_date)::date`,
+      [companyId],
+    );
+    return r[0] ? Number(r[0].envoyes) : 0;
+  },
+
+  async incrementerSmsDuMois(companyId) {
+    // UPSERT : le premier envoi du mois crée la ligne, les suivants
+    // l'incrémentent. Un SELECT suivi d'un INSERT échouerait sur la clé
+    // primaire dès deux envois simultanés — cas courant, le worker
+    // hebdomadaire traitant plusieurs fiches d'une même agence en parallèle.
+    await q(
+      `INSERT INTO sms_usage (company_id, mois, envoyes)
+       VALUES ($1, date_trunc('month', current_date)::date, 1)
+       ON CONFLICT (company_id, mois)
+       DO UPDATE SET envoyes = sms_usage.envoyes + 1`,
+      [companyId],
+    );
+  },
+
   async listerPosts(profileId, limite = 20) {
     const r = await q(
       `SELECT * FROM posts WHERE google_profile_id = $1

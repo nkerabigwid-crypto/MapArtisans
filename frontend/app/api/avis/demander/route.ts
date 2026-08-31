@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getRepo } from "@/lib/server/repo";
 import { verifySession, sessionCookie } from "@/lib/server/session";
 import { autoriserDemande, composeDemandeAvis, demandeFitsOneSegment } from "@/lib/server/sms/demandeAvis";
+import { autoriserEnvoi, messageQuota } from "@/lib/server/sms/quota";
 import { assertAffordable, resolveSmsSender } from "@/lib/server/sms/twilio";
 
 export const runtime = "nodejs";
@@ -68,6 +69,19 @@ export async function POST(request: NextRequest) {
     repo.dernierEnvoiAvis(fiche.id, numero),
   ]);
 
+  /*
+   * Plafond mensuel AVANT toute autre vérification coûteuse. C'est le seul coût
+   * variable non borné du produit : un import de fichier clients ou une boucle
+   * peut envoyer des centaines de SMS, et la facture Twilio n'arrive qu'après.
+   */
+  if (entreprise) {
+    const envoyes = await repo.compterSmsDuMois(entreprise.id);
+    const quota = autoriserEnvoi(entreprise.planId, envoyes, "demande-avis");
+    if (!quota.ok) {
+      return NextResponse.json({ error: messageQuota(entreprise.planId) }, { status: 429 });
+    }
+  }
+
   const verdict = autoriserDemande({
     clientPhone,
     placeId,
@@ -115,6 +129,9 @@ export async function POST(request: NextRequest) {
       clientPhone: numero,
       statut: "sent",
     });
+    // Compté APRÈS l'envoi réussi : un échec Twilio n'est pas facturé, il ne
+    // doit donc pas consommer le plafond de l'artisan.
+    if (entreprise) await repo.incrementerSmsDuMois(entreprise.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const raison = err instanceof Error ? err.message : String(err);

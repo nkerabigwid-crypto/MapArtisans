@@ -336,6 +336,13 @@ export interface Repo {
   /** Horodate la transmission au client. Une facture non transmise est retrouvable. */
   marquerFactureEnvoyee(numero: string): Promise<void>;
 
+  // --- Plafond mensuel de SMS.
+  /** SMS déjà envoyés ce mois-ci par cette entreprise, tous types confondus. */
+  compterSmsDuMois(companyId: string): Promise<number>;
+
+  /** Incrémente le compteur du mois. Appelé APRÈS un envoi réussi. */
+  incrementerSmsDuMois(companyId: string): Promise<void>;
+
   // --- Publications Google.
   /** Brouillons et publications d'une fiche, la plus récente d'abord. */
   listerPosts(profileId: string, limite?: number): Promise<PostRecord[]>;
@@ -442,6 +449,7 @@ const reglagesAssistant = new Map<string, AssistantSettingsRecord>();
 const usageAssistant = new Map<string, number>();
 const rendezVous: unknown[] = [];
 const posts = new Map<string, PostRecord>();
+const usageSms = new Map<string, number>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -861,6 +869,17 @@ export const memoryRepo: Repo = {
     if (!factures.has(numero)) throw new Error(`Facture introuvable : ${numero}`);
   },
 
+  async compterSmsDuMois(companyId) {
+    await seed();
+    return usageSms.get(`${companyId}:${new Date().toISOString().slice(0, 7)}`) ?? 0;
+  },
+
+  async incrementerSmsDuMois(companyId) {
+    await seed();
+    const cle = `${companyId}:${new Date().toISOString().slice(0, 7)}`;
+    usageSms.set(cle, (usageSms.get(cle) ?? 0) + 1);
+  },
+
   async listerPosts(profileId, limite = 20) {
     await seed();
     return [...posts.values()]
@@ -1044,6 +1063,14 @@ export function getRepo(): Repo {
 
 /** Réservé aux tests. */
 export function __resetRepo() {
+  /*
+   * TOUS les stockages en mémoire, sans exception.
+   *
+   * Trois d'entre eux manquaient — compteurs de factures, d'assistant et de
+   * SMS — et l'état fuyait d'un test à l'autre : un test isolé passait, la
+   * suite complète échouait, et le coupable était le test précédent. Ajouter un
+   * stockage sans l'ajouter ici recrée ce piège.
+   */
   users.clear();
   companies.clear();
   profiles.clear();
@@ -1051,5 +1078,15 @@ export function __resetRepo() {
   agencies.clear();
   magicLinks.clear();
   evenementsStripe.clear();
+  demandesAvis.length = 0;
+  desabonnes.clear();
+  factures.clear();
+  compteursFacture.clear();
+  sessionsFacturees.clear();
+  reglagesAssistant.clear();
+  usageAssistant.clear();
+  rendezVous.length = 0;
+  posts.clear();
+  usageSms.clear();
   seeded = false;
 }

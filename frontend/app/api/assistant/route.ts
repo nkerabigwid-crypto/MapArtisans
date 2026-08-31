@@ -4,6 +4,7 @@ import { autoriserDemande, messageDeRefus } from "@/lib/server/assistant/access"
 import { repondreAuVisiteur, type TourAssistant } from "@/lib/server/assistant/repondre";
 import { composeRendezVousSms, rendezVousFitsOneSegment } from "@/lib/server/sms/rendezVous";
 import { resolveSmsSender } from "@/lib/server/sms/twilio";
+import { autoriserEnvoi } from "@/lib/server/sms/quota";
 import { resolveTradeOrDefault } from "@/lib/trades";
 
 export const runtime = "nodejs";
@@ -141,9 +142,26 @@ export async function POST(request: NextRequest) {
           requestedAt: new Date(rdv.requestedAt),
           details: rdv.details,
         });
-        if (rendezVousFitsOneSegment(sms)) {
+        /*
+         * Le plafond s'applique aussi ici. Un visiteur malveillant qui
+         * enchaînerait de fausses demandes de rendez-vous ferait sinon partir
+         * autant de SMS aux frais de l'artisan.
+         *
+         * Le rendez-vous est déjà ENREGISTRÉ à ce stade : si le plafond bloque
+         * la notification, l'artisan retrouve la demande dans son tableau de
+         * bord. On ne perd jamais un client réel.
+         */
+        const envoyes = entreprise ? await repo.compterSmsDuMois(entreprise.id) : 0;
+        const quota = entreprise
+          ? autoriserEnvoi(entreprise.planId, envoyes, "rendez-vous")
+          : { ok: false };
+
+        if (!quota.ok) {
+          console.warn("[assistant] plafond SMS atteint, notification non envoyée");
+        } else if (rendezVousFitsOneSegment(sms)) {
           try {
             await resolveSmsSender().send(proprietaire.phoneNumber, sms);
+            if (entreprise) await repo.incrementerSmsDuMois(entreprise.id);
           } catch (err) {
             console.error("[assistant] notification SMS échouée :", err);
           }
