@@ -282,7 +282,7 @@ export default function LandingPage() {
       <section className="lp-section" id="tarifs">
         <BlurFade delay={0.05} inView>
           <p className="lp-label">Tarifs</p>
-          <h2 className="lp-h2">Sans engagement. Résiliable en un clic.</h2>
+          <h2 className="lp-h2">Abonnement sans engagement. Résiliable en un clic.</h2>
           <p className="lp-lede">
             Sept jours d&apos;essai gratuit, sans carte bancaire. Tarifs en francs suisses.
           </p>
