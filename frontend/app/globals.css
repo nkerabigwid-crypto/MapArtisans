@@ -36,6 +36,16 @@
   --accent-ink: #ffffff;
   --accent-wash: #e7edf4;
 
+  /* En-tête et pied de page : ils doivent se détacher du fond de la page.
+     Des jetons dédiés, et non `--accent` : en mode sombre celui-ci devient un
+     bleu CLAIR, et un pied de page qui l'emploierait comme fond deviendrait
+     illisible avec du texte blanc. */
+  --entete-fond: #ffffff;
+  --pdp-fond: #123f6d;
+  --pdp-texte: #ffffff;
+  --pdp-texte-doux: rgba(255, 255, 255, 0.72);
+  --pdp-ligne: rgba(255, 255, 255, 0.16);
+
   /* ---- Sémantique — jamais utilisée pour décorer ---------------------- */
   --status-good: #2f6b4f;
   --status-good-bg: #e3ece6;
@@ -80,6 +90,13 @@
     --accent-hover: #a8c7e8;
     --accent-ink: #0b1220;
     --accent-wash: #182634;
+    /* Bleu-gris profond : distinct du fond de page (#121412) sans virer au
+       clair comme le ferait --accent en mode sombre. */
+    --entete-fond: #1b1e1b;
+    --pdp-fond: #16212c;
+    --pdp-texte: #e8eae5;
+    --pdp-texte-doux: rgba(232, 234, 229, 0.68);
+    --pdp-ligne: rgba(232, 234, 229, 0.12);
     --status-good: #7cbf9a;
     --status-good-bg: #17271f;
     --status-warn: #d8b558;
@@ -960,7 +977,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.9rem 1.5rem;
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  /* Blanc plutôt que le crème du fond : la barre se détache sans qu'on ait
+     besoin d'une ombre lourde. Le voile translucide reste, pour que le contenu
+     qui défile dessous se devine. */
+  background: color-mix(in srgb, var(--entete-fond) 92%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -1714,36 +1734,47 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 
 /* --- Pied de page ------------------------------------------------------ */
-.pdp { border-top: 1px solid var(--line); margin-top: 2rem; }
+.pdp {
+  background: var(--pdp-fond);
+  color: var(--pdp-texte);
+  margin-top: 3rem;
+}
+/* Le logo hérite de `--accent` et `--ink` : sur fond bleu profond, les deux
+   disparaîtraient. On les reprend explicitement. */
+.pdp .logo, .pdp .logo-nom { color: var(--pdp-texte); }
+.pdp .logo-s { opacity: 0.55; }
 .pdp-haut {
   max-width: 1040px; margin: 0 auto; padding: 2.6rem 1.5rem 2rem;
   display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 2.5rem;
 }
 .pdp-marque { display: flex; flex-direction: column; gap: 0.7rem; }
 .pdp-baseline {
-  font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0; max-width: 30ch;
+  font-size: 0.86rem; color: var(--pdp-texte-doux); line-height: 1.55; margin: 0; max-width: 30ch;
 }
 .pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
 .pdp-col { display: flex; flex-direction: column; gap: 0.5rem; }
 .pdp-titre {
   font-family: var(--font-mono), monospace; font-size: 0.64rem;
-  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  /* Plus pâle que les liens, mais pas au point de disparaître : un titre de
+     colonne illisible fait perdre la structure qu'il sert à donner. */
+  color: var(--pdp-texte-doux);
   margin: 0 0 0.2rem; font-weight: 400;
 }
 .pdp-col a {
-  font-size: 0.88rem; color: var(--ink-soft); text-decoration: none;
+  font-size: 0.88rem; color: var(--pdp-texte-doux); text-decoration: none;
   /* Cible tactile : sur telephone, des liens de pied de page trop serres se
      touchent les uns les autres. */
   padding: 0.15rem 0;
 }
-.pdp-col a:hover { color: var(--accent); }
+.pdp-col a:hover { color: var(--pdp-texte); }
 .pdp-bas {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--pdp-ligne);
   max-width: 1040px; margin: 0 auto; padding: 1.1rem 1.5rem 2.5rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
   font-family: var(--font-mono), monospace; font-size: 0.66rem;
-  color: var(--ink-faint); letter-spacing: 0.04em;
+  color: var(--pdp-texte-doux); letter-spacing: 0.04em;
 }
 .pdp-mention { max-width: 44ch; text-align: right; }
 
