@@ -13,7 +13,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/tableau-de-bord", "/api/", "/connexion", "/abonnement"],
+      // `/admin` ne répond 404 qu'aux non-administrateurs, mais l'exclure
+      // évite qu'un moteur en signale l'existence dans ses résultats.
+      disallow: ["/tableau-de-bord", "/admin", "/api/", "/connexion", "/abonnement"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
