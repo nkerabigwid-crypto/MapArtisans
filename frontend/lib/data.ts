@@ -140,10 +140,12 @@ export const PLANS: Plan[] = [
       "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
     features: [
       "Un assistant répond à vos visiteurs pendant que vous êtes en intervention",
-      // La formulation dit maintenant les DEUX temps : l'alerte immédiate, et
-      // l'agenda qui reste. C'est le second qui règle le problème réel — un SMS
-      // perdu emportait le rendez-vous avec lui.
-      "Il note le rendez-vous, vous alerte par SMS, et tout reste dans votre agenda",
+      "Il note le rendez-vous et vous alerte par SMS",
+      // L'agenda a sa propre ligne, et pas une incise dans la précédente : le
+      // SMS PRÉVIENT, l'agenda CONSERVE. C'est le second qui règle le problème
+      // réel — un SMS perdu emportait le rendez-vous avec lui, et l'artisan
+      // revenait au carnet et aux oublis.
+      "Votre agenda en ligne : tous vos rendez-vous sur votre téléphone, plus aucun oublié",
       "Il connaît les questions courantes de votre métier",
       // FORMULATION VOLONTAIREMENT PRUDENTE.
       //
@@ -160,7 +162,7 @@ export const PLANS: Plan[] = [
       "Des publications prêtes à relire pour garder votre fiche vivante",
       "Tout ce que contient Essentiel",
     ],
-    highlight: "Vous ne ratez plus une demande pendant un chantier.",
+    highlight: "Vous ne ratez plus une demande, et plus aucun rendez-vous ne se perd.",
     recommended: false,
     maxProfiles: 1,
   },
