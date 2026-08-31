@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Logo from "@/components/Logo";
+import PiedDePage from "@/components/PiedDePage";
 import GeoPin from "@/components/GeoPin";
 import { ordinalFr } from "@/lib/format";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -360,20 +361,7 @@ export default function LandingPage() {
         </BlurFade>
       </section>
 
-      <footer className="lp-footer">
-        <span>MapArtisans — Suisse</span>
-        <nav>
-          <Link href="/questions">Questions</Link>
-          <Link href="/onboarding">Créer un compte</Link>
-          <Link href="/connexion">Connexion</Link>
-          {/* Les pages légales doivent être atteignables depuis chaque page :
-              la loi exige qu'on puisse identifier le fournisseur, et une page
-              que personne ne trouve ne remplit pas cette obligation. */}
-          <Link href="/mentions-legales">Mentions légales</Link>
-          <Link href="/confidentialite">Confidentialité</Link>
-          <Link href="/cgv">CGV</Link>
-        </nav>
-      </footer>
+      <PiedDePage />
     </div>
   );
 }

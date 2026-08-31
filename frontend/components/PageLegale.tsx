@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import PiedDePage from "@/components/PiedDePage";
 import { champsManquants, DERNIERE_REVISION } from "@/lib/legal";
 
 /**
@@ -52,15 +53,7 @@ export default function PageLegale({
         <p className="legal-revision">Dernière révision : {DERNIERE_REVISION}.</p>
       </main>
 
-      <footer className="lp-footer">
-        <span>MapArtisans — Suisse</span>
-        <nav>
-          <Link href="/">Accueil</Link>
-          <Link href="/mentions-legales">Mentions légales</Link>
-          <Link href="/confidentialite">Confidentialité</Link>
-          <Link href="/cgv">CGV</Link>
-        </nav>
-      </footer>
+      <PiedDePage />
     </div>
   );
 }

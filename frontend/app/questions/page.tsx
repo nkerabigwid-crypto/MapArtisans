@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import PiedDePage from "@/components/PiedDePage";
 import { FAQ_PUBLIQUE, toutesLesQuestions, texteBrut } from "@/lib/faqPublique";
 
 export const metadata: Metadata = {
@@ -109,14 +110,7 @@ export default function QuestionsPage() {
         </Link>
       </section>
 
-      <footer className="lp-footer">
-        <span>MapArtisans — Suisse</span>
-        <nav>
-          <Link href="/">Accueil</Link>
-          <Link href="/#tarifs">Tarifs</Link>
-          <Link href="/connexion">Connexion</Link>
-        </nav>
-      </footer>
+      <PiedDePage />
     </div>
   );
 }

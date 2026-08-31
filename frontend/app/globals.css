@@ -1712,3 +1712,44 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line);
   font-size: 0.8rem; color: var(--ink-faint);
 }
+
+/* --- Pied de page ------------------------------------------------------ */
+.pdp { border-top: 1px solid var(--line); margin-top: 2rem; }
+.pdp-haut {
+  max-width: 1040px; margin: 0 auto; padding: 2.6rem 1.5rem 2rem;
+  display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 2.5rem;
+}
+.pdp-marque { display: flex; flex-direction: column; gap: 0.7rem; }
+.pdp-baseline {
+  font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0; max-width: 30ch;
+}
+.pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
+.pdp-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.pdp-titre {
+  font-family: var(--font-mono), monospace; font-size: 0.64rem;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint);
+  margin: 0 0 0.2rem; font-weight: 400;
+}
+.pdp-col a {
+  font-size: 0.88rem; color: var(--ink-soft); text-decoration: none;
+  /* Cible tactile : sur telephone, des liens de pied de page trop serres se
+     touchent les uns les autres. */
+  padding: 0.15rem 0;
+}
+.pdp-col a:hover { color: var(--accent); }
+.pdp-bas {
+  border-top: 1px solid var(--line);
+  max-width: 1040px; margin: 0 auto; padding: 1.1rem 1.5rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 0.6rem;
+  font-family: var(--font-mono), monospace; font-size: 0.66rem;
+  color: var(--ink-faint); letter-spacing: 0.04em;
+}
+.pdp-mention { max-width: 44ch; text-align: right; }
+
+@media (max-width: 720px) {
+  .pdp-haut { grid-template-columns: 1fr; gap: 2rem; }
+  .pdp-colonnes { grid-template-columns: repeat(2, 1fr); }
+  .pdp-bas { flex-direction: column; align-items: flex-start; }
+  .pdp-mention { text-align: left; }
+}

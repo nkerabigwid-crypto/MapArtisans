@@ -1027,3 +1027,59 @@ describe("Pages légales", () => {
     assert.match(textes, /10 ans/);
   });
 });
+
+describe("Témoignages clients", () => {
+  let temoins;
+  before(async () => { temoins = await import("../../temoignages.ts"); });
+
+  test("AUCUN témoignage tant qu'il n'y a aucun client", () => {
+    // Publier de faux avis clients est une indication inexacte au sens de la
+    // LCD art. 3 al. 1 let. b. C'est aussi absurde pour ce produit
+    // précisément : on vend le refus des avis truqués. Un site qui affiche de
+    // faux témoignages en vendant l'authenticité ne survit pas à la première
+    // personne qui cherche le nom cité sur un moteur.
+    assert.equal(temoins.TEMOIGNAGES.length, 0);
+    assert.equal(temoins.assezDeTemoignages(), false);
+  });
+
+  test("un témoignage exige un nom, une entreprise et une ville réels", () => {
+    // Le test décrit le contrat pour le jour où la liste se remplira : pas de
+    // « James L. » ni de « Sarah M., Small Business Owner ».
+    for (const t of temoins.TEMOIGNAGES) {
+      assert.ok(t.auteur?.trim().length > 3, "nom complet exigé");
+      assert.ok(t.entreprise?.trim().length > 2, "entreprise réelle exigée");
+      assert.ok(t.ville?.trim().length > 2, "ville exigée");
+      assert.doesNotMatch(t.auteur, /^[A-Z][a-z]+ [A-Z]\.$/, `« ${t.auteur} » : initiale seule`);
+    }
+  });
+
+  test("une section ne s'affiche pas avec un seul témoignage", () => {
+    // Un témoignage isolé fait plus douter qu'il ne rassure.
+    assert.equal(typeof temoins.assezDeTemoignages(), "boolean");
+  });
+});
+
+describe("Pied de page", () => {
+  test("les trois pages légales y sont accessibles", async () => {
+    // La loi exige qu'on puisse identifier le fournisseur. Une page légale que
+    // personne ne trouve ne remplit pas cette obligation.
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const racine = fileURLToPath(new URL("../../../", import.meta.url));
+    const pdp = await readFile(`${racine}components/PiedDePage.tsx`, "utf8");
+    for (const lien of ["/mentions-legales", "/confidentialite", "/cgv"]) {
+      assert.ok(pdp.includes(lien), `${lien} doit figurer au pied de page`);
+    }
+  });
+
+  test("la mention sur l'origine des données Google y figure", async () => {
+    // Elle n'est pas décorative : le dossier d'accès à l'API demande de
+    // préciser comment les données sont obtenues.
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const racine = fileURLToPath(new URL("../../../", import.meta.url));
+    const pdp = await readFile(`${racine}components/PiedDePage.tsx`, "utf8");
+    assert.match(pdp, /API officielle/);
+    assert.match(pdp, /consentement/);
+  });
+});
