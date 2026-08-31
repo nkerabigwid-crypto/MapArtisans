@@ -156,6 +156,12 @@ function versEntreprise(r: any): CompanyRecord {
     companyName: r.company_name,
     tradeType: r.trade_type ?? "",
     planId: r.plan_id ?? "basique",
+    country: r.country ?? "CH",
+    planAmount: Number(r.plan_amount ?? 0),
+    subscriptionStatus: r.subscription_status ?? "trialing",
+    paymentFailedAt: r.payment_failed_at ?? null,
+    gracePeriodEndsAt: r.grace_period_ends_at ?? null,
+    canceledAt: r.canceled_at ?? null,
   } as CompanyRecord;
 }
 
@@ -308,6 +314,14 @@ export const pgRepo: Repo = {
   async listProfilesWithAutoReplyEnabled() {
     const r = await q("SELECT * FROM google_profiles WHERE ai_auto_reply = true");
     return r.map(versFiche);
+  },
+
+  async listReviewsForProfile(profileId, limite = 50) {
+    const r = await q(
+      "SELECT * FROM reviews WHERE google_profile_id = $1 ORDER BY created_at DESC LIMIT $2",
+      [profileId, limite],
+    );
+    return r.map(versAvis);
   },
 
   async listPendingReviews(profileId) {

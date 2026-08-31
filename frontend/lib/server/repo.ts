@@ -84,6 +84,15 @@ export interface CompanyRecord {
    * pas s'appuyer dessus côté serveur.
    */
   planId: string;
+
+  // --- Abonnement. Colonnes présentes depuis l'origine, exposées seulement
+  // maintenant : le tableau de bord affichait un abonnement de démonstration.
+  country: string;
+  planAmount: number;
+  subscriptionStatus: "trialing" | "active" | "past_due" | "canceled";
+  paymentFailedAt: Date | null;
+  gracePeriodEndsAt: Date | null;
+  canceledAt: Date | null;
 }
 
 export interface GoogleProfileRecord {
@@ -234,6 +243,14 @@ export interface Repo {
   // ces méthodes des méthodes ci-dessus rend visible, à la lecture d'une route
   // HTTP, qu'aucune d'elles ne devrait jamais appeler celles-ci directement.
   listProfilesWithAutoReplyEnabled(): Promise<GoogleProfileRecord[]>;
+  /**
+   * TOUS les avis d'une fiche, le plus récent d'abord.
+   *
+   * Distinct de `listPendingReviews`, réservé au worker : le tableau de bord
+   * doit montrer les avis déjà traités autant que ceux en attente, sans quoi
+   * l'artisan croit n'avoir jamais reçu d'avis.
+   */
+  listReviewsForProfile(profileId: string, limite?: number): Promise<ReviewRecord[]>;
   listPendingReviews(profileId: string): Promise<ReviewRecord[]>;
   getReviewById(reviewId: string): Promise<ReviewRecord | null>;
   getProfileById(profileId: string): Promise<GoogleProfileRecord | null>;
@@ -495,6 +512,12 @@ async function seed() {
     companyName: "Dupont Plomberie",
     tradeType: "plombier",
     planId: "professionnel",
+    country: "CH",
+    planAmount: 149,
+    subscriptionStatus: "active",
+    paymentFailedAt: null,
+    gracePeriodEndsAt: null,
+    canceledAt: null,
   });
   profiles.set("g-001", {
     id: "g-001",
@@ -526,6 +549,12 @@ async function seed() {
     companyName: "Autre Plomberie",
     tradeType: "plombier",
     planId: "professionnel",
+    country: "CH",
+    planAmount: 149,
+    subscriptionStatus: "active",
+    paymentFailedAt: null,
+    gracePeriodEndsAt: null,
+    canceledAt: null,
   });
   profiles.set("g-002", {
     id: "g-002",
@@ -565,6 +594,12 @@ async function seed() {
     companyName: "Bornand Electricite",
     tradeType: "electricien",
     planId: "professionnel",
+    country: "CH",
+    planAmount: 149,
+    subscriptionStatus: "active",
+    paymentFailedAt: null,
+    gracePeriodEndsAt: null,
+    canceledAt: null,
   });
   profiles.set("g-003", {
     id: "g-003",
@@ -678,6 +713,14 @@ export const memoryRepo: Repo = {
       companyName: input.companyName,
       tradeType: input.tradeType,
       planId: "basique",
+      country: input.country,
+      // Un compte neuf naît en essai, au tarif du palier d'entrée. Le webhook
+      // Stripe le fera passer en `active` au premier paiement encaissé.
+      planAmount: 49,
+      subscriptionStatus: "trialing",
+      paymentFailedAt: null,
+      gracePeriodEndsAt: null,
+      canceledAt: null,
     };
     companies.set(c.id, c);
     return c;
@@ -738,6 +781,13 @@ export const memoryRepo: Repo = {
   async listProfilesWithAutoReplyEnabled() {
     await seed();
     return [...profiles.values()].filter((p) => p.aiAutoReply);
+  },
+
+  async listReviewsForProfile(profileId, limite = 50) {
+    await seed();
+    return [...reviews.values()]
+      .filter((r) => r.googleProfileId === profileId)
+      .slice(0, limite);
   },
 
   async listPendingReviews(profileId) {

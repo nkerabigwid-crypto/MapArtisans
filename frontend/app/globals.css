@@ -1876,3 +1876,62 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 
 .bandeau-google-fermer:hover { color: var(--ink); }
+
+/* --- Compte sans fiche Google rattachée ---------------------------------
+   Premier écran du produit tant que l'accès API n'est pas accordé : il doit
+   être aussi soigné que le tableau de bord lui-même, pas ressembler à une
+   page d'erreur. */
+.vide {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4) var(--s-8);
+  text-align: left;
+}
+
+.vide-titre {
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-xl);
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.vide-texte {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.vide-liste {
+  margin: 0 0 var(--s-5);
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Bloc et non inline : un lien-bouton doit occuper toute la largeur du pouce
+   sur un téléphone, c'est là que l'artisan cliquera. */
+.vide-cta {
+  display: block;
+  padding: 0.85rem 1.2rem;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  text-align: center;
+  text-decoration: none;
+}
+
+.vide-cta:hover { background: var(--accent-hover); }
+
+.vide-note {
+  margin: var(--s-4) 0 0;
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
