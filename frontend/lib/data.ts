@@ -140,7 +140,10 @@ export const PLANS: Plan[] = [
       "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
     features: [
       "Un assistant répond à vos visiteurs pendant que vous êtes en intervention",
-      "Il note le rendez-vous et vous alerte par SMS",
+      // La formulation dit maintenant les DEUX temps : l'alerte immédiate, et
+      // l'agenda qui reste. C'est le second qui règle le problème réel — un SMS
+      // perdu emportait le rendez-vous avec lui.
+      "Il note le rendez-vous, vous alerte par SMS, et tout reste dans votre agenda",
       "Il connaît les questions courantes de votre métier",
       // FORMULATION VOLONTAIREMENT PRUDENTE.
       //

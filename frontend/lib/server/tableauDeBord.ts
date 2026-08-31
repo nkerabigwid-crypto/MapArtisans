@@ -33,6 +33,15 @@ import type {
  * s'ils gardent l'abonnement.
  */
 
+export interface RendezVousAffiche {
+  id: string;
+  clientName: string;
+  clientPhone: string;
+  requestedAt: string;
+  details: string | null;
+  status: "confirmed" | "honored" | "canceled";
+}
+
 export interface DonneesTableauDeBord {
   company: Company;
   /** Identifiant interne de la fiche, requis par les routes API. `null` sans fiche. */
@@ -41,6 +50,7 @@ export interface DonneesTableauDeBord {
   reviews: Review[];
   posts: Post[];
   qrCode: QrCode | null;
+  rendezVous: RendezVousAffiche[];
   /** `true` tant qu'aucune fiche Google n'est rattachée. */
   sansFiche: boolean;
 }
@@ -89,13 +99,15 @@ export async function chargerTableauDeBord(
       reviews: [],
       posts: [],
       qrCode: null,
+      rendezVous: [],
       sansFiche: true,
     };
   }
 
-  const [avis, publications] = await Promise.all([
+  const [avis, publications, rdv] = await Promise.all([
     repo.listReviewsForProfile(fiche.id),
     repo.listerPosts(fiche.id),
+    repo.listerRendezVous(fiche.id),
   ]);
 
   const profile: GoogleProfile = {
@@ -135,6 +147,17 @@ export async function chargerTableauDeBord(
         scheduled_at: p.scheduledAt.toISOString().slice(0, 10),
       }),
     ),
+    rendezVous: rdv.map((r) => ({
+      id: r.id,
+      clientName: r.clientName,
+      clientPhone: r.clientPhone,
+      // Sérialisé en ISO : une Date ne traverse pas la frontière serveur/client
+      // sans être transformée, et un format localisé côté serveur figerait la
+      // langue du navigateur de l'artisan.
+      requestedAt: r.requestedAt.toISOString(),
+      details: r.details,
+      status: r.status,
+    })),
     qrCode: fiche.placeId
       ? {
           label: "Votre QR code",

@@ -1,1 +1,1 @@
-export type ViewId = "home" | "reviews" | "posts" | "clients" | "settings";
+export type ViewId = "home" | "agenda" | "reviews" | "posts" | "clients" | "settings";

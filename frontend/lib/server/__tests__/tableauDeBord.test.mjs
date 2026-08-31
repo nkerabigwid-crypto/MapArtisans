@@ -122,3 +122,102 @@ describe("Chargement", () => {
     assert.notEqual(da.company.id, db.company.id);
   });
 });
+
+describe("Agenda", () => {
+  /*
+   * Les rendez-vous étaient ÉCRITS en base et jamais relus. L'artisan recevait
+   * un SMS et, s'il le perdait, le rendez-vous était perdu avec — soit
+   * exactement le bout de papier que l'assistant devait faire disparaître.
+   */
+  async function ficheAvecCompte() {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("agenda@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
+    });
+    const f = await repo.upsertGoogleProfile({
+      companyId: c.id,
+      googleLocationId: "locations/agenda",
+      placeId: "ChIJagenda",
+      businessName: "Ex",
+      address: null, city: "Sion", latitude: null, longitude: null,
+      accessTokenEnc: null, refreshTokenEnc: null,
+    });
+    return { repo, userId: u.id, ficheId: f.id };
+  }
+
+  test("un rendez-vous enregistré est RELU par le tableau de bord", async () => {
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.creerRendezVous({
+      profileId: ficheId,
+      clientName: "Paul",
+      clientPhone: "+41791234567",
+      requestedAt: new Date(Date.now() + 86_400_000),
+      details: "Fuite sous l'évier",
+    });
+
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.equal(d.rendezVous.length, 1);
+    assert.equal(d.rendezVous[0].clientName, "Paul");
+    assert.equal(d.rendezVous[0].status, "confirmed");
+    // Sérialisé : une Date ne traverse pas la frontière serveur/client.
+    assert.equal(typeof d.rendezVous[0].requestedAt, "string");
+  });
+
+  test("le plus proche vient en premier", async () => {
+    // Sur un téléphone consulté entre deux interventions, la seule question
+    // est « c'est quoi la suite ».
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    const base = Date.now();
+    for (const [nom, jours] of [["Loin", 5], ["Proche", 1], ["Moyen", 3]]) {
+      await repo.creerRendezVous({
+        profileId: ficheId,
+        clientName: nom,
+        clientPhone: "+41791234567",
+        requestedAt: new Date(base + jours * 86_400_000),
+      });
+    }
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.deepEqual(d.rendezVous.map((r) => r.clientName), ["Proche", "Moyen", "Loin"]);
+  });
+
+  test("un rendez-vous marqué honoré change de statut", async () => {
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.creerRendezVous({
+      profileId: ficheId, clientName: "Paul", clientPhone: "+41791234567",
+      requestedAt: new Date(Date.now() + 86_400_000),
+    });
+    const avant = await tdb.chargerTableauDeBord(userId);
+    await repo.majStatutRendezVous({
+      rendezVousId: avant.rendezVous[0].id, profileId: ficheId, statut: "honored",
+    });
+    const apres = await tdb.chargerTableauDeBord(userId);
+    assert.equal(apres.rendezVous[0].status, "honored");
+  });
+
+  test("l'agenda d'un autre artisan reste inaccessible", async () => {
+    const { repo, ficheId } = await ficheAvecCompte();
+    await repo.creerRendezVous({
+      profileId: ficheId, clientName: "Paul", clientPhone: "+41791234567",
+      requestedAt: new Date(Date.now() + 86_400_000),
+    });
+    const rdv = await repo.listerRendezVous(ficheId);
+    await assert.rejects(() =>
+      repo.majStatutRendezVous({
+        rendezVousId: rdv[0].id,
+        profileId: "fiche-d-un-autre",
+        statut: "canceled",
+      }),
+    );
+  });
+
+  test("un compte sans fiche a un agenda vide, pas une erreur", async () => {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("vide@exemple.test", "mot-de-passe-long-12");
+    await repo.createCompany({
+      userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
+    });
+    const d = await tdb.chargerTableauDeBord(u.id);
+    assert.deepEqual(d.rendezVous, []);
+  });
+});

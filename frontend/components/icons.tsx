@@ -55,3 +55,21 @@ export function GearIcon() {
     </svg>
   );
 }
+
+/**
+ * Agenda — un calendrier, la métaphore que tout le monde reconnaît.
+ *
+ * Même grammaire que les autres icônes de la barre : trait seul, pas de
+ * remplissage, coins arrondis. Une icône pleine au milieu d'icônes en trait se
+ * lirait comme un état actif permanent.
+ */
+export function AgendaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+    </svg>
+  );
+}

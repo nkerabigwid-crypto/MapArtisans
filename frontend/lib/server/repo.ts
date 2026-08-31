@@ -39,6 +39,17 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface RendezVousRecord {
+  id: string;
+  googleProfileId: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string | null;
+  requestedAt: Date;
+  details: string | null;
+  status: "confirmed" | "honored" | "canceled";
+}
+
 export interface StatistiquesAdmin {
   comptes: number;
   entreprises: number;
@@ -451,6 +462,28 @@ export interface Repo {
   /** Incrémente le compteur du jour. Appelé après acceptation, jamais avant. */
   incrementerMessagesAssistant(profileId: string): Promise<void>;
 
+  /**
+   * Rendez-vous d'une fiche, le plus proche d'abord.
+   *
+   * Ils étaient ÉCRITS et jamais relus : l'artisan recevait un SMS et, s'il le
+   * perdait, le rendez-vous était perdu avec — exactement le problème du bout
+   * de papier que l'assistant devait faire disparaître.
+   */
+  listerRendezVous(profileId: string, limite?: number): Promise<RendezVousRecord[]>;
+
+  /**
+   * Passe un rendez-vous en « honoré » ou « annulé ».
+   *
+   * `honored` et non `done` : c'est le vocabulaire imposé par la contrainte de
+   * la migration 016. Aligner le code sur la base plutôt que l'inverse évite
+   * une migration dont le seul objet serait un synonyme.
+   */
+  majStatutRendezVous(input: {
+    rendezVousId: string;
+    profileId: string;
+    statut: "honored" | "canceled";
+  }): Promise<void>;
+
   /** Enregistre une demande de rendez-vous captée par l'assistant. */
   creerRendezVous(input: {
     profileId: string;
@@ -494,7 +527,7 @@ const compteursFacture = new Map<number, number>();
 const sessionsFacturees = new Map<string, string>();
 const reglagesAssistant = new Map<string, AssistantSettingsRecord>();
 const usageAssistant = new Map<string, number>();
-const rendezVous: unknown[] = [];
+const rendezVous = new Map<string, RendezVousRecord>();
 const posts = new Map<string, PostRecord>();
 const usageSms = new Map<string, number>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
@@ -1079,7 +1112,36 @@ export const memoryRepo: Repo = {
 
   async creerRendezVous(input) {
     await seed();
-    rendezVous.push(input);
+    const r: RendezVousRecord = {
+      id: `rdv-${crypto.randomUUID()}`,
+      googleProfileId: input.profileId,
+      clientName: input.clientName,
+      clientPhone: input.clientPhone,
+      clientEmail: input.clientEmail ?? null,
+      requestedAt: input.requestedAt,
+      details: input.details ?? null,
+      status: "confirmed",
+    };
+    rendezVous.set(r.id, r);
+  },
+
+  async listerRendezVous(profileId, limite = 50) {
+    await seed();
+    return [...rendezVous.values()]
+      .filter((r) => r.googleProfileId === profileId)
+      .sort((a, b) => a.requestedAt.getTime() - b.requestedAt.getTime())
+      .slice(0, limite);
+  },
+
+  async majStatutRendezVous(input) {
+    await seed();
+    const r = rendezVous.get(input.rendezVousId);
+    // Le contrôle porte sur la fiche : un identifiant deviné ne doit pas
+    // laisser modifier le rendez-vous d'un autre artisan.
+    if (!r || r.googleProfileId !== input.profileId) {
+      throw new Error(`Rendez-vous introuvable : ${input.rendezVousId}`);
+    }
+    r.status = input.statut;
   },
 
   async listWeeklyStats() {
@@ -1191,7 +1253,7 @@ export function __resetRepo() {
   sessionsFacturees.clear();
   reglagesAssistant.clear();
   usageAssistant.clear();
-  rendezVous.length = 0;
+  rendezVous.clear();
   posts.clear();
   usageSms.clear();
   seeded = false;

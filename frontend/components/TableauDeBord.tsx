@@ -24,6 +24,7 @@ import type { ViewId } from "@/components/types";
 import type { Review, Post, Company } from "@/lib/data";
 import type { DonneesTableauDeBord } from "@/lib/server/tableauDeBord";
 import AucuneFiche from "@/components/AucuneFiche";
+import AgendaView from "@/components/AgendaView";
 import { companyVariants, geoGrid, weekStats } from "@/lib/data";
 
 /**
@@ -72,6 +73,7 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
   const [aiAutoReply, setAiAutoReply] = useState(googleProfile?.ai_auto_reply ?? true);
   const [posts, setPosts] = useState<Post[]>(donnees.posts);
   const [regenEnCours, setRegenEnCours] = useState<string | null>(null);
+  const [rendezVous, setRendezVous] = useState(donnees.rendezVous);
 
   // ?status=past_due | canceled | trialing — voir README. Sans paramètre, on
   // reste sur l'abonnement actif.
@@ -99,6 +101,28 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
   const isPastDue = company.subscription_status === "past_due";
 
   const needsReviewCount = reviews.filter((r) => r.status === "needs_review").length;
+  const rdvCount = rendezVous.filter((r) => r.status === "confirmed").length;
+
+  /**
+   * Marque un rendez-vous honoré ou annulé.
+   *
+   * L'état local est mis à jour APRÈS confirmation du serveur : l'inverse
+   * ferait disparaître un rendez-vous de l'écran alors qu'il est toujours en
+   * base, et l'artisan le retrouverait au rechargement suivant sans comprendre.
+   */
+  async function handleStatutRdv(id: string, statut: "honored" | "canceled") {
+    if (!donnees.profileId) return;
+    const reponse = await fetch("/api/rendez-vous", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ficheId: donnees.profileId, rendezVousId: id, statut }),
+    });
+    if (!reponse.ok) {
+      window.alert("La mise à jour a échoué. Réessayez dans un instant.");
+      return;
+    }
+    setRendezVous((prev) => prev.map((r) => (r.id === id ? { ...r, status: statut } : r)));
+  }
   const openReview = reviews.find((r) => r.id === openReviewId) ?? null;
 
   function handlePublish(reviewId: string, text: string) {
@@ -191,6 +215,13 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
           )}
         </main>
       )}
+      {view === "agenda" && (
+        <main>
+          <ViewGate skeleton={<ListSkeleton label="Agenda" rows={3} />} what="votre agenda">
+            <AgendaView rendezVous={rendezVous} onStatut={handleStatutRdv} />
+          </ViewGate>
+        </main>
+      )}
       {view === "reviews" && (
         <main>
           <ViewGate skeleton={<ListSkeleton label="Avis" />} what="vos avis">
@@ -226,7 +257,12 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
         </main>
       )}
 
-      <BottomNav active={view} onChange={setView} needsReviewCount={needsReviewCount} />
+      <BottomNav
+        active={view}
+        onChange={setView}
+        needsReviewCount={needsReviewCount}
+        rdvCount={rdvCount}
+      />
 
       {/* Toujours monté : Drawer a besoin de rester dans l'arbre pour jouer
           l'animation de sortie et le glissement de fermeture. */}

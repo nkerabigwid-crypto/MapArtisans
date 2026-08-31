@@ -1989,3 +1989,135 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
+
+/* --- Agenda ---------------------------------------------------------------
+   Consulté entre deux interventions, sur un téléphone, parfois avec des gants.
+   D'où des cibles tactiles larges et un prochain rendez-vous immédiatement
+   lisible sans effort de lecture. */
+.agenda { padding: var(--s-4) var(--s-4) var(--s-8); }
+
+.agenda-titre {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-lg);
+  color: var(--ink);
+}
+
+.agenda-sous-titre {
+  margin: var(--s-6) 0 var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.agenda-vide {
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.agenda-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.agenda-item {
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+
+/* Un rendez-vous dont l'heure est passée mais non traité : il ne disparaît
+   pas, il attend une décision. Le signaler évite qu'il traîne des semaines. */
+.agenda-item--passe { border-color: var(--status-warn); }
+
+.agenda-quand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: 0.2rem;
+}
+
+.agenda-jour {
+  font-size: var(--t-sm);
+  font-weight: 650;
+  color: var(--ink);
+  text-transform: capitalize;
+}
+
+.agenda-heure {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-sm);
+  color: var(--ink);
+}
+
+.agenda-qui {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.agenda-nom { font-size: var(--t-sm); color: var(--ink); }
+
+.agenda-tel {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-xs);
+  color: var(--accent);
+}
+
+.agenda-details {
+  margin: var(--s-2) 0 0;
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.agenda-actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+/* 44 px de haut : la cible tactile recommandée, et le minimum utilisable
+   d'une main sur un chantier. */
+.agenda-btn {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  font-size: var(--t-xs);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.agenda-btn--ok {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 650;
+}
+
+.agenda-btn:disabled { opacity: 0.5; cursor: default; }
+
+.agenda-item--traite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: baseline;
+  opacity: 0.65;
+  font-size: var(--t-xs);
+}
+
+.agenda-statut {
+  margin-left: auto;
+  color: var(--ink-faint);
+}

@@ -5,6 +5,7 @@ import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
   AssistantSettingsRecord,
+  RendezVousRecord,
   StatistiquesAdmin,
   PostRecord,
   FactureRecord,
@@ -90,6 +91,19 @@ function versUtilisateur(r: any): UserRecord {
     passwordHash: r.password_hash,
     role: r.role,
     phoneNumber: r.phone_number ?? null,
+  };
+}
+
+function versRendezVous(r: any): RendezVousRecord {
+  return {
+    id: r.id,
+    googleProfileId: r.google_profile_id,
+    clientName: r.client_name,
+    clientPhone: r.client_phone,
+    clientEmail: r.client_email ?? null,
+    requestedAt: r.requested_at,
+    details: r.details ?? null,
+    status: r.status,
   };
 }
 
@@ -740,6 +754,26 @@ export const pgRepo: Repo = {
        DO UPDATE SET messages = assistant_usage.messages + 1`,
       [profileId],
     );
+  },
+
+  async listerRendezVous(profileId, limite = 50) {
+    const r = await q(
+      `SELECT * FROM appointments WHERE google_profile_id = $1
+        ORDER BY requested_at ASC LIMIT $2`,
+      [profileId, limite],
+    );
+    return r.map(versRendezVous);
+  },
+
+  async majStatutRendezVous(input) {
+    // Le filtre sur google_profile_id est DANS la requête : un identifiant
+    // deviné ne doit pas laisser modifier le rendez-vous d'un autre artisan.
+    const r = await q(
+      `UPDATE appointments SET status = $3
+        WHERE id = $1 AND google_profile_id = $2 RETURNING id`,
+      [input.rendezVousId, input.profileId, input.statut],
+    );
+    if (r.length === 0) throw new Error(`Rendez-vous introuvable : ${input.rendezVousId}`);
   },
 
   async creerRendezVous(input) {
