@@ -639,3 +639,87 @@ describe("Envoi d'e-mails", () => {
     assert.equal(envoye.attachments[0].contentType, "application/pdf");
   });
 });
+
+describe("Demande d'avis par SMS", () => {
+  let avis;
+  before(async () => { avis = await import("../demandeAvis.ts"); });
+
+  const PLACE = "ChIJN1t_tDeuEmsRUsoyG83frY4";
+  const base = { placeId: PLACE, businessName: "Dupont Plomberie" };
+
+  test("le message tient en UN segment GSM-7, lien Google compris", () => {
+    // Le lien Google fait 79 caracteres a lui seul. Un accent circonflexe
+    // ferait basculer en UCS-2, ou la limite tombe a 70 : le SMS partirait
+    // systematiquement en trois segments.
+    const corps = avis.composeDemandeAvis(base);
+    assert.ok(avis.demandeFitsOneSegment(corps), corps);
+    assert.match(corps, /search\.google\.com\/local\/writereview/);
+  });
+
+  test("un nom d'entreprise a rallonge ne fait pas basculer a deux segments", () => {
+    // Sur un parc qui envoie apres chaque intervention, doubler le nombre de
+    // segments double la ligne SMS du compte d'exploitation.
+    for (const nom of [
+      "Entreprise Generale de Plomberie Sanitaire et Chauffage Dupont et Fils",
+      "A".repeat(120),
+    ]) {
+      const corps = avis.composeDemandeAvis({ ...base, businessName: nom });
+      assert.ok(avis.demandeFitsOneSegment(corps), `${corps.length} caracteres`);
+    }
+  });
+
+  test("marque blanche : le nom MapArtisans n'apparait jamais", () => {
+    const corps = avis.composeDemandeAvis({ ...base, brandName: "MonAgence SEO" });
+    assert.doesNotMatch(corps, /MapArtisans/);
+    assert.match(corps, /MonAgence SEO/);
+  });
+
+  test("AUCUN paramètre ne permet de filtrer les destinataires", () => {
+    // C'est la garantie centrale du module. Google interdit de « solliciter
+    // sélectivement les avis positifs » : offrir le choix du destinataire
+    // transformerait cet outil en ce que nous refusons de construire.
+    const source = avis.autoriserDemande.toString() + avis.composeDemandeAvis.toString();
+    assert.doesNotMatch(source, /satisfait|content|note|rating|etoile/i);
+  });
+
+  test("un numéro inutilisable est refusé AVANT tout appel à Twilio", () => {
+    const ctx = { clientPhone: "079 pas un numero", placeId: PLACE, desabonne: false, dernierEnvoi: null };
+    assert.equal(avis.autoriserDemande(ctx).raison, "numero-invalide");
+  });
+
+  test("un désabonnement est refusé, et passe avant toute autre vérification", () => {
+    // Un client qui a dit STOP ne doit pas voir son numéro comparé à des dates
+    // avant d'être écarté.
+    const ctx = { clientPhone: "+41791234567", placeId: PLACE, desabonne: true, dernierEnvoi: null };
+    assert.equal(avis.autoriserDemande(ctx).raison, "desabonne");
+  });
+
+  test("on ne redemande pas au même client avant 90 jours", () => {
+    // Un artisan qui intervient trois fois chez la même personne ne doit pas
+    // envoyer trois SMS.
+    const maintenant = new Date("2026-09-01T10:00:00Z");
+    const recent = { clientPhone: "+41791234567", placeId: PLACE, desabonne: false,
+                     dernierEnvoi: new Date("2026-08-15T10:00:00Z") };
+    assert.equal(avis.autoriserDemande(recent, maintenant).raison, "deja-sollicite");
+
+    const ancien = { ...recent, dernierEnvoi: new Date("2026-01-01T10:00:00Z") };
+    assert.equal(avis.autoriserDemande(ancien, maintenant).ok, true);
+  });
+
+  test("une fiche sans place_id ne peut rien envoyer", () => {
+    // Le lien serait vide : le client recevrait un SMS qui ne mène nulle part.
+    const ctx = { clientPhone: "+41791234567", placeId: null, desabonne: false, dernierEnvoi: null };
+    assert.equal(avis.autoriserDemande(ctx).raison, "fiche-sans-place-id");
+  });
+
+  test("STOP est reconnu, y compris dans ce qu'écrit vraiment quelqu'un d'agacé", () => {
+    // Les opérateurs suisses ne gèrent pas STOP automatiquement comme aux
+    // États-Unis : c'est à nous de le faire.
+    for (const m of ["STOP", "stop", " Stop. ", "arret", "ARRETER", "unsubscribe", "non"]) {
+      assert.equal(avis.estDesabonnement(m), true, m);
+    }
+    for (const m of ["merci beaucoup", "oui avec plaisir", "c'était parfait"]) {
+      assert.equal(avis.estDesabonnement(m), false, m);
+    }
+  });
+});
