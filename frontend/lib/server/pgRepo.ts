@@ -389,6 +389,49 @@ export const pgRepo: Repo = {
     await q(`UPDATE companies SET ${champs.join(", ")} WHERE user_id = $1`, valeurs);
   },
 
+  async estDesabonne(phone) {
+    const r = await q("SELECT 1 FROM sms_optouts WHERE phone = $1", [phone]);
+    return r.length > 0;
+  },
+
+  async dernierEnvoiAvis(profileId, phone) {
+    // On ne retient que les envois RÉUSSIS : un échec technique n'a jamais
+    // dérangé le client, il ne doit donc pas bloquer une nouvelle tentative
+    // pendant trois mois.
+    const r = await q<{ envoi: Date | null }>(
+      `SELECT max(COALESCE(sent_at, created_at)) AS envoi
+         FROM review_requests
+        WHERE google_profile_id = $1 AND client_phone = $2 AND status = 'sent'`,
+      [profileId, phone],
+    );
+    return r[0]?.envoi ?? null;
+  },
+
+  async enregistrerDemandeAvis(input) {
+    await q(
+      `INSERT INTO review_requests
+         (google_profile_id, client_phone, client_name, status, sent_at, failure_reason)
+       VALUES ($1, $2, $3, $4, CASE WHEN $4 = 'sent' THEN now() ELSE NULL END, $5)`,
+      [
+        input.profileId,
+        input.clientPhone,
+        input.clientName ?? null,
+        input.statut,
+        input.motifEchec ?? null,
+      ],
+    );
+  },
+
+  async enregistrerDesabonnement(phone, motif = "stop") {
+    // ON CONFLICT DO NOTHING : un second STOP ne doit pas écraser la date du
+    // premier, qui est la preuve de la date à laquelle le refus a été exprimé.
+    await q(
+      `INSERT INTO sms_optouts (phone, reason) VALUES ($1, $2)
+       ON CONFLICT (phone) DO NOTHING`,
+      [phone, motif],
+    );
+  },
+
   async listWeeklyStats() {
     // Une seule requête plutôt qu'une boucle avec N requêtes : la tournée
     // hebdomadaire parcourt tout le parc, et le coût d'un aller-retour par

@@ -239,6 +239,37 @@ export interface Repo {
     planId?: string | null;
   }): Promise<void>;
 
+  // --- Demandes d'avis après intervention.
+  /**
+   * Ce numéro a-t-il demandé à ne plus être sollicité ?
+   *
+   * Le registre est GLOBAL, pas par artisan : un client qui répond STOP ne
+   * s'attend pas à devoir le répéter au prochain plombier. C'est aussi ce
+   * qu'exige la LCD, qui vise le destinataire et non l'expéditeur.
+   */
+  estDesabonne(phone: string): Promise<boolean>;
+
+  /** Date du dernier SMS de demande d'avis envoyé à ce numéro pour cette fiche. */
+  dernierEnvoiAvis(profileId: string, phone: string): Promise<Date | null>;
+
+  /**
+   * Trace une demande d'avis, envoyée ou échouée.
+   *
+   * Enregistrée dans les DEUX cas : la trace sert à prouver la non-sélection
+   * exigée par Google — on a sollicité tout le monde, pas seulement les clients
+   * contents — et un échec effacé fausserait cette preuve.
+   */
+  enregistrerDemandeAvis(input: {
+    profileId: string;
+    clientPhone: string;
+    clientName?: string | null;
+    statut: "sent" | "failed";
+    motifEchec?: string | null;
+  }): Promise<void>;
+
+  /** Inscrit un numéro au registre de désabonnement. Idempotent. */
+  enregistrerDesabonnement(phone: string, motif?: string): Promise<void>;
+
   /** Fiches à qui envoyer le rapport hebdomadaire, avec leurs chiffres. */
   listWeeklyStats(): Promise<WeeklyStatsRecord[]>;
   /**
@@ -259,6 +290,14 @@ const profiles = new Map<string, GoogleProfileRecord>();
 const reviews = new Map<string, ReviewRecord>();
 const magicLinks = new Map<string, MagicLinkRecord>();
 const evenementsStripe = new Set<string>();
+const demandesAvis: {
+  profileId: string;
+  clientPhone: string;
+  clientName: string | null;
+  statut: "sent" | "failed";
+  envoyeeA: Date;
+}[] = [];
+const desabonnes = new Set<string>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -612,6 +651,35 @@ export const memoryRepo: Repo = {
       if (input.planId) (c as { tradeType: string }).tradeType = c.tradeType;
     }
   },
+  async estDesabonne(phone) {
+    await seed();
+    return desabonnes.has(phone);
+  },
+
+  async dernierEnvoiAvis(profileId, phone) {
+    await seed();
+    const dates = demandesAvis
+      .filter((d) => d.profileId === profileId && d.clientPhone === phone)
+      .map((d) => d.envoyeeA.getTime());
+    return dates.length > 0 ? new Date(Math.max(...dates)) : null;
+  },
+
+  async enregistrerDemandeAvis(input) {
+    await seed();
+    demandesAvis.push({
+      profileId: input.profileId,
+      clientPhone: input.clientPhone,
+      clientName: input.clientName ?? null,
+      statut: input.statut,
+      envoyeeA: new Date(),
+    });
+  },
+
+  async enregistrerDesabonnement(phone) {
+    await seed();
+    desabonnes.add(phone);
+  },
+
   async listWeeklyStats() {
     await seed();
     const out: WeeklyStatsRecord[] = [];

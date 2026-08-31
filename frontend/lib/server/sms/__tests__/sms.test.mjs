@@ -723,3 +723,69 @@ describe("Demande d'avis par SMS", () => {
     }
   });
 });
+
+describe("Registre de désabonnement et historique (dépôt)", () => {
+  // `avis` est portée par un autre describe : on réimporte le module ici plutôt
+  // que d'élargir sa portée, pour que ce bloc reste déplaçable tel quel.
+  let avis;
+  before(async () => { avis = await import("../demandeAvis.ts"); });
+
+  /*
+   * Ces tests portent sur la PERSISTANCE, pas sur la décision. `autoriserDemande`
+   * était déjà correcte et testée ; elle recevait simplement `desabonne: false`
+   * écrit en dur et `dernierEnvoi: null`. La logique refusait donc correctement
+   * des cas qui ne lui étaient jamais présentés.
+   */
+  test("un numéro inconnu n'est pas désabonné", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    assert.equal(await repo.estDesabonne("+41790000001"), false);
+  });
+
+  test("un STOP enregistré est retenu", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    await repo.enregistrerDesabonnement("+41790000002");
+    assert.equal(await repo.estDesabonne("+41790000002"), true);
+  });
+
+  test("sans envoi antérieur, aucune date ne bloque", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    assert.equal(await repo.dernierEnvoiAvis("g-001", "+41790000003"), null);
+  });
+
+  test("un envoi tracé produit une date, qui déclenche le délai de trois mois", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    await repo.enregistrerDemandeAvis({
+      profileId: "g-001",
+      clientPhone: "+41790000004",
+      statut: "sent",
+    });
+    const date = await repo.dernierEnvoiAvis("g-001", "+41790000004");
+    assert.ok(date instanceof Date, "une date doit être retournée");
+
+    // C'est le branchement qui manquait : la date alimente autoriserDemande.
+    const verdict = avis.autoriserDemande({
+      clientPhone: "+41790000004",
+      placeId: "ChIJexemple",
+      desabonne: false,
+      dernierEnvoi: date,
+    });
+    assert.deepEqual(verdict, { ok: false, raison: "deja-sollicite" });
+  });
+
+  test("l'historique est cloisonné par fiche", async () => {
+    // Deux artisans différents ayant servi le même client ne doivent pas se
+    // bloquer mutuellement : le délai protège du harcèlement par UN artisan.
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    await repo.enregistrerDemandeAvis({
+      profileId: "g-001",
+      clientPhone: "+41790000005",
+      statut: "sent",
+    });
+    assert.equal(await repo.dernierEnvoiAvis("g-002", "+41790000005"), null);
+  });
+});

@@ -3,7 +3,6 @@ import { getRepo } from "@/lib/server/repo";
 import { verifySession, sessionCookie } from "@/lib/server/session";
 import { autoriserDemande, composeDemandeAvis, demandeFitsOneSegment } from "@/lib/server/sms/demandeAvis";
 import { assertAffordable, resolveSmsSender } from "@/lib/server/sms/twilio";
-import { qrCode } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -51,18 +50,29 @@ export async function POST(request: NextRequest) {
 
   const entreprise = await repo.getCompanyForProfile(fiche.id);
 
-  // Les données de démonstration portent le place_id tant que l'OAuth Google
-  // n'est pas branché ; ensuite il viendra de la fiche elle-même.
-  const placeId = qrCode.place_id;
+  // Le Place ID vient de la FICHE, jamais des données de démonstration : il est
+  // récupéré auprès de Google au rattachement OAuth. Une fiche sans Place ID est
+  // écartée juste après par `autoriserDemande`.
+  const placeId = fiche.placeId;
+
+  /*
+   * Numéro normalisé UNE fois, puis utilisé partout : registre de
+   * désabonnement, historique, envoi et trace. Normaliser à chaque usage
+   * laisserait « +41 79 … » et « +4179… » cohabiter en base, et un client
+   * désabonné sous une forme continuerait de recevoir des SMS sous l'autre.
+   */
+  const numero = clientPhone.replace(/[\s.\-()]/g, "");
+
+  const [desabonne, dernierEnvoi] = await Promise.all([
+    repo.estDesabonne(numero),
+    repo.dernierEnvoiAvis(fiche.id, numero),
+  ]);
 
   const verdict = autoriserDemande({
     clientPhone,
     placeId,
-    // Registre de désabonnement et historique : à brancher sur le dépôt quand
-    // les méthodes existeront. Pour l'instant, la garde de format et de
-    // place_id est déjà appliquée.
-    desabonne: false,
-    dernierEnvoi: null,
+    desabonne,
+    dernierEnvoi,
   });
 
   if (!verdict.ok) {
@@ -94,11 +104,32 @@ export async function POST(request: NextRequest) {
   assertAffordable(message, 1);
 
   try {
-    await resolveSmsSender().send(clientPhone.replace(/[\s.\-()]/g, ""), message);
+    await resolveSmsSender().send(numero, message);
+    /*
+     * La trace est écrite APRÈS un envoi réussi. L'écrire avant bloquerait le
+     * client trois mois sur un SMS jamais parti ; l'omettre laisserait l'artisan
+     * le solliciter tous les jours.
+     */
+    await repo.enregistrerDemandeAvis({
+      profileId: fiche.id,
+      clientPhone: numero,
+      statut: "sent",
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     const raison = err instanceof Error ? err.message : String(err);
     console.error(`[avis] envoi échoué pour ${fiche.id} : ${raison}`);
+    /*
+     * L'échec est tracé lui aussi : l'historique documente la NON-SÉLECTION
+     * exigée par Google — nous sollicitons tous les clients, pas seulement les
+     * contents. Un registre où ne figurent que les succès ne prouve plus rien.
+     */
+    await repo.enregistrerDemandeAvis({
+      profileId: fiche.id,
+      clientPhone: numero,
+      statut: "failed",
+      motifEchec: raison.slice(0, 500),
+    });
     return NextResponse.json(
       { error: "L'envoi a échoué. Réessayez dans un instant." },
       { status: 503 },
