@@ -158,9 +158,12 @@ export const FAQ_PUBLIQUE: SectionFaq[] = [
         reponse:
           "<p>Un avis à 4 ou 5 étoiles reçoit sa réponse tout seul, rédigée dans le " +
           "vocabulaire de votre métier et de votre ville.</p>" +
-          "<p>En dessous, <strong>rien n'est publié</strong> : un brouillon est préparé et " +
-          "vous décidez. Nous ne répondons jamais à un client mécontent en votre nom sans " +
-          "votre accord.</p>",
+          "<p>En dessous, <strong>notre réponse n'est pas envoyée</strong> : un brouillon " +
+          "est préparé et vous décidez. Nous ne répondons jamais à un client mécontent en " +
+          "votre nom sans votre accord.</p>" +
+          "<p><strong>L'avis du client, lui, reste visible.</strong> Nous ne masquons, ne " +
+          "filtrons et ne retardons aucun avis — c'est votre réponse qui attend, jamais " +
+          "l'avis.</p>",
       },
       {
         question: "Faut-il consulter un tableau de bord tous les jours ?",

@@ -455,6 +455,12 @@ describe("Conformité : aucune promesse de tri des avis", () => {
       /avant que l'avis ne soit public/i,
       /client m[ée]content vers/i,
       /(trie|filtre)r? les clients/i,
+      // Ambiguïté, pas infraction : notre pratique est conforme — c'est la
+      // RÉPONSE qui attend l'accord de l'artisan, jamais l'avis. Mais
+      // « rien n'est publié » se lit comme « aucun avis n'est publié », soit
+      // exactement le filtrage interdit. Un examinateur Google lisant la page
+      // au moment du dossier d'accès à l'API ferait cette lecture.
+      /rien n'est publié/i,
     ];
     const fautifs = [];
 

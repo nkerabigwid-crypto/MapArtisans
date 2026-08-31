@@ -37,7 +37,7 @@ const FEATURES = [
   {
     n: "01",
     t: "Réponses aux avis par l'IA",
-    d: "Un avis à 4 ou 5 étoiles reçoit sa réponse tout seul, ancrée dans votre métier et votre ville. En dessous, rien n'est publié : l'IA prépare un brouillon et vous laisse décider. On ne répond jamais à un client mécontent en votre nom sans votre accord.",
+    d: "Un avis à 4 ou 5 étoiles reçoit sa réponse tout seul, ancrée dans votre métier et votre ville. En dessous, la réponse n'est pas envoyée : un brouillon vous attend, et vous décidez. L'avis du client, lui, reste visible sur votre fiche — nous ne masquons ni ne filtrons jamais un avis.",
   },
   {
     n: "02",

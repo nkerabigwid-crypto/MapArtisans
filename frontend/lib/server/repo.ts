@@ -573,8 +573,10 @@ export const memoryRepo: Repo = {
     const r = reviews.get(reviewId);
     if (!r) throw new Error(`Avis introuvable : ${reviewId}`);
     r.aiReplyDraft = draft;
-    // `replyText` et `status` restent intacts : rien n'est publié, et l'avis
-    // doit continuer d'apparaître dans « à valider » sur le tableau de bord.
+    // `replyText` et `status` restent intacts : NOTRE RÉPONSE n'est pas
+    // envoyée, et l'avis continue d'apparaître dans « à valider ». L'avis du
+    // client, lui, reste visible sur la fiche Google — nous n'y touchons
+    // jamais, et le formuler ainsi évite de laisser croire le contraire.
     r.status = "pending";
   },
   async markReviewFailed(reviewId) {

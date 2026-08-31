@@ -241,8 +241,9 @@ export const pgRepo: Repo = {
   },
 
   async saveReviewDraft(reviewId, draft) {
-    // `reply_text` et `status` ne bougent pas : rien n'est publié, et l'avis
-    // doit rester dans la file « à valider » du tableau de bord.
+    // `reply_text` et `status` ne bougent pas : NOTRE RÉPONSE n'est pas
+    // envoyée, et l'avis reste dans la file « à valider ». L'avis du client
+    // reste visible sur sa fiche — nous ne masquons jamais un avis.
     const r = await q(
       `UPDATE reviews SET ai_reply_draft = $2, status = 'pending'
        WHERE id = $1 RETURNING id`,

@@ -94,7 +94,12 @@ export const PLANS: Plan[] = [
     features: [
       "1 établissement",
       "Chaque avis reçoit sa réponse, dans le vocabulaire de votre métier et de votre ville",
-      "Un avis mitigé ? Rien n'est publié sans votre accord",
+      // Formulation précise : c'est la RÉPONSE qui attend, pas l'avis. « Rien
+      // n'est publié » se lisait comme « aucun avis n'est publié », soit
+      // exactement le filtrage que Google interdit — et que nous ne faisons
+      // pas. L'ambiguïté serait lue par un examinateur Google au moment du
+      // dossier d'accès à l'API.
+      "Avis mitigé ? Vous relisez notre réponse avant qu'elle ne parte",
       "Suivi Geo-Grid : 1 mot-clé",
       "Rapport SMS chaque semaine",
     ],
