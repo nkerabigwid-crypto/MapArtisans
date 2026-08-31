@@ -191,7 +191,12 @@ export default function AuditPage() {
       </section>
 
       <footer className="audit-foot">
-        <span>MapArtisans — Suisse</span>
+        {/* « Édité en Suisse » : la mention précédente accolait le nom de la marque
+            au pays, ce qui se lisait comme une limite de marché. C'est le pays de
+            l'éditeur, pas celui des clients — six pays francophones sont servis,
+            et un artisan belge ou québécois qui croit le service réservé à la
+            Suisse referme la page. */}
+        <span>MapArtisans · Édité en Suisse</span>
         <span>Audit généré le {aujourdhui}</span>
       </footer>
     </div>

@@ -20,8 +20,8 @@ export default function PiedDePage() {
         <div className="pdp-marque">
           <Logo taille={1.2} />
           <p className="pdp-baseline">
-            Visibilité Google Maps pour les artisans et les professionnels du transport, en
-            Suisse romande.
+            Visibilité Google Maps pour les artisans et les professionnels du transport.
+            Suisse, France, Belgique, Luxembourg, Canada, Monaco.
           </p>
         </div>
 
@@ -50,7 +50,12 @@ export default function PiedDePage() {
       </div>
 
       <div className="pdp-bas">
-        <span>MapArtisans — Suisse</span>
+        {/* « Édité en Suisse » : la mention précédente accolait le nom de la marque
+            au pays, ce qui se lisait comme une limite de marché. C'est le pays de
+            l'éditeur, pas celui des clients — six pays francophones sont servis,
+            et un artisan belge ou québécois qui croit le service réservé à la
+            Suisse referme la page. */}
+        <span>MapArtisans · Édité en Suisse</span>
         {/* Cette mention n'est pas décorative : le dossier d'accès à l'API
             Google demande de préciser comment les données sont obtenues, et
             un visiteur qui se demande si l'outil est légitime la cherche. */}

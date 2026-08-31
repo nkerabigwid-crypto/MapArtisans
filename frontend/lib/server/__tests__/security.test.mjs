@@ -1083,3 +1083,31 @@ describe("Pied de page", () => {
     assert.match(pdp, /consentement/);
   });
 });
+
+describe("Cohérence du marché annoncé", () => {
+  test("le pied de page ne présente pas la Suisse comme une limite de marché", async () => {
+    // « MapArtisans — Suisse » se lisait comme « service réservé à la Suisse ».
+    // C'est le pays de l'ÉDITEUR, pas celui des clients : six pays sont servis,
+    // et un artisan belge ou québécois qui lit cela referme la page.
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const racine = fileURLToPath(new URL("../../../", import.meta.url));
+    const pdp = await readFile(`${racine}components/PiedDePage.tsx`, "utf8");
+    assert.match(pdp, /Édité en Suisse/);
+    assert.doesNotMatch(pdp, /MapArtisans — Suisse/);
+  });
+
+  test("les pays annoncés correspondent à ceux que le formulaire accepte", async () => {
+    // Annoncer un pays qu'on refuse à l'inscription fait perdre le visiteur au
+    // moment précis où il allait s'inscrire.
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const racine = fileURLToPath(new URL("../../../", import.meta.url));
+    const pdp = await readFile(`${racine}components/PiedDePage.tsx`, "utf8");
+    const form = await readFile(`${racine}components/onboarding/StepBusiness.tsx`, "utf8");
+    for (const pays of ["Suisse", "France", "Belgique", "Luxembourg", "Canada", "Monaco"]) {
+      assert.ok(pdp.includes(pays), `${pays} annoncé au pied de page`);
+      assert.ok(form.includes(pays), `${pays} proposé au formulaire`);
+    }
+  });
+});
