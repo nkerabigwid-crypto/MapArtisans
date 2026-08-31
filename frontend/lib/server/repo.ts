@@ -38,6 +38,16 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface AssistantSettingsRecord {
+  googleProfileId: string;
+  widgetKey: string;
+  allowedOrigins: string[];
+  faqContext: string | null;
+  widgetColor: string;
+  dailyMessageLimit: number;
+  isActive: boolean;
+}
+
 export interface FactureRecord {
   numero: string;
   userId: string;
@@ -309,6 +319,32 @@ export interface Repo {
   /** Horodate la transmission au client. Une facture non transmise est retrouvable. */
   marquerFactureEnvoyee(numero: string): Promise<void>;
 
+  // --- Assistant du site de l'artisan.
+  /**
+   * Réglages associés à une clé de widget.
+   *
+   * La clé est publique — elle vit dans le code d'un site tiers. C'est
+   * `allowedOrigins` qui protège, pas le secret de la clé : la recherche par clé
+   * n'accorde donc rien à elle seule.
+   */
+  findAssistantSettings(widgetKey: string): Promise<AssistantSettingsRecord | null>;
+
+  /** Messages déjà consommés aujourd'hui par cette fiche. */
+  compterMessagesAssistant(profileId: string): Promise<number>;
+
+  /** Incrémente le compteur du jour. Appelé après acceptation, jamais avant. */
+  incrementerMessagesAssistant(profileId: string): Promise<void>;
+
+  /** Enregistre une demande de rendez-vous captée par l'assistant. */
+  creerRendezVous(input: {
+    profileId: string;
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string | null;
+    requestedAt: Date;
+    details?: string | null;
+  }): Promise<void>;
+
   /** Fiches à qui envoyer le rapport hebdomadaire, avec leurs chiffres. */
   listWeeklyStats(): Promise<WeeklyStatsRecord[]>;
   /**
@@ -340,6 +376,9 @@ const desabonnes = new Set<string>();
 const factures = new Map<string, FactureRecord>();
 const compteursFacture = new Map<number, number>();
 const sessionsFacturees = new Map<string, string>();
+const reglagesAssistant = new Map<string, AssistantSettingsRecord>();
+const usageAssistant = new Map<string, number>();
+const rendezVous: unknown[] = [];
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -753,6 +792,27 @@ export const memoryRepo: Repo = {
   async marquerFactureEnvoyee(numero) {
     await seed();
     if (!factures.has(numero)) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async findAssistantSettings(widgetKey) {
+    await seed();
+    return reglagesAssistant.get(widgetKey) ?? null;
+  },
+
+  async compterMessagesAssistant(profileId) {
+    await seed();
+    return usageAssistant.get(`${profileId}:${new Date().toISOString().slice(0, 10)}`) ?? 0;
+  },
+
+  async incrementerMessagesAssistant(profileId) {
+    await seed();
+    const cle = `${profileId}:${new Date().toISOString().slice(0, 10)}`;
+    usageAssistant.set(cle, (usageAssistant.get(cle) ?? 0) + 1);
+  },
+
+  async creerRendezVous(input) {
+    await seed();
+    rendezVous.push(input);
   },
 
   async listWeeklyStats() {

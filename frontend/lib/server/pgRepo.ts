@@ -4,6 +4,7 @@ import { hashPassword } from "./password";
 import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
+  AssistantSettingsRecord,
   FactureRecord,
   CompanyRecord,
   GoogleProfileRecord,
@@ -502,6 +503,64 @@ export const pgRepo: Repo = {
       [numero],
     );
     if (r.length === 0) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async findAssistantSettings(widgetKey) {
+    const r = await q("SELECT * FROM assistant_settings WHERE widget_key = $1", [widgetKey]);
+    if (!r[0]) return null;
+    const a = r[0] as Record<string, unknown>;
+    return {
+      googleProfileId: a.google_profile_id as string,
+      widgetKey: a.widget_key as string,
+      // Champ texte séparé par des virgules en base. Filtré : une virgule finale
+      // produirait une origine vide, qui correspondrait à un `Origin` absent.
+      allowedOrigins: String(a.allowed_origins ?? "")
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean),
+      faqContext: (a.faq_context as string | null) ?? null,
+      widgetColor: a.widget_color as string,
+      dailyMessageLimit: Number(a.daily_message_limit),
+      isActive: Boolean(a.is_active),
+    } satisfies AssistantSettingsRecord;
+  },
+
+  async compterMessagesAssistant(profileId) {
+    const r = await q<{ messages: string }>(
+      `SELECT messages::text AS messages FROM assistant_usage
+        WHERE google_profile_id = $1 AND jour = current_date`,
+      [profileId],
+    );
+    return r[0] ? Number(r[0].messages) : 0;
+  },
+
+  async incrementerMessagesAssistant(profileId) {
+    // UPSERT : la première requête du jour crée la ligne, les suivantes
+    // l'incrémentent. Un SELECT suivi d'un INSERT échouerait sur la clé
+    // primaire dès deux visiteurs simultanés.
+    await q(
+      `INSERT INTO assistant_usage (google_profile_id, jour, messages)
+       VALUES ($1, current_date, 1)
+       ON CONFLICT (google_profile_id, jour)
+       DO UPDATE SET messages = assistant_usage.messages + 1`,
+      [profileId],
+    );
+  },
+
+  async creerRendezVous(input) {
+    await q(
+      `INSERT INTO appointments
+         (google_profile_id, client_name, client_phone, client_email, requested_at, details)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        input.profileId,
+        input.clientName,
+        input.clientPhone,
+        input.clientEmail ?? null,
+        input.requestedAt,
+        input.details ?? null,
+      ],
+    );
   },
 
   async listWeeklyStats() {
