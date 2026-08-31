@@ -15,8 +15,17 @@ const BASE_ETABLISSEMENTS =
 /**
  * Champs demandés. `readMask` est OBLIGATOIRE sur cette API : sans lui, Google
  * répond 400. On ne demande que ce qui alimente `google_profiles`.
+ *
+ * `metadata` porte le Place ID, et il est indispensable : le lien de demande
+ * d'avis s'écrit `writereview?placeid=ChIJ…`. Sans lui, le SMS envoyé après
+ * chaque intervention et le QR code pointent vers une page vide — la
+ * fonctionnalité principale du produit, cassée sans erreur visible.
+ *
+ * L'identifiant de fiche à 19 chiffres affiché dans les paramètres Google
+ * (« ID de la fiche d'établissement ») est un TROISIÈME identifiant, réservé
+ * au support Google. Il ne fonctionne dans aucun des deux usages ci-dessus.
  */
-const CHAMPS = "name,title,storefrontAddress,latlng";
+const CHAMPS = "name,title,storefrontAddress,latlng,metadata";
 
 type Fetch = typeof globalThis.fetch;
 
@@ -32,6 +41,12 @@ export class LectureGoogleEchouee extends Error {
 export interface Etablissement {
   /** Identifiant stable, forme `locations/123…`. Clé unique en base. */
   locationId: string;
+  /**
+   * Place ID, forme `ChIJ…`. Distinct de `locationId` : c'est LUI que Google
+   * attend dans un lien d'avis. `null` si Google ne le publie pas encore, ce
+   * qui arrive sur une fiche récemment créée et non encore validée.
+   */
+  placeId: string | null;
   businessName: string;
   address: string | null;
   city: string | null;
@@ -63,6 +78,7 @@ interface LocationBrute {
     postalCode?: string;
   };
   latlng?: { latitude?: number; longitude?: number };
+  metadata?: { placeId?: string };
 }
 
 /** Mise en forme d'une adresse Google en une ligne lisible. */
@@ -82,6 +98,7 @@ export function normaliserEtablissement(brut: LocationBrute): Etablissement | nu
   if (!brut.name) return null;
   return {
     locationId: brut.name,
+    placeId: brut.metadata?.placeId?.trim() || null,
     businessName: brut.title?.trim() || "Établissement sans nom",
     address: formaterAdresse(brut.storefrontAddress),
     city: brut.storefrontAddress?.locality?.trim() || null,

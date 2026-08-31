@@ -93,6 +93,7 @@ function versFiche(r: any): GoogleProfileRecord {
     id: r.id,
     companyId: r.company_id,
     googleLocationId: r.google_location_id,
+    placeId: r.place_id ?? null,
     businessName: r.business_name,
     city: r.city ?? "",
     aiAutoReply: r.ai_auto_reply,
@@ -188,11 +189,15 @@ export const pgRepo: Repo = {
     // remplacer un jeton durable valide par NULL.
     const r = await q(
       `INSERT INTO google_profiles
-         (company_id, google_location_id, business_name, address, city,
+         (company_id, google_location_id, place_id, business_name, address, city,
           latitude, longitude, google_access_token, google_refresh_token)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (google_location_id) DO UPDATE SET
          company_id           = EXCLUDED.company_id,
+         -- COALESCE : Google ne publie pas toujours le Place ID sur une fiche
+         -- récente. Une reconnexion ne doit pas effacer celui déjà obtenu, sans
+         -- quoi les liens d'avis déjà imprimés en QR code cesseraient de viser.
+         place_id             = COALESCE(EXCLUDED.place_id, google_profiles.place_id),
          business_name        = EXCLUDED.business_name,
          address              = EXCLUDED.address,
          city                 = EXCLUDED.city,
@@ -205,6 +210,7 @@ export const pgRepo: Repo = {
       [
         input.companyId,
         input.googleLocationId,
+        input.placeId,
         input.businessName,
         input.address,
         input.city,

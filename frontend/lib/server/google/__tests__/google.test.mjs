@@ -242,6 +242,48 @@ describe("Lecture des établissements", () => {
     assert.deepEqual(r.map((e) => e.locationId), ["locations/1", "locations/2"]);
   });
 
+  test("récupère le Place ID, sans quoi la demande d'avis par SMS n'a pas de cible", () => {
+    // Trois identifiants coexistent et se confondent facilement :
+    //   locations/123…   -> l'API Business Profile
+    //   ChIJ…            -> le lien d'avis et le QR code
+    //   4532601362778…   -> le support Google, inutilisable ailleurs
+    // Oublier le second casse le SMS envoyé après chaque intervention.
+    const e = etablissements.normaliserEtablissement({
+      name: "locations/1",
+      title: "Garage du Rhône",
+      metadata: { placeId: "ChIJexemple" },
+    });
+    assert.equal(e.placeId, "ChIJexemple");
+  });
+
+  test("un Place ID absent vaut null, jamais une chaîne vide", () => {
+    // Google ne le publie pas sur une fiche récente et non encore validée.
+    // Une chaîne vide produirait un lien writereview?placeid= silencieusement
+    // cassé, là où null permet de détecter le cas.
+    const e = etablissements.normaliserEtablissement({
+      name: "locations/1",
+      title: "Nouvelle fiche",
+    });
+    assert.equal(e.placeId, null);
+  });
+
+  test("demande metadata dans readMask, sinon Google ne renvoie pas le Place ID", async () => {
+    let vue = "";
+    const fetchImpl = async (url) => {
+      const s = String(url);
+      if (s.includes("accountmanagement")) {
+        return new Response(JSON.stringify({ accounts: [{ name: "accounts/1" }] }));
+      }
+      vue = s;
+      return new Response(JSON.stringify({ locations: [] }));
+    };
+    await etablissements.listerEtablissements("jeton", fetchImpl);
+    assert.ok(
+      decodeURIComponent(vue).includes("metadata"),
+      `metadata absent du readMask : ${vue}`,
+    );
+  });
+
   test("demande readMask, sans quoi Google répond 400", async () => {
     let vue = "";
     const fetchImpl = async (url) => {

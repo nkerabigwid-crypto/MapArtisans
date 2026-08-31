@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
       await repo.upsertGoogleProfile({
         companyId: entreprise.id,
         googleLocationId: etablissement.locationId,
+        placeId: etablissement.placeId,
         businessName: etablissement.businessName,
         address: etablissement.address,
         city: etablissement.city,

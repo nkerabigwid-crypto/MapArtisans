@@ -55,6 +55,13 @@ export interface GoogleProfileRecord {
    * interne change à chaque insertion, celui-ci non.
    */
   googleLocationId: string;
+  /**
+   * Place ID (`ChIJ…`). C'est l'identifiant qu'attend un lien d'avis Google,
+   * distinct de `googleLocationId` utilisé par l'API. `null` tant que Google
+   * ne le publie pas — la fiche existe alors, mais la demande d'avis par SMS
+   * et le QR code n'ont pas de cible.
+   */
+  placeId: string | null;
   businessName: string;
   city: string;
   aiAutoReply: boolean;
@@ -152,6 +159,8 @@ export interface Repo {
   upsertGoogleProfile(input: {
     companyId: string;
     googleLocationId: string;
+    /** Place ID (`ChIJ…`) : c'est lui qu'attend un lien d'avis Google. */
+    placeId: string | null;
     businessName: string;
     address: string | null;
     city: string | null;
@@ -299,6 +308,7 @@ async function seed() {
     id: "g-001",
     companyId: "c-001",
       googleLocationId: "locations/demo-c-001",
+      placeId: "ChIJ_demo_c001",
     businessName: "Dupont Plomberie",
     city: "Lyon",
     aiAutoReply: true,
@@ -328,6 +338,7 @@ async function seed() {
     id: "g-002",
     companyId: "c-002",
       googleLocationId: "locations/demo-c-002",
+      placeId: "ChIJ_demo_c002",
     businessName: "Autre Plomberie",
     city: "Genève",
     aiAutoReply: false,
@@ -365,6 +376,7 @@ async function seed() {
     id: "g-003",
     companyId: "c-003",
       googleLocationId: "locations/demo-c-003",
+      placeId: "ChIJ_demo_c003",
     businessName: "Bornand Electricite",
     city: "Lausanne",
     aiAutoReply: true,
@@ -489,6 +501,7 @@ export const memoryRepo: Repo = {
       id: existante?.id ?? `g-${crypto.randomUUID()}`,
       companyId: input.companyId,
       googleLocationId: input.googleLocationId,
+      placeId: input.placeId ?? existante?.placeId ?? null,
       businessName: input.businessName,
       city: input.city ?? "",
       aiAutoReply: existante?.aiAutoReply ?? true,
