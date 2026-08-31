@@ -20,8 +20,8 @@ export default function PiedDePage() {
         <div className="pdp-marque">
           <Logo taille={1.2} />
           <p className="pdp-baseline">
-            Votre visibilité Google Maps, sans y passer de temps. Pour les artisans et les
-            professionnels du transport en Suisse romande.
+            Visibilité Google Maps pour les artisans et les professionnels du transport, en
+            Suisse romande.
           </p>
         </div>
 

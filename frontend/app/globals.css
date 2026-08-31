@@ -1737,40 +1737,43 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .pdp {
   background: var(--pdp-fond);
   color: var(--pdp-texte);
-  margin-top: 3rem;
+  margin-top: 1.6rem;
 }
 /* Le logo hérite de `--accent` et `--ink` : sur fond bleu profond, les deux
    disparaîtraient. On les reprend explicitement. */
 .pdp .logo, .pdp .logo-nom { color: var(--pdp-texte); }
 .pdp .logo-s { opacity: 0.55; }
+/* Espacements resserrés : le pied de page faisait 569 px, soit plus d'un
+   demi-écran de téléphone pour des liens qu'on consulte rarement. */
 .pdp-haut {
-  max-width: 1040px; margin: 0 auto; padding: 2.6rem 1.5rem 2rem;
-  display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 2.5rem;
+  max-width: 1040px; margin: 0 auto; padding: 1.5rem 1.5rem 1.1rem;
+  display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 1.4rem 2rem;
 }
-.pdp-marque { display: flex; flex-direction: column; gap: 0.7rem; }
+.pdp-marque { display: flex; flex-direction: column; gap: 0.45rem; }
 .pdp-baseline {
-  font-size: 0.86rem; color: var(--pdp-texte-doux); line-height: 1.55; margin: 0; max-width: 30ch;
+  font-size: 0.82rem; color: var(--pdp-texte-doux); line-height: 1.45; margin: 0; max-width: 34ch;
 }
-.pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; }
-.pdp-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+.pdp-col { display: flex; flex-direction: column; gap: 0.25rem; }
 .pdp-titre {
   font-family: var(--font-mono), monospace; font-size: 0.64rem;
   text-transform: uppercase; letter-spacing: 0.08em;
   /* Plus pâle que les liens, mais pas au point de disparaître : un titre de
      colonne illisible fait perdre la structure qu'il sert à donner. */
   color: var(--pdp-texte-doux);
-  margin: 0 0 0.2rem; font-weight: 400;
+  margin: 0 0 0.15rem; font-weight: 400;
 }
 .pdp-col a {
-  font-size: 0.88rem; color: var(--pdp-texte-doux); text-decoration: none;
-  /* Cible tactile : sur telephone, des liens de pied de page trop serres se
-     touchent les uns les autres. */
-  padding: 0.15rem 0;
+  font-size: 0.85rem; color: var(--pdp-texte-doux); text-decoration: none;
+  /* 0.3rem de hauteur en plus par lien : resserrer davantage ferait se
+     toucher les cibles tactiles sur téléphone, et ces liens mènent aux pages
+     légales — celles qu'on cherche justement avec précision. */
+  padding: 0.22rem 0;
 }
 .pdp-col a:hover { color: var(--pdp-texte); }
 .pdp-bas {
   border-top: 1px solid var(--pdp-ligne);
-  max-width: 1040px; margin: 0 auto; padding: 1.1rem 1.5rem 2.5rem;
+  max-width: 1040px; margin: 0 auto; padding: 0.8rem 1.5rem 1.2rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
   font-family: var(--font-mono), monospace; font-size: 0.66rem;
@@ -1779,10 +1782,21 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .pdp-mention { max-width: 44ch; text-align: right; }
 
 @media (max-width: 720px) {
-  .pdp-haut { grid-template-columns: 1fr; gap: 2rem; }
-  .pdp-colonnes { grid-template-columns: repeat(2, 1fr); }
-  .pdp-bas { flex-direction: column; align-items: flex-start; }
+  .pdp-haut { grid-template-columns: 1fr; gap: 1.1rem; }
+  /* Trois colonnes maintenues jusqu'en bas : les passer à deux ajoutait une
+     rangée entière, et le pied dépassait un demi-écran de téléphone pour des
+     liens qu'on consulte rarement. Les libellés longs se replient sur deux
+     lignes, ce qui coûte bien moins de hauteur qu'une rangée de plus. */
+  .pdp-colonnes { grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+  .pdp-bas { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
   .pdp-mention { text-align: left; }
+}
+
+@media (max-width: 420px) {
+  /* En dessous, trois colonnes deviennent illisibles : deux, mais avec la
+     baseline masquée pour compenser la rangée supplémentaire. */
+  .pdp-colonnes { grid-template-columns: repeat(2, 1fr); }
+  .pdp-baseline { display: none; }
 }
 
 /* --- Demande d'avis apres intervention --------------------------------- */
