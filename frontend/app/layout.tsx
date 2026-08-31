@@ -62,12 +62,36 @@ export const metadata: Metadata = {
     description: "Réponses aux avis par l'IA et suivi de position, pour les artisans romands.",
   },
   robots: { index: true, follow: true },
+  /**
+   * iOS ignore `display: standalone` du manifeste sur plusieurs versions
+   * encore répandues et s'appuie sur ces balises. Sans elles, l'artisan qui
+   * ajoute le site à son écran d'accueil relance simplement Safari, barre
+   * d'adresse comprise — et ne voit aucune différence avec un signet.
+   */
+  appleWebApp: {
+    capable: true,
+    title: "MapArtisans",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /**
+   * Couleur de la barre système une fois l'application lancée depuis l'écran
+   * d'accueil. Sans elle, iOS et Android peignent une bande blanche au-dessus
+   * de l'en-tête : l'application a l'air de flotter dans un navigateur, ce que
+   * le mode plein écran devait précisément faire disparaître.
+   *
+   * Deux valeurs, une par thème : la couleur claire sur un téléphone en mode
+   * sombre produirait une bande éblouissante en haut de l'écran.
+   */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1e1b" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
