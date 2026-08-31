@@ -1737,7 +1737,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .pdp {
   background: var(--pdp-fond);
   color: var(--pdp-texte);
-  margin-top: 1.6rem;
+  margin-top: 1.2rem;
 }
 /* Le logo hérite de `--accent` et `--ink` : sur fond bleu profond, les deux
    disparaîtraient. On les reprend explicitement. */
@@ -1746,12 +1746,14 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 /* Espacements resserrés : le pied de page faisait 569 px, soit plus d'un
    demi-écran de téléphone pour des liens qu'on consulte rarement. */
 .pdp-haut {
-  max-width: 1040px; margin: 0 auto; padding: 1.5rem 1.5rem 1.1rem;
-  display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 1.4rem 2rem;
+  max-width: 1040px; margin: 0 auto; padding: 1.2rem 1.5rem 0.9rem;
+  display: grid; grid-template-columns: minmax(240px, 1fr) 2fr; gap: 1.1rem 2rem;
 }
 .pdp-marque { display: flex; flex-direction: column; gap: 0.45rem; }
+/* 46ch au lieu de 34 : la phrase tient sur deux lignes au lieu de trois, et
+   c'est elle qui fixait la hauteur de toute la colonne de marque. */
 .pdp-baseline {
-  font-size: 0.82rem; color: var(--pdp-texte-doux); line-height: 1.45; margin: 0; max-width: 34ch;
+  font-size: 0.8rem; color: var(--pdp-texte-doux); line-height: 1.4; margin: 0; max-width: 46ch;
 }
 .pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
 .pdp-col { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -1773,13 +1775,18 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .pdp-col a:hover { color: var(--pdp-texte); }
 .pdp-bas {
   border-top: 1px solid var(--pdp-ligne);
-  max-width: 1040px; margin: 0 auto; padding: 0.8rem 1.5rem 1.2rem;
+  max-width: 1040px; margin: 0 auto; padding: 0.7rem 1.5rem 1rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
   font-family: var(--font-mono), monospace; font-size: 0.66rem;
   color: var(--pdp-texte-doux); letter-spacing: 0.04em;
 }
-.pdp-mention { max-width: 44ch; text-align: right; }
+/* Une seule ligne : c'est une mention, pas un paragraphe. Le `max-width: 44ch`
+   qui la coupait en deux lui donnait l'air d'un texte à lire, alors qu'elle
+   sert de note de bas de page.
+   Le repli reste autorisé sous 720 px, où une ligne de 70 caractères
+   déborderait de l'écran. */
+.pdp-mention { text-align: right; white-space: nowrap; }
 
 @media (max-width: 720px) {
   .pdp-haut { grid-template-columns: 1fr; gap: 1.1rem; }
@@ -1789,7 +1796,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
      lignes, ce qui coûte bien moins de hauteur qu'une rangée de plus. */
   .pdp-colonnes { grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
   .pdp-bas { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
-  .pdp-mention { text-align: left; }
+  .pdp-mention { text-align: left; white-space: normal; }
 }
 
 @media (max-width: 420px) {
