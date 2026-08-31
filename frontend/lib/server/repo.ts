@@ -48,6 +48,13 @@ export interface CompanyRecord {
 export interface GoogleProfileRecord {
   id: string;
   companyId: string;
+  /**
+   * Identifiant Google de l'établissement, forme `locations/123…`.
+   *
+   * C'est la clé de rapprochement lors d'une reconnexion : l'identifiant
+   * interne change à chaque insertion, celui-ci non.
+   */
+  googleLocationId: string;
   businessName: string;
   city: string;
   aiAutoReply: boolean;
@@ -126,6 +133,34 @@ export interface Repo {
     tradeType: string;
     country: string;
   }): Promise<CompanyRecord>;
+  /**
+   * Entreprise de cet utilisateur, pour y rattacher une fiche Google.
+   *
+   * Renvoie la plus ancienne s'il en a plusieurs : le rattachement automatique
+   * ne doit pas deviner. Une agence multi-entreprises choisira explicitement,
+   * quand cet écran existera.
+   */
+  findCompanyForUser(userId: string): Promise<CompanyRecord | null>;
+
+  /**
+   * Crée ou met à jour la fiche Google d'un établissement.
+   *
+   * La clé est `googleLocationId`, pas l'identifiant interne : un artisan qui
+   * reconnecte sa fiche (jeton révoqué, changement de compte Google) doit
+   * retrouver SA fiche avec son historique d'avis, pas en créer une seconde.
+   */
+  upsertGoogleProfile(input: {
+    companyId: string;
+    googleLocationId: string;
+    businessName: string;
+    address: string | null;
+    city: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    accessTokenEnc: string | null;
+    refreshTokenEnc: string | null;
+  }): Promise<GoogleProfileRecord>;
+
   /** Fiches accessibles à cet utilisateur — jamais toutes les fiches. */
   listProfilesForUser(userId: string): Promise<GoogleProfileRecord[]>;
   /**
@@ -263,6 +298,7 @@ async function seed() {
   profiles.set("g-001", {
     id: "g-001",
     companyId: "c-001",
+      googleLocationId: "locations/demo-c-001",
     businessName: "Dupont Plomberie",
     city: "Lyon",
     aiAutoReply: true,
@@ -291,6 +327,7 @@ async function seed() {
   profiles.set("g-002", {
     id: "g-002",
     companyId: "c-002",
+      googleLocationId: "locations/demo-c-002",
     businessName: "Autre Plomberie",
     city: "Genève",
     aiAutoReply: false,
@@ -327,6 +364,7 @@ async function seed() {
   profiles.set("g-003", {
     id: "g-003",
     companyId: "c-003",
+      googleLocationId: "locations/demo-c-003",
     businessName: "Bornand Electricite",
     city: "Lausanne",
     aiAutoReply: true,
@@ -437,6 +475,34 @@ export const memoryRepo: Repo = {
     companies.set(c.id, c);
     return c;
   },
+  async findCompanyForUser(userId) {
+    await seed();
+    return [...companies.values()].find((c) => c.userId === userId) ?? null;
+  },
+
+  async upsertGoogleProfile(input) {
+    await seed();
+    const existante = [...profiles.values()].find(
+      (p) => p.googleLocationId === input.googleLocationId,
+    );
+    const fiche: GoogleProfileRecord = {
+      id: existante?.id ?? `g-${crypto.randomUUID()}`,
+      companyId: input.companyId,
+      googleLocationId: input.googleLocationId,
+      businessName: input.businessName,
+      city: input.city ?? "",
+      aiAutoReply: existante?.aiAutoReply ?? true,
+      googleAccessTokenEnc: input.accessTokenEnc,
+      // Chiffres dérivés : ils viennent des relevés, pas de la connexion.
+      bestPosition: existante?.bestPosition ?? null,
+      previousPosition: existante?.previousPosition ?? null,
+      callsGenerated: existante?.callsGenerated ?? 0,
+      directionsGenerated: existante?.directionsGenerated ?? 0,
+    };
+    profiles.set(fiche.id, fiche);
+    return fiche;
+  },
+
   async listProfilesForUser(userId) {
     await seed();
     const owned = new Set(

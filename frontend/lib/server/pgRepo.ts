@@ -92,6 +92,7 @@ function versFiche(r: any): GoogleProfileRecord {
   return {
     id: r.id,
     companyId: r.company_id,
+    googleLocationId: r.google_location_id,
     businessName: r.business_name,
     city: r.city ?? "",
     aiAutoReply: r.ai_auto_reply,
@@ -163,6 +164,57 @@ export const pgRepo: Repo = {
       [input.userId, input.companyName, input.tradeType, input.country],
     );
     return versEntreprise(r[0]);
+  },
+
+  async findCompanyForUser(userId) {
+    const r = await q(
+      "SELECT * FROM companies WHERE user_id = $1 ORDER BY created_at LIMIT 1",
+      [userId],
+    );
+    return r[0] ? versEntreprise(r[0]) : null;
+  },
+
+  async upsertGoogleProfile(input) {
+    // Le conflit porte sur google_location_id, qui est UNIQUE : reconnecter une
+    // fiche met à jour l'existante au lieu d'en créer une seconde, et
+    // l'historique d'avis rattaché reste en place.
+    //
+    // ai_auto_reply est volontairement ABSENT du SET : c'est un réglage de
+    // l'artisan, et une reconnexion ne doit pas le remettre à sa valeur par
+    // défaut, ce qui réactiverait des réponses qu'il avait coupées.
+    //
+    // Le jeton de rafraîchissement n'est écrasé que si Google en renvoie un :
+    // il n'est émis qu'à la première autorisation, et COALESCE évite de
+    // remplacer un jeton durable valide par NULL.
+    const r = await q(
+      `INSERT INTO google_profiles
+         (company_id, google_location_id, business_name, address, city,
+          latitude, longitude, google_access_token, google_refresh_token)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (google_location_id) DO UPDATE SET
+         company_id           = EXCLUDED.company_id,
+         business_name        = EXCLUDED.business_name,
+         address              = EXCLUDED.address,
+         city                 = EXCLUDED.city,
+         latitude             = EXCLUDED.latitude,
+         longitude            = EXCLUDED.longitude,
+         google_access_token  = EXCLUDED.google_access_token,
+         google_refresh_token = COALESCE(EXCLUDED.google_refresh_token,
+                                         google_profiles.google_refresh_token)
+       RETURNING *`,
+      [
+        input.companyId,
+        input.googleLocationId,
+        input.businessName,
+        input.address,
+        input.city,
+        input.latitude,
+        input.longitude,
+        input.accessTokenEnc,
+        input.refreshTokenEnc,
+      ],
+    );
+    return versFiche(r[0]);
   },
 
   async listProfilesForUser(userId) {
