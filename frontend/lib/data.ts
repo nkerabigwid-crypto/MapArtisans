@@ -123,6 +123,19 @@ export const PLANS: Plan[] = [
       // portée par `highlight`, où elle devient un argument plutôt qu'une
       // réserve noyée au milieu de la liste.
       "QR code à présenter sur vos devis, factures et véhicules",
+      // FORMULATION VOLONTAIREMENT PRUDENTE.
+      //
+      // Google documente trois critères de classement local — pertinence,
+      // distance, notoriété. La fréquence de publication n'en fait pas partie.
+      // Écrire « améliore votre référencement » serait une allégation inexacte
+      // sur une prestation payante, ce que la LCD art. 3 al. 1 let. b interdit,
+      // et le premier artisan qui ne voit pas sa position bouger aurait raison
+      // de le reprocher.
+      //
+      // Ce que les publications font réellement : occuper la fiche. Entre deux
+      // plombiers, l'un a une fiche vivante, l'autre est muet depuis deux ans.
+      // C'est un argument de conversion, et il est réel.
+      "Des publications prêtes à relire pour garder votre fiche vivante",
       "Suivi Geo-Grid : 5 mots-clés",
       "Historique des positions sur 12 mois",
       "Support prioritaire",

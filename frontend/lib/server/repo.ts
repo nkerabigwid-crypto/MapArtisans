@@ -39,6 +39,16 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface PostRecord {
+  id: string;
+  googleProfileId: string;
+  content: string;
+  topicTag: string | null;
+  scheduledAt: Date;
+  status: "published" | "scheduled" | "draft";
+  createdAt: Date;
+}
+
 export interface AssistantSettingsRecord {
   googleProfileId: string;
   widgetKey: string;
@@ -68,6 +78,12 @@ export interface CompanyRecord {
   userId: string;
   companyName: string;
   tradeType: string;
+  /**
+   * Palier souscrit. La colonne existait depuis la migration 009 et n'était pas
+   * exposée : le contrôle d'accès aux fonctionnalités payantes ne pouvait donc
+   * pas s'appuyer dessus côté serveur.
+   */
+  planId: string;
 }
 
 export interface GoogleProfileRecord {
@@ -320,6 +336,25 @@ export interface Repo {
   /** Horodate la transmission au client. Une facture non transmise est retrouvable. */
   marquerFactureEnvoyee(numero: string): Promise<void>;
 
+  // --- Publications Google.
+  /** Brouillons et publications d'une fiche, la plus récente d'abord. */
+  listerPosts(profileId: string, limite?: number): Promise<PostRecord[]>;
+
+  /** Enregistre un brouillon généré. Il n'est jamais publié sans action. */
+  creerPost(input: {
+    profileId: string;
+    content: string;
+    topicTag: string | null;
+    scheduledAt: Date;
+  }): Promise<PostRecord>;
+
+  /** Remplace le texte d'un brouillon — le bouton « Régénérer ». */
+  majPost(input: {
+    postId: string;
+    profileId: string;
+    content: string;
+  }): Promise<void>;
+
   // --- Assistant du site de l'artisan.
   /**
    * Réglages associés à une clé de widget.
@@ -406,6 +441,7 @@ const sessionsFacturees = new Map<string, string>();
 const reglagesAssistant = new Map<string, AssistantSettingsRecord>();
 const usageAssistant = new Map<string, number>();
 const rendezVous: unknown[] = [];
+const posts = new Map<string, PostRecord>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -450,6 +486,7 @@ async function seed() {
     userId: u.id,
     companyName: "Dupont Plomberie",
     tradeType: "plombier",
+    planId: "pro",
   });
   profiles.set("g-001", {
     id: "g-001",
@@ -480,6 +517,7 @@ async function seed() {
     userId: other.id,
     companyName: "Autre Plomberie",
     tradeType: "plombier",
+    planId: "pro",
   });
   profiles.set("g-002", {
     id: "g-002",
@@ -518,6 +556,7 @@ async function seed() {
     userId: agence.id,
     companyName: "Bornand Electricite",
     tradeType: "electricien",
+    planId: "pro",
   });
   profiles.set("g-003", {
     id: "g-003",
@@ -630,6 +669,7 @@ export const memoryRepo: Repo = {
       userId: input.userId,
       companyName: input.companyName,
       tradeType: input.tradeType,
+      planId: "essentiel",
     };
     companies.set(c.id, c);
     return c;
@@ -819,6 +859,40 @@ export const memoryRepo: Repo = {
   async marquerFactureEnvoyee(numero) {
     await seed();
     if (!factures.has(numero)) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async listerPosts(profileId, limite = 20) {
+    await seed();
+    return [...posts.values()]
+      .filter((p) => p.googleProfileId === profileId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, limite);
+  },
+
+  async creerPost(input) {
+    await seed();
+    const post: PostRecord = {
+      id: `p-${crypto.randomUUID()}`,
+      googleProfileId: input.profileId,
+      content: input.content,
+      topicTag: input.topicTag,
+      scheduledAt: input.scheduledAt,
+      status: "draft",
+      createdAt: new Date(),
+    };
+    posts.set(post.id, post);
+    return post;
+  },
+
+  async majPost(input) {
+    await seed();
+    const p = posts.get(input.postId);
+    // Le contrôle de propriété porte sur la fiche : sans lui, un identifiant
+    // deviné laisserait réécrire la publication d'un autre artisan.
+    if (!p || p.googleProfileId !== input.profileId) {
+      throw new Error(`Publication introuvable : ${input.postId}`);
+    }
+    p.content = input.content;
   },
 
   async findAssistantSettings(widgetKey) {

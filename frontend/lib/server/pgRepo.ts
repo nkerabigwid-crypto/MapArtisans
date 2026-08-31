@@ -5,6 +5,7 @@ import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
   AssistantSettingsRecord,
+  PostRecord,
   FactureRecord,
   CompanyRecord,
   GoogleProfileRecord,
@@ -91,6 +92,18 @@ function versUtilisateur(r: any): UserRecord {
   };
 }
 
+function versPost(r: any): PostRecord {
+  return {
+    id: r.id,
+    googleProfileId: r.google_profile_id,
+    content: r.content,
+    topicTag: r.topic_tag ?? null,
+    scheduledAt: r.scheduled_at,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
 function versReglagesAssistant(r: any): AssistantSettingsRecord {
   return {
     googleProfileId: r.google_profile_id,
@@ -142,6 +155,7 @@ function versEntreprise(r: any): CompanyRecord {
     userId: r.user_id,
     companyName: r.company_name,
     tradeType: r.trade_type ?? "",
+    planId: r.plan_id ?? "essentiel",
   } as CompanyRecord;
 }
 
@@ -521,6 +535,37 @@ export const pgRepo: Repo = {
       [numero],
     );
     if (r.length === 0) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async listerPosts(profileId, limite = 20) {
+    const r = await q(
+      `SELECT * FROM posts WHERE google_profile_id = $1
+        ORDER BY created_at DESC LIMIT $2`,
+      [profileId, limite],
+    );
+    return r.map(versPost);
+  },
+
+  async creerPost(input) {
+    const r = await q(
+      `INSERT INTO posts (google_profile_id, content, topic_tag, scheduled_at, status)
+       VALUES ($1, $2, $3, $4, 'draft')
+       RETURNING *`,
+      [input.profileId, input.content, input.topicTag, input.scheduledAt],
+    );
+    return versPost(r[0]);
+  },
+
+  async majPost(input) {
+    // Le filtre sur google_profile_id est DANS la requête : un identifiant
+    // deviné ne doit pas laisser réécrire la publication d'un autre artisan.
+    const r = await q(
+      `UPDATE posts SET content = $3
+        WHERE id = $1 AND google_profile_id = $2
+        RETURNING id`,
+      [input.postId, input.profileId, input.content],
+    );
+    if (r.length === 0) throw new Error(`Publication introuvable : ${input.postId}`);
   },
 
   async findAssistantSettings(widgetKey) {
