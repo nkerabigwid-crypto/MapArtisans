@@ -4,6 +4,7 @@ import { hashPassword } from "./password";
 import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
+  FactureRecord,
   CompanyRecord,
   GoogleProfileRecord,
   Repo,
@@ -85,6 +86,21 @@ function versUtilisateur(r: any): UserRecord {
     passwordHash: r.password_hash,
     role: r.role,
     phoneNumber: r.phone_number ?? null,
+  };
+}
+
+function versFacture(r: any): FactureRecord {
+  return {
+    numero: r.numero,
+    userId: r.user_id,
+    clientNom: r.client_nom,
+    clientEmail: r.client_email ?? null,
+    designation: r.designation,
+    montantCentimes: Number(r.montant_centimes),
+    devise: r.devise,
+    tvaIde: r.tva_ide ?? null,
+    emiseLe: r.emise_le,
+    payeeLe: r.payee_le ?? null,
   };
 }
 
@@ -430,6 +446,62 @@ export const pgRepo: Repo = {
        ON CONFLICT (phone) DO NOTHING`,
       [phone, motif],
     );
+  },
+
+  async creerFacture(input) {
+    // Un webhook rejoué ne doit pas produire un second document. On regarde
+    // AVANT d'incrémenter le compteur : sinon un rejeu consommerait un numéro
+    // pour rien et creuserait un trou dans la série.
+    if (input.stripeSessionId) {
+      const deja = await q("SELECT * FROM invoices WHERE stripe_session_id = $1", [
+        input.stripeSessionId,
+      ]);
+      if (deja[0]) return versFacture(deja[0]);
+    }
+
+    const annee = new Date().getFullYear();
+    /*
+     * UNE seule instruction, donc atomique. Le UPSERT sur invoice_counters
+     * sérialise sur la clé primaire : deux paiements simultanés obtiennent deux
+     * séquences distinctes, jamais la même. Un SELECT max()+1 suivi d'un INSERT
+     * permettrait le doublon, et une série avec doublon est un problème
+     * comptable, pas un détail d'implémentation.
+     */
+    const r = await q(
+      `WITH compteur AS (
+         INSERT INTO invoice_counters (annee, dernier) VALUES ($1, 1)
+         ON CONFLICT (annee) DO UPDATE SET dernier = invoice_counters.dernier + 1
+         RETURNING dernier
+       )
+       INSERT INTO invoices
+         (numero, user_id, client_nom, client_email, designation,
+          montant_centimes, devise, tva_ide, payee_le, stripe_session_id)
+       SELECT
+         'FA-' || $1::text || '-' || lpad(compteur.dernier::text, 4, '0'),
+         $2, $3, $4, $5, $6, $7, $8, now(), $9
+       FROM compteur
+       RETURNING *`,
+      [
+        annee,
+        input.userId,
+        input.clientNom,
+        input.clientEmail,
+        input.designation,
+        input.montantCentimes,
+        input.devise,
+        input.tvaIde,
+        input.stripeSessionId,
+      ],
+    );
+    return versFacture(r[0]);
+  },
+
+  async marquerFactureEnvoyee(numero) {
+    const r = await q(
+      "UPDATE invoices SET envoyee_le = now() WHERE numero = $1 RETURNING numero",
+      [numero],
+    );
+    if (r.length === 0) throw new Error(`Facture introuvable : ${numero}`);
   },
 
   async listWeeklyStats() {

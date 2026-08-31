@@ -38,6 +38,20 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface FactureRecord {
+  numero: string;
+  userId: string;
+  clientNom: string;
+  clientEmail: string | null;
+  designation: string;
+  montantCentimes: number;
+  devise: string;
+  /** IDE en vigueur à l'émission. `null` = émetteur non assujetti. */
+  tvaIde: string | null;
+  emiseLe: Date;
+  payeeLe: Date | null;
+}
+
 export interface CompanyRecord {
   id: string;
   userId: string;
@@ -270,6 +284,31 @@ export interface Repo {
   /** Inscrit un numéro au registre de désabonnement. Idempotent. */
   enregistrerDesabonnement(phone: string, motif?: string): Promise<void>;
 
+  // --- Facturation.
+  /**
+   * Émet une facture et lui attribue son numéro, en UNE opération atomique.
+   *
+   * Deux paiements simultanés ne doivent jamais obtenir le même numéro : un
+   * `SELECT max()+1` suivi d'un `INSERT` le permettrait, et une série avec
+   * doublon est un problème comptable, pas un détail.
+   *
+   * Renvoie la facture existante si ce paiement Stripe a déjà été facturé —
+   * un webhook rejoué ne doit pas produire un second document.
+   */
+  creerFacture(input: {
+    userId: string;
+    clientNom: string;
+    clientEmail: string | null;
+    designation: string;
+    montantCentimes: number;
+    devise: string;
+    tvaIde: string | null;
+    stripeSessionId: string | null;
+  }): Promise<FactureRecord>;
+
+  /** Horodate la transmission au client. Une facture non transmise est retrouvable. */
+  marquerFactureEnvoyee(numero: string): Promise<void>;
+
   /** Fiches à qui envoyer le rapport hebdomadaire, avec leurs chiffres. */
   listWeeklyStats(): Promise<WeeklyStatsRecord[]>;
   /**
@@ -298,6 +337,9 @@ const demandesAvis: {
   envoyeeA: Date;
 }[] = [];
 const desabonnes = new Set<string>();
+const factures = new Map<string, FactureRecord>();
+const compteursFacture = new Map<number, number>();
+const sessionsFacturees = new Map<string, string>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -678,6 +720,39 @@ export const memoryRepo: Repo = {
   async enregistrerDesabonnement(phone) {
     await seed();
     desabonnes.add(phone);
+  },
+
+  async creerFacture(input) {
+    await seed();
+    if (input.stripeSessionId) {
+      const deja = [...factures.values()].find(
+        (f) => sessionsFacturees.get(f.numero) === input.stripeSessionId,
+      );
+      if (deja) return deja;
+    }
+    const annee = new Date().getFullYear();
+    const sequence = (compteursFacture.get(annee) ?? 0) + 1;
+    compteursFacture.set(annee, sequence);
+    const facture: FactureRecord = {
+      numero: `FA-${annee}-${String(sequence).padStart(4, "0")}`,
+      userId: input.userId,
+      clientNom: input.clientNom,
+      clientEmail: input.clientEmail,
+      designation: input.designation,
+      montantCentimes: input.montantCentimes,
+      devise: input.devise,
+      tvaIde: input.tvaIde,
+      emiseLe: new Date(),
+      payeeLe: new Date(),
+    };
+    factures.set(facture.numero, facture);
+    if (input.stripeSessionId) sessionsFacturees.set(facture.numero, input.stripeSessionId);
+    return facture;
+  },
+
+  async marquerFactureEnvoyee(numero) {
+    await seed();
+    if (!factures.has(numero)) throw new Error(`Facture introuvable : ${numero}`);
   },
 
   async listWeeklyStats() {

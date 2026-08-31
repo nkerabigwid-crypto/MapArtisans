@@ -209,3 +209,100 @@ describe("Configuration de facturation", () => {
     delete process.env.FACTURATION_ADRESSE;
   });
 });
+
+describe("Émission après paiement", () => {
+  /*
+   * Le générateur PDF, la numérotation et la configuration de l'émetteur étaient
+   * écrits et testés — et importés par AUCUN code de production. Un client qui
+   * payait ne recevait aucune facture. Ces tests couvrent le branchement.
+   */
+  let emission, repoMod;
+  before(async () => {
+    emission = await import("../emission.ts");
+    repoMod = await import("../../repo.ts");
+    process.env.FACTURATION_RAISON_SOCIALE = "MapArtisans Exemple";
+    process.env.FACTURATION_ADRESSE = "Rue Exemple 1 | 1000 Ville | Suisse";
+    process.env.FACTURATION_EMAIL = "contact@exemple.test";
+    delete process.env.FACTURATION_IDE;
+  });
+
+  function senderFactice() {
+    const envois = [];
+    return { envois, send: async (m) => void envois.push(m) };
+  }
+
+  test("émet une facture, la joint en PDF et l'envoie", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const sender = senderFactice();
+
+    const numero = await emission.emettreFacture(
+      { repo, userId: "u-1", email: "client@exemple.test", planId: "essentiel", stripeSessionId: "cs_1" },
+      { sender },
+    );
+
+    assert.match(numero, /^FA-\d{4}-\d{4}$/, "numéro au format attendu");
+    assert.equal(sender.envois.length, 1);
+    const [envoi] = sender.envois;
+    assert.equal(envoi.to, "client@exemple.test");
+    assert.equal(envoi.attachments.length, 1);
+    assert.equal(envoi.attachments[0].contentType, "application/pdf");
+    // Un PDF commence par %PDF- : sans ce contrôle, un Buffer vide passerait.
+    assert.equal(envoi.attachments[0].content.subarray(0, 5).toString(), "%PDF-");
+  });
+
+  test("un webhook rejoué ne produit pas une seconde facture", async () => {
+    // Stripe rejoue jusqu'à trois jours. Deux factures pour un paiement, c'est
+    // une erreur comptable que le client découvre avant nous.
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const sender = senderFactice();
+    const args = { repo, userId: "u-1", email: "c@exemple.test", planId: "essentiel", stripeSessionId: "cs_2" };
+
+    const a = await emission.emettreFacture(args, { sender });
+    const b = await emission.emettreFacture(args, { sender });
+    assert.equal(a, b, "le même numéro doit être réutilisé");
+  });
+
+  test("deux paiements reçoivent deux numéros distincts et consécutifs", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const sender = senderFactice();
+
+    const a = await emission.emettreFacture(
+      { repo, userId: "u-1", email: "a@exemple.test", planId: "essentiel", stripeSessionId: "cs_a" },
+      { sender },
+    );
+    const b = await emission.emettreFacture(
+      { repo, userId: "u-2", email: "b@exemple.test", planId: "pro", stripeSessionId: "cs_b" },
+      { sender },
+    );
+    assert.notEqual(a, b);
+    const seqA = Number(a.slice(-4));
+    const seqB = Number(b.slice(-4));
+    assert.equal(seqB, seqA + 1, "la série doit être continue");
+  });
+
+  test("un plan inconnu n'émet AUCUNE facture plutôt qu'une facture à zéro", async () => {
+    // Un document faux ne se retire pas de la comptabilité du client.
+    repoMod.__resetRepo();
+    const sender = senderFactice();
+    const numero = await emission.emettreFacture(
+      { repo: repoMod.getRepo(), userId: "u-1", email: "x@exemple.test", planId: "inexistant", stripeSessionId: "cs_x" },
+      { sender },
+    );
+    assert.equal(numero, null);
+    assert.equal(sender.envois.length, 0);
+  });
+
+  test("ne lève jamais : un échec d'envoi ne doit pas faire rejouer le paiement", async () => {
+    repoMod.__resetRepo();
+    const sender = { send: async () => { throw new Error("SMTP indisponible"); } };
+    const numero = await emission.emettreFacture(
+      { repo: repoMod.getRepo(), userId: "u-1", email: "y@exemple.test", planId: "essentiel", stripeSessionId: "cs_y" },
+      { sender },
+    );
+    // La facture reste en base avec envoyee_le à NULL : l'envoi se rattrape.
+    assert.equal(numero, null, "l'échec est signalé par null, pas par une exception");
+  });
+});

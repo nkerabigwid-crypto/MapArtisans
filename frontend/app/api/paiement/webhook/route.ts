@@ -3,6 +3,8 @@ import type Stripe from "stripe";
 import { getRepo } from "@/lib/server/repo";
 import { verifierSignature } from "@/lib/server/paiement/stripe";
 import { envoyerBienvenue } from "@/lib/server/email/bienvenue";
+import { emettreFacture } from "@/lib/server/billing/emission";
+import { type PlanId } from "@/lib/data";
 
 export const runtime = "nodejs";
 // Jamais mise en cache : chaque événement est unique et doit atteindre le code.
@@ -94,6 +96,22 @@ async function traiter(evenement: Stripe.Event, repo: ReturnType<typeof getRepo>
         // l'abonnement actif. Faire échouer le webhook ferait rejouer le
         // paiement par Stripe pour un e-mail non parti.
         await envoyerBienvenue({ userId, email: utilisateur.email }, { repo });
+
+        /*
+         * La facture suit le même principe : `emettreFacture` ne lève jamais.
+         * En Suisse elle n'est pas une courtoisie mais la pièce comptable que
+         * le client doit produire, et que le CO impose de conserver dix ans.
+         *
+         * `session.id` sert de clé d'idempotence en base : un webhook rejoué
+         * retrouve la facture existante au lieu d'en émettre une seconde.
+         */
+        await emettreFacture({
+          repo,
+          userId,
+          email: utilisateur.email,
+          planId: (session.metadata?.planId as PlanId | undefined) ?? null,
+          stripeSessionId: session.id,
+        });
       }
       break;
     }
