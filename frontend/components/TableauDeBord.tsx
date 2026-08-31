@@ -26,11 +26,6 @@ import type { DonneesTableauDeBord } from "@/lib/server/tableauDeBord";
 import AucuneFiche from "@/components/AucuneFiche";
 import { companyVariants, geoGrid, weekStats } from "@/lib/data";
 
-const REGENERATED_DRAFTS = [
-  "Chaudière en panne juste avant le week-end ? Dupont Plomberie intervient le jour même sur Lyon.",
-  "Un doute sur une fuite ? Un diagnostic rapide évite souvent une réparation bien plus lourde.",
-];
-
 /**
  * Valeurs de repli pour les écrans qui exigent une fiche.
  *
@@ -76,7 +71,7 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
   const [openReviewId, setOpenReviewId] = useState<string | null>(null);
   const [aiAutoReply, setAiAutoReply] = useState(googleProfile?.ai_auto_reply ?? true);
   const [posts, setPosts] = useState<Post[]>(donnees.posts);
-  const [regenCount, setRegenCount] = useState(0);
+  const [regenEnCours, setRegenEnCours] = useState<string | null>(null);
 
   // ?status=past_due | canceled | trialing — voir README. Sans paramètre, on
   // reste sur l'abonnement actif.
@@ -116,12 +111,43 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
   }
 
 
-  function handleRegeneratePost(postId: string) {
-    const nextDraft = REGENERATED_DRAFTS[regenCount % REGENERATED_DRAFTS.length];
-    setRegenCount((n) => n + 1);
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, content: nextDraft } : p))
-    );
+  /**
+   * Régénération réelle d'une publication.
+   *
+   * Ce bouton piochait auparavant dans deux textes écrits en dur qu'il faisait
+   * tourner : l'artisan croyait voir une IA travailler. Il appelle désormais
+   * /api/posts, qui vérifie le palier côté serveur et enregistre le résultat.
+   */
+  async function handleRegeneratePost(postId: string) {
+    if (!donnees.profileId || regenEnCours) return;
+    const post = posts.find((p) => p.id === postId);
+    setRegenEnCours(postId);
+    try {
+      const reponse = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ficheId: donnees.profileId,
+          sujet: post?.topic_tag ?? "conseil",
+          postId,
+        }),
+      });
+      const data = await reponse.json();
+      if (!reponse.ok) {
+        // Le message du serveur est affiché tel quel : il explique le plafond
+        // atteint ou le palier requis, ce qu'un « une erreur est survenue »
+        // ne dirait pas.
+        window.alert(data.error ?? "La régénération a échoué.");
+        return;
+      }
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, content: data.content } : p))
+      );
+    } catch {
+      window.alert("La régénération a échoué. Réessayez dans un instant.");
+    } finally {
+      setRegenEnCours(null);
+    }
   }
 
   return (

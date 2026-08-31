@@ -35,6 +35,8 @@ import type {
 
 export interface DonneesTableauDeBord {
   company: Company;
+  /** Identifiant interne de la fiche, requis par les routes API. `null` sans fiche. */
+  profileId: string | null;
   profile: GoogleProfile | null;
   reviews: Review[];
   posts: Post[];
@@ -80,7 +82,15 @@ export async function chargerTableauDeBord(
   const fiche = fiches[0] ?? null;
 
   if (!fiche) {
-    return { company, profile: null, reviews: [], posts: [], qrCode: null, sansFiche: true };
+    return {
+      company,
+      profileId: null,
+      profile: null,
+      reviews: [],
+      posts: [],
+      qrCode: null,
+      sansFiche: true,
+    };
   }
 
   const [avis, publications] = await Promise.all([
@@ -101,6 +111,7 @@ export async function chargerTableauDeBord(
 
   return {
     company,
+    profileId: fiche.id,
     profile,
     reviews: avis.map(
       (r): Review => ({
