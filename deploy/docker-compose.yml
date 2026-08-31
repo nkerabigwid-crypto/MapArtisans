@@ -103,6 +103,25 @@ services:
       redis: { condition: service_healthy }
     networks: [interne]
 
+  # Remplit les files que les deux workers consomment. Sans ce service, ils
+  # tournent indéfiniment à vide : aucun avis traité, aucun rapport envoyé, et
+  # rien qui le signale — conteneurs verts, aucune erreur.
+  planificateur:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    command: ["npm", "run", "planificateur:prod"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [interne]
+
   worker-rapports:
     build:
       context: ../frontend

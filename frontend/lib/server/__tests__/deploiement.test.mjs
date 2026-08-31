@@ -85,6 +85,7 @@ function variablesDuService(service) {
 const SERVICES = [
   { service: "worker-avis", entree: "lib/server/queue/reviewWorker.ts" },
   { service: "worker-rapports", entree: "lib/server/queue/reportWorker.ts" },
+  { service: "planificateur", entree: "workers/planificateur.ts" },
 ];
 
 for (const { service, entree } of SERVICES) {

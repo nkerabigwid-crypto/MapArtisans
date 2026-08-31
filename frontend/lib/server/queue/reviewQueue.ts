@@ -44,10 +44,12 @@ export function getReviewReplyQueue(): Queue<ReviewReplyJobData> {
  * Met en file un job de réponse pour chaque avis en attente des fiches ayant
  * activé la réponse automatique.
  *
- * Le déclenchement périodique lui-même (BullMQ « repeatable job », ou un cron
- * externe qui appelle ce script) est délibérément hors de cette fonction :
- * elle décrit UNE exécution, pas la programmation. Voir
- * workers/reviewScheduler.ts pour l'appel périodique.
+ * Le déclenchement périodique est délibérément hors de cette fonction : elle
+ * décrit UNE exécution, pas la programmation. Voir workers/planificateur.ts.
+ *
+ * Ce commentaire renvoyait à `workers/reviewScheduler.ts`, un fichier qui n'a
+ * jamais été écrit — et c'est exactement pour cela qu'aucun avis n'était traité
+ * en production : la fonction n'était appelée que par les tests.
  */
 export async function enqueuePendingReviews(repo: Repo): Promise<number> {
   const q = getReviewReplyQueue();
