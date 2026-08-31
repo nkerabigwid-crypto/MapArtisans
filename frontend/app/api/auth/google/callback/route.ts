@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       : null;
 
     for (const etablissement of etablissements) {
-      await repo.upsertGoogleProfile({
+      const fiche = await repo.upsertGoogleProfile({
         companyId: entreprise.id,
         googleLocationId: etablissement.locationId,
         placeId: etablissement.placeId,
@@ -102,6 +102,16 @@ export async function GET(request: NextRequest) {
         accessTokenEnc,
         refreshTokenEnc,
       });
+
+      /*
+       * Les réglages de l'assistant naissent avec la fiche. Sans cette ligne, la
+       * clé de widget n'existe nulle part et l'assistant reste inatteignable —
+       * exactement le défaut qu'on vient de corriger sur la route elle-même.
+       *
+       * Idempotent : une reconnexion ne regénère pas la clé, qui est déjà collée
+       * dans le HTML du site de l'artisan.
+       */
+      await repo.creerReglagesAssistant(fiche.id);
     }
 
     return retour("connecte");

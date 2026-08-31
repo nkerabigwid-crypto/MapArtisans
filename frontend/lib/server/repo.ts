@@ -8,6 +8,7 @@
 // client" (vérifié), et chaque route Next qui l'utilise déclare elle-même
 // `export const runtime = "nodejs"`.
 import type { MagicLinkRecord } from "./magicLink";
+import { genererWidgetKey } from "./assistant/access";
 import { hashPassword } from "./password";
 import type { AgencyBrandingRecord } from "./branding";
 import { pgRepo } from "./pgRepo";
@@ -328,6 +329,32 @@ export interface Repo {
    * n'accorde donc rien à elle seule.
    */
   findAssistantSettings(widgetKey: string): Promise<AssistantSettingsRecord | null>;
+
+  /**
+   * Crée les réglages de l'assistant d'une fiche, s'ils n'existent pas.
+   *
+   * Idempotent : appelée à chaque rattachement OAuth, y compris lors d'une
+   * reconnexion. Regénérer la clé casserait le widget déjà collé sur le site de
+   * l'artisan, sans qu'il comprenne pourquoi.
+   *
+   * L'assistant naît DÉSACTIVÉ et sans origine autorisée : tant que l'artisan
+   * n'a pas déclaré son domaine, aucune requête ne peut consommer son budget.
+   */
+  creerReglagesAssistant(profileId: string): Promise<AssistantSettingsRecord>;
+
+  /** Réglages d'une fiche appartenant à cet utilisateur, ou `null`. */
+  findAssistantSettingsForUser(
+    userId: string,
+    profileId: string,
+  ): Promise<AssistantSettingsRecord | null>;
+
+  /** Met à jour ce que l'artisan contrôle : domaines, activation, base de connaissances. */
+  majReglagesAssistant(input: {
+    profileId: string;
+    allowedOrigins?: string[];
+    faqContext?: string | null;
+    isActive?: boolean;
+  }): Promise<void>;
 
   /** Messages déjà consommés aujourd'hui par cette fiche. */
   compterMessagesAssistant(profileId: string): Promise<number>;
@@ -797,6 +824,47 @@ export const memoryRepo: Repo = {
   async findAssistantSettings(widgetKey) {
     await seed();
     return reglagesAssistant.get(widgetKey) ?? null;
+  },
+
+  async creerReglagesAssistant(profileId) {
+    await seed();
+    const existants = [...reglagesAssistant.values()].find(
+      (r) => r.googleProfileId === profileId,
+    );
+    if (existants) return existants;
+    const reglages: AssistantSettingsRecord = {
+      googleProfileId: profileId,
+      widgetKey: genererWidgetKey(),
+      allowedOrigins: [],
+      faqContext: null,
+      widgetColor: "#123f6d",
+      dailyMessageLimit: 200,
+      isActive: false,
+    };
+    reglagesAssistant.set(reglages.widgetKey, reglages);
+    return reglages;
+  },
+
+  async findAssistantSettingsForUser(userId, profileId) {
+    await seed();
+    const p = profiles.get(profileId);
+    if (!p) return null;
+    const company = companies.get(p.companyId);
+    if (!company || company.userId !== userId) return null;
+    return (
+      [...reglagesAssistant.values()].find((r) => r.googleProfileId === profileId) ?? null
+    );
+  },
+
+  async majReglagesAssistant(input) {
+    await seed();
+    const r = [...reglagesAssistant.values()].find(
+      (x) => x.googleProfileId === input.profileId,
+    );
+    if (!r) throw new Error(`Réglages introuvables : ${input.profileId}`);
+    if (input.allowedOrigins !== undefined) r.allowedOrigins = input.allowedOrigins;
+    if (input.faqContext !== undefined) r.faqContext = input.faqContext;
+    if (input.isActive !== undefined) r.isActive = input.isActive;
   },
 
   async compterMessagesAssistant(profileId) {

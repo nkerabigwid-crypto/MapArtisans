@@ -471,3 +471,69 @@ describe("Tour de conversation (branchement OpenAI)", () => {
     assert.equal(vu.messages.length, repondre.TOURS_MAX + 2);
   });
 });
+
+describe("Naissance de la clé de widget", () => {
+  /*
+   * `genererWidgetKey` existait et n'était appelée par personne : la clé
+   * n'existait nulle part, donc aucun artisan ne pouvait installer l'assistant.
+   * Elle naît désormais avec la fiche Google.
+   */
+  let repoMod;
+  before(async () => { repoMod = await import("../../repo.ts"); });
+
+  test("une fiche rattachée reçoit une clé, désactivée et sans domaine", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const r = await repo.creerReglagesAssistant("g-001");
+
+    assert.ok(r.widgetKey.length >= 24, "clé assez longue pour ne pas se deviner");
+    // Désactivé et sans origine : tant que l'artisan n'a pas déclaré son site,
+    // aucune requête ne peut consommer son budget OpenAI.
+    assert.equal(r.isActive, false);
+    assert.deepEqual(r.allowedOrigins, []);
+  });
+
+  test("une reconnexion NE regénère PAS la clé", async () => {
+    // Elle est collée dans le HTML du site de l'artisan : la changer casserait
+    // son widget sans qu'il comprenne pourquoi.
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const a = await repo.creerReglagesAssistant("g-001");
+    const b = await repo.creerReglagesAssistant("g-001");
+    assert.equal(a.widgetKey, b.widgetKey);
+  });
+
+  test("deux fiches ont deux clés distinctes", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const a = await repo.creerReglagesAssistant("g-001");
+    const b = await repo.creerReglagesAssistant("g-002");
+    assert.notEqual(a.widgetKey, b.widgetKey);
+  });
+
+  test("la clé n'est lisible que par le propriétaire de la fiche", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    await repo.creerReglagesAssistant("g-001");
+    const fiche = await repo.getProfileById("g-001");
+    const entreprise = await repo.getCompanyForProfile(fiche.id);
+
+    const sien = await repo.findAssistantSettingsForUser(entreprise.userId, "g-001");
+    assert.ok(sien, "le propriétaire doit pouvoir la lire");
+
+    const autre = await repo.findAssistantSettingsForUser("u-inconnu", "g-001");
+    assert.equal(autre, null, "un tiers ne doit rien obtenir");
+  });
+
+  test("la clé seule ne suffit pas : sans domaine déclaré, tout est refusé", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.getRepo();
+    const r = await repo.creerReglagesAssistant("g-001");
+    const verdict = acces.autoriserDemande(r, {
+      message: "bonjour",
+      origine: "https://nimporte-quel-site.test",
+      messagesAujourdhui: 0,
+    });
+    assert.equal(verdict.ok, false);
+  });
+});

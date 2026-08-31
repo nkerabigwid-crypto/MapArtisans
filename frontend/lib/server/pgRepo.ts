@@ -14,6 +14,7 @@ import type {
   WeeklyStatsRecord,
 } from "./repo";
 import { normalizeEmail } from "./repo";
+import { genererWidgetKey } from "./assistant/access";
 
 /**
  * Dépôt PostgreSQL — l'implémentation de production.
@@ -87,6 +88,23 @@ function versUtilisateur(r: any): UserRecord {
     passwordHash: r.password_hash,
     role: r.role,
     phoneNumber: r.phone_number ?? null,
+  };
+}
+
+function versReglagesAssistant(r: any): AssistantSettingsRecord {
+  return {
+    googleProfileId: r.google_profile_id,
+    widgetKey: r.widget_key,
+    // Champ texte séparé par des virgules en base. Filtré : une virgule finale
+    // produirait une origine vide, qui correspondrait à un `Origin` absent.
+    allowedOrigins: String(r.allowed_origins ?? "")
+      .split(",")
+      .map((o: string) => o.trim())
+      .filter(Boolean),
+    faqContext: r.faq_context ?? null,
+    widgetColor: r.widget_color,
+    dailyMessageLimit: Number(r.daily_message_limit),
+    isActive: Boolean(r.is_active),
   };
 }
 
@@ -507,22 +525,65 @@ export const pgRepo: Repo = {
 
   async findAssistantSettings(widgetKey) {
     const r = await q("SELECT * FROM assistant_settings WHERE widget_key = $1", [widgetKey]);
-    if (!r[0]) return null;
-    const a = r[0] as Record<string, unknown>;
-    return {
-      googleProfileId: a.google_profile_id as string,
-      widgetKey: a.widget_key as string,
-      // Champ texte séparé par des virgules en base. Filtré : une virgule finale
-      // produirait une origine vide, qui correspondrait à un `Origin` absent.
-      allowedOrigins: String(a.allowed_origins ?? "")
-        .split(",")
-        .map((o) => o.trim())
-        .filter(Boolean),
-      faqContext: (a.faq_context as string | null) ?? null,
-      widgetColor: a.widget_color as string,
-      dailyMessageLimit: Number(a.daily_message_limit),
-      isActive: Boolean(a.is_active),
-    } satisfies AssistantSettingsRecord;
+    return r[0] ? versReglagesAssistant(r[0]) : null;
+  },
+
+  async creerReglagesAssistant(profileId) {
+    /*
+     * DO NOTHING et non DO UPDATE : une reconnexion OAuth ne doit pas regénérer
+     * la clé. Elle est collée dans le HTML du site de l'artisan — la changer
+     * casserait son widget sans qu'il comprenne pourquoi.
+     *
+     * L'assistant naît désactivé, sans origine autorisée : tant que l'artisan
+     * n'a pas déclaré son domaine, aucune requête ne peut consommer son budget.
+     */
+    await q(
+      `INSERT INTO assistant_settings (google_profile_id, widget_key, allowed_origins, is_active)
+       VALUES ($1, $2, '', false)
+       ON CONFLICT (google_profile_id) DO NOTHING`,
+      [profileId, genererWidgetKey()],
+    );
+    const r = await q("SELECT * FROM assistant_settings WHERE google_profile_id = $1", [
+      profileId,
+    ]);
+    return versReglagesAssistant(r[0]);
+  },
+
+  async findAssistantSettingsForUser(userId, profileId) {
+    // Le filtre de propriété est DANS la requête : la clé de widget ne doit
+    // jamais pouvoir être lue par un autre utilisateur.
+    const r = await q(
+      `SELECT a.* FROM assistant_settings a
+         JOIN google_profiles gp ON gp.id = a.google_profile_id
+         JOIN companies c ON c.id = gp.company_id
+        WHERE c.user_id = $1 AND a.google_profile_id = $2`,
+      [userId, profileId],
+    );
+    return r[0] ? versReglagesAssistant(r[0]) : null;
+  },
+
+  async majReglagesAssistant(input) {
+    const champs: string[] = [];
+    const valeurs: unknown[] = [input.profileId];
+    if (input.allowedOrigins !== undefined) {
+      valeurs.push(input.allowedOrigins.join(","));
+      champs.push(`allowed_origins = $${valeurs.length}`);
+    }
+    if (input.faqContext !== undefined) {
+      valeurs.push(input.faqContext);
+      champs.push(`faq_context = $${valeurs.length}`);
+    }
+    if (input.isActive !== undefined) {
+      valeurs.push(input.isActive);
+      champs.push(`is_active = $${valeurs.length}`);
+    }
+    if (champs.length === 0) return;
+    const r = await q(
+      `UPDATE assistant_settings SET ${champs.join(", ")}
+        WHERE google_profile_id = $1 RETURNING google_profile_id`,
+      valeurs,
+    );
+    if (r.length === 0) throw new Error(`Réglages introuvables : ${input.profileId}`);
   },
 
   async compterMessagesAssistant(profileId) {
