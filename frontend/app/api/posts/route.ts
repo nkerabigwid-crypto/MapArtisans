@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 /**
  * Génération des publications Google.
  *
- * RÉSERVÉ AUX PALIERS PRO ET COMPLET
+ * RÉSERVÉ AU PALIER PROFESSIONNEL
  *
  * Le contrôle est ici, côté serveur, et pas seulement dans l'affichage : une
  * fonctionnalité facturée qui se déclenche depuis la console d'un navigateur
@@ -22,7 +22,7 @@ export const runtime = "nodejs";
  * qu'il l'ait relu.
  */
 
-const PALIERS_AUTORISES: PlanId[] = ["complet"];
+const PALIERS_AUTORISES: PlanId[] = ["professionnel"];
 
 /** Précisions libres de l'artisan. Court : c'est un aide-mémoire, pas un brief. */
 const PRECISIONS_MAX = 300;
@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
   }
 
   const entreprise = await repo.getCompanyForProfile(fiche.id);
-  const plan = (entreprise?.planId ?? "essentiel") as PlanId;
+  const plan = (entreprise?.planId ?? "basique") as PlanId;
   if (!PALIERS_AUTORISES.includes(plan)) {
     return NextResponse.json(
-      { error: "Les publications sont incluses dans le palier Complet." },
+      { error: "Les publications sont incluses dans le palier Professionnel." },
       { status: 403 },
     );
   }

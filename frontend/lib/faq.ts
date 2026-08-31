@@ -5,7 +5,7 @@
  *
  * `assistant_settings.faq_context` attend une base de connaissances rédigée
  * par l'artisan. Aucun ne le fera : il est sous un évier ou au volant. Sans
- * base de départ, l'assistant du palier Complet répondrait « je ne sais pas »
+ * base de départ, l'assistant du palier Professionnel répondrait « je ne sais pas »
  * à tout, dès la première minute.
  *
  * LA CONTRAINTE QUI GOUVERNE CHAQUE LIGNE

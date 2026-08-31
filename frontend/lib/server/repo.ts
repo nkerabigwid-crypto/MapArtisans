@@ -486,7 +486,7 @@ async function seed() {
     userId: u.id,
     companyName: "Dupont Plomberie",
     tradeType: "plombier",
-    planId: "pro",
+    planId: "professionnel",
   });
   profiles.set("g-001", {
     id: "g-001",
@@ -517,7 +517,7 @@ async function seed() {
     userId: other.id,
     companyName: "Autre Plomberie",
     tradeType: "plombier",
-    planId: "pro",
+    planId: "professionnel",
   });
   profiles.set("g-002", {
     id: "g-002",
@@ -556,7 +556,7 @@ async function seed() {
     userId: agence.id,
     companyName: "Bornand Electricite",
     tradeType: "electricien",
-    planId: "pro",
+    planId: "professionnel",
   });
   profiles.set("g-003", {
     id: "g-003",
@@ -669,7 +669,7 @@ export const memoryRepo: Repo = {
       userId: input.userId,
       companyName: input.companyName,
       tradeType: input.tradeType,
-      planId: "essentiel",
+      planId: "basique",
     };
     companies.set(c.id, c);
     return c;

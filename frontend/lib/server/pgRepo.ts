@@ -155,7 +155,7 @@ function versEntreprise(r: any): CompanyRecord {
     userId: r.user_id,
     companyName: r.company_name,
     tradeType: r.trade_type ?? "",
-    planId: r.plan_id ?? "essentiel",
+    planId: r.plan_id ?? "basique",
   } as CompanyRecord;
 }
 
@@ -209,7 +209,7 @@ export const pgRepo: Repo = {
     // plutôt que d'enregistrer une facturation impossible.
     const r = await q(
       `INSERT INTO companies (user_id, company_name, trade_type, country, currency, plan_id)
-       VALUES ($1, $2, $3, $4, 'CHF', 'essentiel')
+       VALUES ($1, $2, $3, $4, 'CHF', 'basique')
        RETURNING *`,
       [input.userId, input.companyName, input.tradeType, input.country],
     );

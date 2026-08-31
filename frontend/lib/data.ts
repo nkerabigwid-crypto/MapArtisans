@@ -49,7 +49,7 @@ export function formatPlanLabel(company: Pick<Company, "plan_amount">) {
  * clients souscrit désormais cinq abonnements au prix affiché — un seul prix
  * public, vérifiable par tout le monde.
  */
-export type PlanId = "essentiel" | "pro" | "complet";
+export type PlanId = "basique" | "essentiel" | "professionnel";
 
 export interface Plan {
   id: PlanId;
@@ -86,8 +86,8 @@ export interface Plan {
  */
 export const PLANS: Plan[] = [
   {
-    id: "essentiel",
-    name: "Essentiel",
+    id: "basique",
+    name: "Basique",
     amount: 49,
     audience:
       "L'indépendant qui veut être trouvé sans y passer de temps. Un seul établissement.",
@@ -108,8 +108,8 @@ export const PLANS: Plan[] = [
     maxProfiles: 1,
   },
   {
-    id: "pro",
-    name: "Pro",
+    id: "essentiel",
+    name: "Essentiel",
     amount: 99,
     audience:
       "L'artisan qui veut des avis après chaque intervention, sans y penser, et suivre chaque quartier de près.",
@@ -126,15 +126,15 @@ export const PLANS: Plan[] = [
       "Suivi Geo-Grid : 5 mots-clés",
       "Historique des positions sur 12 mois",
       "Support prioritaire",
-      "Tout ce que contient Essentiel",
+      "Tout ce que contient Basique",
     ],
     highlight: "Envoyé à tous vos clients, sans tri : la seule méthode que Google autorise.",
     recommended: true,
     maxProfiles: 1,
   },
   {
-    id: "complet",
-    name: "Complet",
+    id: "professionnel",
+    name: "Professionnel",
     amount: 149,
     audience:
       "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
@@ -155,7 +155,7 @@ export const PLANS: Plan[] = [
       // plombiers, l'un a une fiche vivante, l'autre est muet depuis deux ans.
       // C'est un argument de conversion, et il est réel.
       "Des publications prêtes à relire pour garder votre fiche vivante",
-      "Tout ce que contient Pro",
+      "Tout ce que contient Essentiel",
     ],
     highlight: "Vous ne ratez plus une demande pendant un chantier.",
     recommended: false,
@@ -316,7 +316,7 @@ export const company: Company = {
   trade_type: "plombier",
   country: "FR",
   currency: "CHF",
-  plan_id: "essentiel",
+  plan_id: "basique",
   subscription_status: "active",
   plan_amount: 49,
   payment_failed_at: null,

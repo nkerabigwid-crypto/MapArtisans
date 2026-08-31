@@ -302,7 +302,7 @@ describe("Grille tarifaire", () => {
     // Les montants sont figés ici volontairement. Le prix est ce qu'un client
     // a accepté en signant : le changer doit être une décision explicite, pas
     // un effet de bord d'une modification de la page tarifs.
-    assert.deepEqual(data.PLANS.map((p) => p.id), ["essentiel", "pro", "complet"]);
+    assert.deepEqual(data.PLANS.map((p) => p.id), ["basique", "essentiel", "professionnel"]);
     assert.deepEqual(data.PLANS.map((p) => p.amount), [49, 99, 149]);
   });
 
@@ -352,7 +352,7 @@ describe("Plafond d'établissements par formule", () => {
   });
 
   test("une formule solo refuse la deuxième fiche", () => {
-    for (const id of ["essentiel", "pro"]) {
+    for (const id of ["basique", "essentiel"]) {
       assert.equal(data.peutAjouterFiche(id, 0).ok, true, `${id} : la première passe`);
       const refus = data.peutAjouterFiche(id, 1);
       assert.equal(refus.ok, false, `${id} : la seconde est refusée`);
@@ -364,7 +364,7 @@ describe("Plafond d'établissements par formule", () => {
   test("le plafond annoncé sur la carte correspond au plafond appliqué", () => {
     // Le chiffre affiché et le chiffre appliqué doivent rester le même, sans
     // quoi on vend un établissement et on en autorise l'infini.
-    const essentiel = data.PLANS.find((p) => p.id === "essentiel");
+    const essentiel = data.PLANS.find((p) => p.id === "basique");
     assert.equal(essentiel.maxProfiles, 1);
     assert.ok(
       essentiel.features.some((f) => f.includes("1 établissement")),

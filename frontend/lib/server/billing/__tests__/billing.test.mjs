@@ -237,7 +237,7 @@ describe("Émission après paiement", () => {
     const sender = senderFactice();
 
     const numero = await emission.emettreFacture(
-      { repo, userId: "u-1", email: "client@exemple.test", planId: "essentiel", stripeSessionId: "cs_1" },
+      { repo, userId: "u-1", email: "client@exemple.test", planId: "basique", stripeSessionId: "cs_1" },
       { sender },
     );
 
@@ -257,7 +257,7 @@ describe("Émission après paiement", () => {
     repoMod.__resetRepo();
     const repo = repoMod.getRepo();
     const sender = senderFactice();
-    const args = { repo, userId: "u-1", email: "c@exemple.test", planId: "essentiel", stripeSessionId: "cs_2" };
+    const args = { repo, userId: "u-1", email: "c@exemple.test", planId: "basique", stripeSessionId: "cs_2" };
 
     const a = await emission.emettreFacture(args, { sender });
     const b = await emission.emettreFacture(args, { sender });
@@ -270,11 +270,11 @@ describe("Émission après paiement", () => {
     const sender = senderFactice();
 
     const a = await emission.emettreFacture(
-      { repo, userId: "u-1", email: "a@exemple.test", planId: "essentiel", stripeSessionId: "cs_a" },
+      { repo, userId: "u-1", email: "a@exemple.test", planId: "basique", stripeSessionId: "cs_a" },
       { sender },
     );
     const b = await emission.emettreFacture(
-      { repo, userId: "u-2", email: "b@exemple.test", planId: "pro", stripeSessionId: "cs_b" },
+      { repo, userId: "u-2", email: "b@exemple.test", planId: "essentiel", stripeSessionId: "cs_b" },
       { sender },
     );
     assert.notEqual(a, b);
@@ -299,7 +299,7 @@ describe("Émission après paiement", () => {
     repoMod.__resetRepo();
     const sender = { send: async () => { throw new Error("SMTP indisponible"); } };
     const numero = await emission.emettreFacture(
-      { repo: repoMod.getRepo(), userId: "u-1", email: "y@exemple.test", planId: "essentiel", stripeSessionId: "cs_y" },
+      { repo: repoMod.getRepo(), userId: "u-1", email: "y@exemple.test", planId: "basique", stripeSessionId: "cs_y" },
       { sender },
     );
     // La facture reste en base avec envoyee_le à NULL : l'envoi se rattrape.
