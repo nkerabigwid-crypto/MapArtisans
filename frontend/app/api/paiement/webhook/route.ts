@@ -100,7 +100,7 @@ async function traiter(evenement: Stripe.Event, repo: ReturnType<typeof getRepo>
 
     case "invoice.payment_failed": {
       const facture = evenement.data.object as Stripe.Invoice;
-      const userId = await retrouverUtilisateur(facture, repo);
+      const userId = retrouverUtilisateur(facture);
       if (userId) await repo.majAbonnement({ userId, statut: "past_due" });
       break;
     }
@@ -122,12 +122,16 @@ async function traiter(evenement: Stripe.Event, repo: ReturnType<typeof getRepo>
   }
 }
 
-/** Retrouve l'utilisateur derrière une facture, via les métadonnées de l'abonnement. */
-async function retrouverUtilisateur(
-  facture: Stripe.Invoice,
-  _repo: ReturnType<typeof getRepo>,
-): Promise<string | null> {
-  const metadonnees = (facture as unknown as { subscription_details?: { metadata?: Record<string, string> } })
-    .subscription_details?.metadata;
+/**
+ * Retrouve l'utilisateur derrière une facture.
+ *
+ * Par les métadonnées de l'abonnement, posées à la création de la session.
+ * L'e-mail de la facture ne conviendrait pas : le client peut en saisir un
+ * autre chez Stripe, et on passerait un compte en impayé au mauvais nom.
+ */
+function retrouverUtilisateur(facture: Stripe.Invoice): string | null {
+  const metadonnees = (
+    facture as unknown as { subscription_details?: { metadata?: Record<string, string> } }
+  ).subscription_details?.metadata;
   return metadonnees?.userId ?? null;
 }
