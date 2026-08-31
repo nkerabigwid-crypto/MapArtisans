@@ -22,7 +22,7 @@ export const runtime = "nodejs";
  * qu'il l'ait relu.
  */
 
-const PALIERS_AUTORISES: PlanId[] = ["pro", "complet"];
+const PALIERS_AUTORISES: PlanId[] = ["complet"];
 
 /** Précisions libres de l'artisan. Court : c'est un aide-mémoire, pas un brief. */
 const PRECISIONS_MAX = 300;
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   const plan = (entreprise?.planId ?? "essentiel") as PlanId;
   if (!PALIERS_AUTORISES.includes(plan)) {
     return NextResponse.json(
-      { error: "Les publications sont incluses à partir du palier Pro." },
+      { error: "Les publications sont incluses dans le palier Complet." },
       { status: 403 },
     );
   }

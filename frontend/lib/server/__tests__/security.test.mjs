@@ -298,9 +298,12 @@ describe("Grille tarifaire", () => {
   let data;
   before(async () => { data = await import("../../data.ts"); });
 
-  test("trois paliers, à 49, 89 et 129 CHF", () => {
+  test("trois paliers, à 49, 99 et 149 CHF", () => {
+    // Les montants sont figés ici volontairement. Le prix est ce qu'un client
+    // a accepté en signant : le changer doit être une décision explicite, pas
+    // un effet de bord d'une modification de la page tarifs.
     assert.deepEqual(data.PLANS.map((p) => p.id), ["essentiel", "pro", "complet"]);
-    assert.deepEqual(data.PLANS.map((p) => p.amount), [49, 89, 129]);
+    assert.deepEqual(data.PLANS.map((p) => p.amount), [49, 99, 149]);
   });
 
   test("les prix montent : un palier plus cher doit offrir davantage", () => {

@@ -117,7 +117,7 @@ export function buildSystemPrompt(ctx: ContexteAssistant): string {
 
   // Base de départ propre au métier : l'artisan n'écrira jamais la sienne, et
   // un assistant qui répond « je ne sais pas » à tout dès le premier jour ne
-  // vaut pas 129 CHF. Elle ne contient ni prix ni délai — uniquement la façon
+  // vaut pas 149 CHF. Elle ne contient ni prix ni délai — uniquement la façon
   // de répondre et le renvoi vers l'entreprise pour ce qui l'engage.
   lignes.push(
     "",

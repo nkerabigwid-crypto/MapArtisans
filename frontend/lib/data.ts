@@ -110,7 +110,7 @@ export const PLANS: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    amount: 89,
+    amount: 99,
     audience:
       "L'artisan qui veut des avis après chaque intervention, sans y penser, et suivre chaque quartier de près.",
     features: [
@@ -123,19 +123,6 @@ export const PLANS: Plan[] = [
       // portée par `highlight`, où elle devient un argument plutôt qu'une
       // réserve noyée au milieu de la liste.
       "QR code à présenter sur vos devis, factures et véhicules",
-      // FORMULATION VOLONTAIREMENT PRUDENTE.
-      //
-      // Google documente trois critères de classement local — pertinence,
-      // distance, notoriété. La fréquence de publication n'en fait pas partie.
-      // Écrire « améliore votre référencement » serait une allégation inexacte
-      // sur une prestation payante, ce que la LCD art. 3 al. 1 let. b interdit,
-      // et le premier artisan qui ne voit pas sa position bouger aurait raison
-      // de le reprocher.
-      //
-      // Ce que les publications font réellement : occuper la fiche. Entre deux
-      // plombiers, l'un a une fiche vivante, l'autre est muet depuis deux ans.
-      // C'est un argument de conversion, et il est réel.
-      "Des publications prêtes à relire pour garder votre fiche vivante",
       "Suivi Geo-Grid : 5 mots-clés",
       "Historique des positions sur 12 mois",
       "Support prioritaire",
@@ -148,13 +135,26 @@ export const PLANS: Plan[] = [
   {
     id: "complet",
     name: "Complet",
-    amount: 129,
+    amount: 149,
     audience:
       "L'artisan qui reçoit des demandes à toute heure et ne peut pas répondre au téléphone en intervention.",
     features: [
       "Un assistant répond à vos visiteurs pendant que vous êtes en intervention",
       "Il note le rendez-vous et vous alerte par SMS",
       "Il connaît les questions courantes de votre métier",
+      // FORMULATION VOLONTAIREMENT PRUDENTE.
+      //
+      // Google documente trois critères de classement local — pertinence,
+      // distance, notoriété. La fréquence de publication n'en fait pas partie.
+      // Écrire « améliore votre référencement » serait une allégation inexacte
+      // sur une prestation payante, ce que la LCD art. 3 al. 1 let. b interdit,
+      // et le premier artisan qui ne verrait pas sa position bouger aurait
+      // raison de le reprocher.
+      //
+      // Ce que les publications font réellement : occuper la fiche. Entre deux
+      // plombiers, l'un a une fiche vivante, l'autre est muet depuis deux ans.
+      // C'est un argument de conversion, et il est réel.
+      "Des publications prêtes à relire pour garder votre fiche vivante",
       "Tout ce que contient Pro",
     ],
     highlight: "Vous ne ratez plus une demande pendant un chantier.",
