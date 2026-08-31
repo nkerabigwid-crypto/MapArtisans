@@ -1,4 +1,5 @@
 import type { QrCode } from "@/lib/data";
+import DemandeAvis from "./DemandeAvis";
 
 interface ClientsViewProps {
   qrCode: QrCode;
@@ -54,6 +55,8 @@ export default function ClientsView({ qrCode }: ClientsViewProps) {
           </div>
         )}
       </div>
+
+      {qrCode.place_id && <DemandeAvis profileId="g-001" />}
 
       <div className="card qr-conseil">
         <div className="qr-conseil-t">Comment l&apos;utiliser</div>

@@ -1784,3 +1784,25 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   .pdp-bas { flex-direction: column; align-items: flex-start; }
   .pdp-mention { text-align: left; }
 }
+
+/* --- Demande d'avis apres intervention --------------------------------- */
+.demande-avis { margin-top: 1rem; }
+.da-titre {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700; font-size: 1.15rem; margin-bottom: 0.3rem;
+}
+.da-lede { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
+.da-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.da-form .btn { margin-top: 0.3rem; }
+.da-succes {
+  background: var(--status-good-bg); color: var(--status-good);
+  border: 1px solid var(--status-good); border-radius: 8px;
+  padding: 0.7rem 0.9rem; font-size: 0.88rem; margin: 0.3rem 0 0;
+}
+/* Rappel de la regle, au moment exact ou l'artisan pourrait etre tente d'y
+   deroger. Discret mais lisible : une mention grisee ne serait pas lue. */
+.da-regle {
+  margin: 1rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--line);
+  font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5;
+}
+.da-regle strong { color: var(--ink); }
