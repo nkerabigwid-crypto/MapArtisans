@@ -112,19 +112,23 @@ export const PLANS: Plan[] = [
     name: "Pro",
     amount: 89,
     audience:
-      "L'artisan qui veut récolter des avis après chaque intervention et suivre chaque quartier de près.",
+      "L'artisan qui veut des avis après chaque intervention, sans y penser, et suivre chaque quartier de près.",
     features: [
+      // La demande par SMS passe AVANT le QR code : le QR exige que l'artisan
+      // y pense devant un client déjà à moitié parti, le SMS s'envoie depuis
+      // la camionnette. C'est le levier le plus direct sur le nombre d'avis.
+      "Intervention terminée ? Un bouton, et votre client reçoit la demande d'avis par SMS",
       // Formulation surveillée : ne jamais réintroduire l'idée d'un QR code
       // qui trierait les clients selon leur satisfaction. La conformité est
-      // ici portée par `highlight`, où elle devient un argument plutôt qu'une
+      // portée par `highlight`, où elle devient un argument plutôt qu'une
       // réserve noyée au milieu de la liste.
-      "QR code à présenter après chaque intervention : l'avis en dix secondes",
+      "QR code à présenter sur vos devis, factures et véhicules",
       "Suivi Geo-Grid : 5 mots-clés",
       "Historique des positions sur 12 mois",
       "Support prioritaire",
       "Tout ce que contient Essentiel",
     ],
-    highlight: "Présenté à tous vos clients, sans tri : la seule méthode que Google autorise.",
+    highlight: "Envoyé à tous vos clients, sans tri : la seule méthode que Google autorise.",
     recommended: true,
     maxProfiles: 1,
   },
