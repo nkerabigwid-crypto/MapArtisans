@@ -1667,3 +1667,48 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   margin-right: 0.7rem; flex-shrink: 0;
 }
 .topbar-accueil:hover { opacity: 0.75; }
+
+/* --- Pages legales ----------------------------------------------------- */
+.legal { max-width: 720px; margin: 0 auto; padding: 3rem 1.4rem 4rem; }
+.legal-h1 {
+  font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700;
+  font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.1; margin: 0 0 0.6rem;
+}
+.legal-lede { color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 2rem; }
+.legal-h2 {
+  font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700;
+  font-size: 1.25rem; margin: 2.2rem 0 0.6rem;
+}
+.legal p { color: var(--ink-soft); line-height: 1.65; margin: 0 0 0.9rem; }
+.legal strong { color: var(--ink); }
+.legal-liste { color: var(--ink-soft); line-height: 1.65; padding-left: 1.2rem; }
+.legal-liste li { margin-bottom: 0.4rem; }
+.legal-adresse { font-style: normal; color: var(--ink-soft); line-height: 1.7; }
+
+/* Avertissement de configuration. Rouge plein, pas une note en bas de page :
+   une page legale incomplete qui en a l'air complete est le pire des cas. */
+.legal-alerte {
+  background: var(--status-bad-bg); color: var(--status-bad);
+  border: 1px solid var(--status-bad); border-radius: 10px;
+  padding: 0.9rem 1.1rem; font-size: 0.9rem; line-height: 1.55; margin: 0 0 1.8rem;
+}
+.legal-alerte-info {
+  background: var(--status-warn-bg); color: var(--status-warn);
+  border-color: var(--status-warn);
+}
+
+.legal-table-wrap { overflow-x: auto; margin: 0 0 1.2rem; }
+.legal-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.legal-table th, .legal-table td {
+  text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.legal-table th {
+  font-family: var(--font-mono), monospace; font-size: 0.66rem;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);
+}
+.legal-table td { color: var(--ink-soft); }
+.legal-revision {
+  margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line);
+  font-size: 0.8rem; color: var(--ink-faint);
+}

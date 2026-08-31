@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getRepo, normalizeEmail } from "@/lib/server/repo";
 import { createSession, sessionCookie } from "@/lib/server/session";
 import { InvalidBusinessTypeError, resolveTrade } from "@/lib/trades";
+import { envoyerBienvenue } from "@/lib/server/email/bienvenue";
 
 /**
  * Inscription.
@@ -152,10 +153,24 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // E-mail de bienvenue, avec le lien magique. Volontairement APRÈS la
+  // création du compte et sans `await` bloquant sur son succès : si l'envoi
+  // échoue, l'artisan est déjà inscrit et connecté. Perdre un client parce
+  // qu'un fournisseur d'e-mails est indisponible serait absurde.
+  const envoi = await envoyerBienvenue(
+    { userId: utilisateur.id, email: adresse },
+    { repo },
+  );
+
   // Session ouverte immédiatement : demander de se reconnecter juste après
   // s'être inscrit fait perdre des clients sans rien protéger.
   const jeton = await createSession(utilisateur.id);
-  const reponse = NextResponse.json({ ok: true, redirection: "/tableau-de-bord" }, { status: 201 });
+  const reponse = NextResponse.json(
+    // `emailEnvoye` permet à l'interface de dire « vérifiez vos e-mails » ou,
+    // au contraire, de ne rien promettre qui ne soit pas arrivé.
+    { ok: true, redirection: "/tableau-de-bord", emailEnvoye: envoi.envoye },
+    { status: 201 },
+  );
   reponse.cookies.set(sessionCookie.name, jeton, sessionCookie.options());
   return reponse;
 }

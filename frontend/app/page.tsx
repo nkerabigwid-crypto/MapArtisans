@@ -363,10 +363,15 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <span>MapArtisans — Suisse</span>
         <nav>
-          <Link href="/abonnement">Tarifs</Link>
+          <Link href="/questions">Questions</Link>
           <Link href="/onboarding">Créer un compte</Link>
           <Link href="/connexion">Connexion</Link>
-          <Link href="/tableau-de-bord">Tableau de bord</Link>
+          {/* Les pages légales doivent être atteignables depuis chaque page :
+              la loi exige qu'on puisse identifier le fournisseur, et une page
+              que personne ne trouve ne remplit pas cette obligation. */}
+          <Link href="/mentions-legales">Mentions légales</Link>
+          <Link href="/confidentialite">Confidentialité</Link>
+          <Link href="/cgv">CGV</Link>
         </nav>
       </footer>
     </div>

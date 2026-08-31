@@ -962,3 +962,62 @@ describe("Page publique de questions fréquentes", () => {
     assert.equal(new Set(qs).size, qs.length);
   });
 });
+
+describe("Pages légales", () => {
+  let legal;
+  before(async () => { legal = await import("../../legal.ts"); });
+
+  test("sans identité configurée, les champs manquants sont nommés", () => {
+    // Une page légale incomplète qui en aurait l'air complète est le pire des
+    // cas : elle donne l'illusion de la conformité tout en manquant
+    // précisément ce que la loi exige.
+    const env = { ...process.env };
+    for (const c of ["FACTURATION_RAISON_SOCIALE", "FACTURATION_ADRESSE", "FACTURATION_EMAIL"]) {
+      delete process.env[c];
+    }
+    const manquants = legal.champsManquants();
+    assert.equal(manquants.length, 3);
+    assert.equal(legal.identiteEditeur(), null, "aucune identité partielle n'est renvoyée");
+    Object.assign(process.env, env);
+  });
+
+  test("l'identité complète est restituée, adresse découpée en lignes", () => {
+    process.env.FACTURATION_RAISON_SOCIALE = "Editeur SA";
+    process.env.FACTURATION_ADRESSE = "Rue du Test 1 | 1000 Lausanne";
+    process.env.FACTURATION_EMAIL = "contact@exemple.ch";
+    const e = legal.identiteEditeur();
+    assert.equal(e.raisonSociale, "Editeur SA");
+    assert.deepEqual(e.adresse, ["Rue du Test 1", "1000 Lausanne"]);
+    assert.equal(e.ide, null, "non assujetti tant qu'aucun IDE n'est renseigné");
+    for (const c of ["FACTURATION_RAISON_SOCIALE", "FACTURATION_ADRESSE", "FACTURATION_EMAIL"]) {
+      delete process.env[c];
+    }
+  });
+
+  test("les sous-traitants listés correspondent aux services réellement appelés", async () => {
+    // Un sous-traitant omis est une omission ; un sous-traitant listé mais
+    // jamais utilisé est une inexactitude. Les deux se vérifient en lisant le
+    // code, et c'est ce que fait ce test.
+    const noms = legal.SOUS_TRAITANTS.map((s) => s.nom.toLowerCase());
+    for (const attendu of ["openai", "twilio", "hostinger"]) {
+      assert.ok(noms.some((n) => n.includes(attendu)), `${attendu} doit être déclaré`);
+    }
+    assert.ok(noms.some((n) => n.includes("google")));
+  });
+
+  test("chaque sous-traitant précise le pays et les données transmises", () => {
+    for (const s of legal.SOUS_TRAITANTS) {
+      assert.ok(s.pays.length > 2, `pays manquant pour ${s.nom}`);
+      assert.ok(s.donnees.length > 10, `données non précisées pour ${s.nom}`);
+    }
+  });
+
+  test("les durées de conservation reprennent ce que fait le code", () => {
+    const textes = legal.CONSERVATION.map((c) => `${c.donnee} ${c.duree}`).join(" ");
+    // 15 minutes : magicLink.ts. 30 jours : deploy/sauvegarde.sh.
+    // 10 ans : Code des obligations, art. 958f.
+    assert.match(textes, /15 minutes/);
+    assert.match(textes, /30 jours/);
+    assert.match(textes, /10 ans/);
+  });
+});

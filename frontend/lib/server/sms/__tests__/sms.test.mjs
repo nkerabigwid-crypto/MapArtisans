@@ -528,3 +528,114 @@ describe("Messages de bienvenue", () => {
     }
   });
 });
+
+describe("Envoi d'e-mails", () => {
+  let sender, bienvenue, repoMod;
+  before(async () => {
+    sender = await import("../../email/sender.ts");
+    bienvenue = await import("../../email/bienvenue.ts");
+    repoMod = await import("../../repo.ts");
+  });
+
+  test("sans fournisseur configuré, l'échec est BRUYANT", async () => {
+    // Un e-mail avalé en silence laisse un client qui a payé sans aucun moyen
+    // de se connecter. Il ne réessaie pas : il demande un remboursement.
+    delete process.env.RESEND_API_KEY;
+    delete process.env.EMAIL_FROM;
+    await assert.rejects(
+      sender.resolveEmailSender().send({ to: "a@b.ch", subject: "x", text: "x", html: "x" }),
+      /aucun fournisseur configuré/,
+    );
+  });
+
+  test("une adresse en no-reply est REFUSÉE", () => {
+    // Nos e-mails disent « Répondez simplement à ce message ». Expédier depuis
+    // une adresse qui rejette les réponses ferait mentir le message dès le
+    // premier client qui essaie.
+    for (const from of ["no-reply@mapartisans.com", "noreply@x.ch", "ne-pas-repondre@x.ch"]) {
+      const r = sender.validerExpediteur(from);
+      assert.equal(r.ok, false, from);
+      assert.match(r.raison, /no-reply/i);
+    }
+  });
+
+  test("une adresse d'expédition normale est acceptée, avec ou sans nom", () => {
+    assert.equal(sender.validerExpediteur("contact@mapartisans.com").ok, true);
+    assert.equal(sender.validerExpediteur("MapArtisans <contact@mapartisans.com>").ok, true);
+  });
+
+  test("une adresse malformée est refusée", () => {
+    for (const from of ["pas-une-adresse", "a@b", ""]) {
+      assert.equal(sender.validerExpediteur(from).ok, false, from);
+    }
+  });
+
+  test("un envoi en échec ne fait PAS échouer l'inscription", async () => {
+    // Le compte est déjà créé et la session ouverte. Perdre le client parce
+    // qu'un fournisseur d'e-mails est indisponible serait absurde.
+    repoMod.__resetRepo();
+    const repo = repoMod.memoryRepo;
+    const u = await repo.createUser("echec@exemple.ch", "phrase-de-passe-solide");
+    const r = await bienvenue.envoyerBienvenue(
+      { userId: u.id, email: u.email },
+      {
+        repo,
+        sender: { async send() { throw new Error("fournisseur indisponible"); } },
+      },
+    );
+    assert.equal(r.envoye, false);
+    assert.match(r.raison, /indisponible/);
+  });
+
+  test("un envoi réussi porte le lien magique en HTTPS", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.memoryRepo;
+    const u = await repo.createUser("ok@exemple.ch", "phrase-de-passe-solide");
+    let envoye = null;
+    const r = await bienvenue.envoyerBienvenue(
+      { userId: u.id, email: u.email },
+      { repo, sender: { async send(m) { envoye = m; } } },
+    );
+    assert.equal(r.envoye, true);
+    assert.equal(envoye.to, "ok@exemple.ch");
+    assert.match(envoye.text, /https:\/\/[^\s]+\/connexion\/lien\//);
+    // Le jeton est dans le CHEMIN, jamais en paramètre de requête : un
+    // paramètre part dans l'en-tête Referer vers chaque ressource tierce.
+    assert.doesNotMatch(envoye.text, /\/connexion\/lien\?/);
+  });
+
+  test("le jeton envoyé est réellement consommable", async () => {
+    // Un lien qui part mais n'ouvre aucune session ne vaut rien.
+    repoMod.__resetRepo();
+    const repo = repoMod.memoryRepo;
+    const magic = await import("../../magicLink.ts");
+    const u = await repo.createUser("consomme@exemple.ch", "phrase-de-passe-solide");
+    let envoye = null;
+    await bienvenue.envoyerBienvenue(
+      { userId: u.id, email: u.email },
+      { repo, sender: { async send(m) { envoye = m; } } },
+    );
+    const jeton = envoye.text.match(/\/connexion\/lien\/([A-Za-z0-9_-]+)/)[1];
+    const verdict = magic.evaluerLien(await repo.consumeMagicLink(await magic.hashMagicToken(jeton)));
+    assert.equal(verdict.ok, true);
+    assert.equal(verdict.userId, u.id);
+  });
+
+  test("la facture part en pièce jointe quand elle existe", async () => {
+    repoMod.__resetRepo();
+    const repo = repoMod.memoryRepo;
+    const u = await repo.createUser("facture@exemple.ch", "phrase-de-passe-solide");
+    let envoye = null;
+    await bienvenue.envoyerBienvenue(
+      {
+        userId: u.id,
+        email: u.email,
+        facture: { nom: "FA-2026-0001.pdf", contenu: Buffer.from("%PDF-1.4 test") },
+      },
+      { repo, sender: { async send(m) { envoye = m; } } },
+    );
+    assert.equal(envoye.attachments.length, 1);
+    assert.equal(envoye.attachments[0].filename, "FA-2026-0001.pdf");
+    assert.equal(envoye.attachments[0].contentType, "application/pdf");
+  });
+});
