@@ -2,6 +2,19 @@ import type { Metadata } from "next";
 import PageLegale from "@/components/PageLegale";
 import { identiteEditeur } from "@/lib/legal";
 
+/**
+ * Rendu à CHAQUE requête, jamais figé à la construction.
+ *
+ * Cette page lit l'identité de l'éditeur dans les variables d'environnement.
+ * Elles sont fournies au conteneur à l'EXÉCUTION, pas au moment du `next build`
+ * qui tourne dans l'image Docker : une page prérendue les verrait toutes vides
+ * et afficherait « Page incomplète » quelle que soit la configuration du
+ * serveur — ce qui est exactement ce qui s'est produit.
+ *
+ * Le coût est nul : une page légale est consultée quelques fois par mois.
+ */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Mentions légales — MapArtisans",
   description: "Identité de l'éditeur, hébergement et contact.",

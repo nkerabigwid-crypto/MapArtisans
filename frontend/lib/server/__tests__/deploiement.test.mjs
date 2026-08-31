@@ -128,3 +128,30 @@ test("au moins une authentification Twilio est transmise aux envoyeurs de SMS", 
     );
   }
 });
+
+/**
+ * Les pages légales lisent l'identité de l'éditeur dans l'environnement.
+ *
+ * Constaté en production : prérendues, elles affichaient « Page incomplète »
+ * quelle que soit la configuration du serveur. Le `next build` tourne dans
+ * l'image Docker, où les variables d'exécution n'existent pas encore — la page
+ * figeait donc l'état « rien n'est renseigné », définitivement.
+ *
+ * C'est une panne silencieuse : le déploiement réussit, la page s'affiche, et
+ * seul le contenu est faux. Rien dans la construction ne la signale.
+ */
+test("les pages légales sont rendues à chaque requête, jamais prérendues", () => {
+  const pages = [
+    "app/mentions-legales/page.tsx",
+    "app/cgv/page.tsx",
+    "app/confidentialite/page.tsx",
+  ];
+  for (const page of pages) {
+    const src = readFileSync(page, "utf8");
+    assert.match(
+      src,
+      /export const dynamic = "force-dynamic"/,
+      `${page} doit être dynamique : prérendue, elle figerait une identité vide.`,
+    );
+  }
+});
