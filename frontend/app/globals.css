@@ -1935,3 +1935,57 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   line-height: 1.5;
   color: var(--ink-faint);
 }
+
+/* --- Console d'administration -------------------------------------------
+   Volontairement austère : c'est un écran d'exploitation consulté seul, pas
+   une page produit. Toute mise en forme supplémentaire serait du temps pris
+   sur ce que les clients voient. */
+.admin {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4) var(--s-8);
+}
+
+.admin-titre {
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-xl);
+  color: var(--ink);
+}
+
+.admin-sous-titre {
+  margin: 0 0 var(--s-6);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+}
+
+.admin-bloc {
+  margin-bottom: var(--s-6);
+}
+
+.admin-section {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.admin-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-sm);
+}
+
+.admin-label { color: var(--ink-soft); }
+
+/* Chiffres en chasse fixe : alignés verticalement, ils se comparent d'un
+   coup d'œil d'une ligne à l'autre. */
+.admin-valeur {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}

@@ -39,6 +39,24 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface StatistiquesAdmin {
+  comptes: number;
+  entreprises: number;
+  fiches: number;
+  /** Répartition des abonnements par statut. */
+  abonnements: Record<string, number>;
+  /** Répartition des entreprises par palier. */
+  paliers: Record<string, number>;
+  avis: number;
+  avisEnAttente: number;
+  demandesAvis: number;
+  desabonnements: number;
+  smsCeMois: number;
+  facturesEmises: number;
+  /** Montant facturé depuis toujours, en centimes. */
+  montantFactureCentimes: number;
+}
+
 export interface PostRecord {
   id: string;
   googleProfileId: string;
@@ -352,6 +370,18 @@ export interface Repo {
 
   /** Horodate la transmission au client. Une facture non transmise est retrouvable. */
   marquerFactureEnvoyee(numero: string): Promise<void>;
+
+  // --- Console d'administration (lecture seule).
+  /**
+   * Chiffres d'ensemble du service.
+   *
+   * AUCUNE DONNÉE PERSONNELLE ICI : des comptages, pas des lignes. Une console
+   * d'administration qui déverse la table `users` devient, le jour d'une
+   * intrusion, la fuite elle-même. Ce dont l'exploitant a besoin au quotidien —
+   * combien de comptes, combien d'abonnements actifs, combien de SMS
+   * consommés — se lit très bien en agrégat.
+   */
+  statistiquesAdmin(): Promise<StatistiquesAdmin>;
 
   // --- Plafond mensuel de SMS.
   /** SMS déjà envoyés ce mois-ci par cette entreprise, tous types confondus. */
@@ -917,6 +947,32 @@ export const memoryRepo: Repo = {
   async marquerFactureEnvoyee(numero) {
     await seed();
     if (!factures.has(numero)) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async statistiquesAdmin() {
+    await seed();
+    const abonnements: Record<string, number> = {};
+    const paliers: Record<string, number> = {};
+    for (const c of companies.values()) {
+      abonnements[c.subscriptionStatus] = (abonnements[c.subscriptionStatus] ?? 0) + 1;
+      paliers[c.planId] = (paliers[c.planId] ?? 0) + 1;
+    }
+    let montant = 0;
+    for (const f of factures.values()) montant += f.montantCentimes;
+    return {
+      comptes: users.size,
+      entreprises: companies.size,
+      fiches: profiles.size,
+      abonnements,
+      paliers,
+      avis: reviews.size,
+      avisEnAttente: [...reviews.values()].filter((r) => r.status === "pending").length,
+      demandesAvis: demandesAvis.length,
+      desabonnements: desabonnes.size,
+      smsCeMois: [...usageSms.values()].reduce((n, v) => n + v, 0),
+      facturesEmises: factures.size,
+      montantFactureCentimes: montant,
+    };
   },
 
   async compterSmsDuMois(companyId) {

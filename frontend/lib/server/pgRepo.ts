@@ -5,6 +5,7 @@ import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
   AssistantSettingsRecord,
+  StatistiquesAdmin,
   PostRecord,
   FactureRecord,
   CompanyRecord,
@@ -549,6 +550,57 @@ export const pgRepo: Repo = {
       [numero],
     );
     if (r.length === 0) throw new Error(`Facture introuvable : ${numero}`);
+  },
+
+  async statistiquesAdmin() {
+    /*
+     * UNE seule requête, en agrégats. Douze allers-retours pour douze compteurs
+     * rendraient la page lente pour rien, et surtout : aucune ligne de donnée
+     * personnelle ne quitte la base. Une console d'administration qui déverse
+     * la table `users` devient, le jour d'une intrusion, la fuite elle-même.
+     */
+    const r = await q<Record<string, string>>(
+      `SELECT
+         (SELECT count(*) FROM users)                                   AS comptes,
+         (SELECT count(*) FROM companies)                               AS entreprises,
+         (SELECT count(*) FROM google_profiles)                         AS fiches,
+         (SELECT count(*) FROM reviews)                                 AS avis,
+         (SELECT count(*) FROM reviews WHERE status = 'pending')        AS avis_attente,
+         (SELECT count(*) FROM review_requests WHERE status = 'sent')   AS demandes,
+         (SELECT count(*) FROM sms_optouts)                             AS desabos,
+         (SELECT COALESCE(sum(envoyes), 0) FROM sms_usage
+           WHERE mois = date_trunc('month', current_date)::date)        AS sms_mois,
+         (SELECT count(*) FROM invoices)                                AS factures,
+         (SELECT COALESCE(sum(montant_centimes), 0) FROM invoices)      AS montant`,
+    );
+    const l = r[0];
+
+    const parStatut = await q<{ subscription_status: string; n: string }>(
+      "SELECT subscription_status, count(*)::text AS n FROM companies GROUP BY 1",
+    );
+    const parPalier = await q<{ plan_id: string | null; n: string }>(
+      "SELECT plan_id, count(*)::text AS n FROM companies GROUP BY 1",
+    );
+
+    const abonnements: Record<string, number> = {};
+    for (const x of parStatut) abonnements[x.subscription_status] = Number(x.n);
+    const paliers: Record<string, number> = {};
+    for (const x of parPalier) paliers[x.plan_id ?? "sans palier"] = Number(x.n);
+
+    return {
+      comptes: Number(l.comptes),
+      entreprises: Number(l.entreprises),
+      fiches: Number(l.fiches),
+      abonnements,
+      paliers,
+      avis: Number(l.avis),
+      avisEnAttente: Number(l.avis_attente),
+      demandesAvis: Number(l.demandes),
+      desabonnements: Number(l.desabos),
+      smsCeMois: Number(l.sms_mois),
+      facturesEmises: Number(l.factures),
+      montantFactureCentimes: Number(l.montant),
+    } satisfies StatistiquesAdmin;
   },
 
   async compterSmsDuMois(companyId) {
