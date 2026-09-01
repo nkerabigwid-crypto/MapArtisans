@@ -40,6 +40,22 @@ export default function ChoixFormule({
   const [erreur, setErreur] = useState<string | null>(null);
   const souscrit = estSouscrit(statut);
 
+  /**
+   * Lien de secours quand le règlement en ligne n'est pas encore ouvert.
+   *
+   * Un bouton grisé laisse le client sans issue. Celui-ci ouvre un message
+   * pré-rempli : il peut souscrire tout de suite, par un autre canal, et
+   * l'exploitant sait exactement quelle formule est demandée.
+   */
+  function lienDeSecours(plan: (typeof PLANS)[number]): string {
+    const sujet = encodeURIComponent(`Souscription formule ${plan.name}`);
+    const corps = encodeURIComponent(
+      `Bonjour,\n\nJe souhaite souscrire la formule ${plan.name} ` +
+        `(${plan.amount} CHF par mois).\n\nMerci de me faire parvenir la marche à suivre.\n`,
+    );
+    return `mailto:contact@mapartisans.com?subject=${sujet}&body=${corps}`;
+  }
+
   async function choisir(planId: PlanId) {
     setErreur(null);
     setEnCours(planId);
@@ -84,21 +100,17 @@ export default function ChoixFormule({
 
         {!paiementOuvert && (
           /*
-           * Même principe que le bouton de rattachement Google : tant que le
-           * paiement n'est pas ouvert, on le DIT au lieu d'offrir un bouton qui
-           * affichera une erreur. Un client qui voit une erreur au moment de
-           * payer en conclut que le produit ne sait pas encaisser.
+           * Le règlement en ligne n'est pas encore ouvert — mais on ne grise
+           * PLUS les boutons pour autant. Un bouton grisé laisse le client sans
+           * issue ; celui-ci ouvre un message pré-rempli, et la souscription
+           * reste possible. On explique simplement ce qui va se passer.
            */
           <div className="vide-attente" role="status">
-            <p className="vide-attente-titre">Paiement en cours d&apos;ouverture</p>
+            <p className="vide-attente-titre">Souscription par message</p>
             <p className="vide-attente-texte">
-              Le règlement en ligne n&apos;est pas encore actif. Votre période
-              d&apos;essai continue normalement, et nous vous préviendrons dès
-              qu&apos;il sera possible de souscrire.
-            </p>
-            <p className="vide-attente-texte">
-              Pour souscrire dès maintenant, écrivez-nous à{" "}
-              <a href="mailto:contact@mapartisans.com">contact@mapartisans.com</a>.
+              Le règlement par carte s&apos;ouvre dans quelques jours. D&apos;ici
+              là, votre demande nous parvient par e-mail et nous vous rappelons —
+              votre période d&apos;essai continue normalement.
             </p>
           </div>
         )}
@@ -139,17 +151,31 @@ export default function ChoixFormule({
                   ))}
                 </ul>
 
-                <button
-                  className={`btn plan-cta${plan.recommended ? "" : " secondary"}`}
-                  onClick={() => void choisir(plan.id)}
-                  disabled={enCours !== null || actuelle || !paiementOuvert}
-                >
-                  {actuelle
-                    ? "Formule actuelle"
-                    : enCours === plan.id
-                      ? "Redirection vers Stripe…"
-                      : `Choisir ${plan.name}`}
-                </button>
+                {/* UN SEUL LIBELLÉ POUR LES TROIS.
+                    « Choisir Basique », « Choisir Essentiel »… obligeait à
+                    relire le nom déjà écrit deux fois au-dessus. Un appel à
+                    l'action identique se compare d'un coup d'œil : seuls le
+                    prix et le contenu distinguent les cartes. */}
+                {actuelle ? (
+                  <button className="btn plan-cta secondary" disabled>
+                    Formule actuelle
+                  </button>
+                ) : paiementOuvert ? (
+                  <button
+                    className={`btn plan-cta${plan.recommended ? "" : " secondary"}`}
+                    onClick={() => void choisir(plan.id)}
+                    disabled={enCours !== null}
+                  >
+                    {enCours === plan.id ? "Redirection vers Stripe…" : "Souscrire"}
+                  </button>
+                ) : (
+                  <a
+                    className={`btn plan-cta${plan.recommended ? "" : " secondary"}`}
+                    href={lienDeSecours(plan)}
+                  >
+                    Souscrire
+                  </a>
+                )}
               </div>
             );
           })}

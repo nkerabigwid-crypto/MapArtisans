@@ -2399,3 +2399,10 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 
 .vide-attente-texte:last-child { margin-bottom: 0; }
 .vide-attente-texte a { color: var(--accent); }
+
+/* Un lien portant .btn doit être indiscernable d'un bouton.
+   Le bouton de souscription devient un lien `mailto:` tant que le règlement en
+   ligne n'est pas ouvert : sans cette règle, il se distinguerait des deux
+   autres par un soulignement, et la ligne de trois cartes perdrait son
+   alignement visuel. */
+a.btn { text-decoration: none; }
