@@ -1059,13 +1059,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-mono), monospace; font-size: 0.78rem;
   color: var(--ink-soft); margin: var(--espace-cta) 0 0; letter-spacing: 0.01em;
 }
-.lp-reassure strong {
-  color: var(--ink); font-weight: 700;
-  /* Souligné discret plutôt qu'une couleur d'accent : le bleu se lirait comme
-     un lien, et un lien qui ne mène nulle part agace. */
-  border-bottom: 1.5px solid var(--accent);
-  padding-bottom: 1px;
-}
+/* Plus de mise en valeur partielle sur cette ligne.
+   « Aucune carte bancaire » était en gras souligné, « requise » ne l'était
+   pas : la phrase paraissait composée de deux morceaux collés. Une ligne de
+   réassurance se lit d'un bloc, ou ne rassure pas. */
 
 /* Titres de section */
 .lp-label {
@@ -1768,10 +1765,16 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .pdp-titre {
   font-family: var(--font-mono), monospace; font-size: 0.64rem;
   text-transform: uppercase; letter-spacing: 0.08em;
-  /* Plus pâle que les liens, mais pas au point de disparaître : un titre de
-     colonne illisible fait perdre la structure qu'il sert à donner. */
-  color: var(--pdp-texte-doux);
-  margin: 0 0 0.15rem; font-weight: 400;
+  /* CES TITRES NE SONT PAS DES LIENS, ET DOIVENT LE MONTRER.
+     Ils avaient la même couleur et la même graisse que les liens en dessous :
+     on cliquait dessus sans que rien ne se passe. Un titre plus clair, plus
+     gras et détaché par un filet se lit comme un intertitre, pas comme une
+     entrée de menu. */
+  color: var(--pdp-texte);
+  font-weight: 700;
+  margin: 0 0 0.55rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--pdp-ligne);
 }
 .pdp-col a {
   font-size: 0.85rem; color: var(--pdp-texte-doux); text-decoration: none;

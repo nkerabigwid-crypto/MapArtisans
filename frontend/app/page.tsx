@@ -129,7 +129,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="lp-reassure">
-            <strong>Aucune carte bancaire</strong> requise · <strong>Résiliable</strong> en un clic
+            Aucune carte bancaire requise · Résiliable en un clic
           </p>
         </BlurFade>
       </section>
@@ -342,7 +342,7 @@ export default function LandingPage() {
             </ShimmerButton>
           </Link>
           <p className="lp-reassure">
-            <strong>Aucune carte bancaire</strong> requise
+            Aucune carte bancaire requise
           </p>
         </BlurFade>
       </section>
