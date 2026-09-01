@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Logo from "@/components/Logo";
 import PiedDePage from "@/components/PiedDePage";
 import { FAQ_PUBLIQUE, toutesLesQuestions, texteBrut } from "@/lib/faqPublique";
+import EntetePublic from "@/components/EntetePublic";
 
 export const metadata: Metadata = {
   title: "Questions fréquentes sur Google Maps pour artisans — MapArtisans",
@@ -53,23 +53,7 @@ export default function QuestionsPage() {
         }}
       />
 
-      <header className="lp-nav">
-        <Link href="/" aria-label="Retour à l'accueil MapArtisans">
-          <Logo taille={1.25} className="lp-logo" />
-        </Link>
-        <nav className="lp-nav-links">
-          <Link href="/#fonctionnalites">Fonctionnalités</Link>
-          <Link href="/#tarifs">Tarifs</Link>
-        </nav>
-        <div className="lp-nav-actions">
-          <Link href="/connexion" className="lp-nav-link">
-            Connexion
-          </Link>
-          <Link href="/onboarding" className="lp-btn lp-nav-cta">
-            Essai gratuit
-          </Link>
-        </div>
-      </header>
+      <EntetePublic />
 
       <section className="lp-section faq-tete">
         <h1 className="lp-h2">Vos questions sur Google Maps</h1>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Logo from "@/components/Logo";
 import PiedDePage from "@/components/PiedDePage";
 import GeoPin from "@/components/GeoPin";
 import { ordinalFr } from "@/lib/format";
@@ -11,6 +10,7 @@ import { Marquee } from "@/components/ui/marquee";
 import { PLANS, geoGrid, getGridStatus } from "@/lib/data";
 import { TRADE_LABELS } from "@/lib/trades";
 import GainSimulator from "@/components/marketing/GainSimulator";
+import EntetePublic from "@/components/EntetePublic";
 
 export const metadata: Metadata = {
   title: "MapArtisans — Votre visibilité Google Maps en pilote automatique",
@@ -89,21 +89,7 @@ export default function LandingPage() {
   return (
     <div className="lp">
       {/* ---------------- 1. En-tête ---------------- */}
-      <header className="lp-nav">
-        <Logo className="lp-logo" taille={1.25} />
-        <nav className="lp-nav-links">
-          <Link href="#fonctionnalites">Fonctionnalités</Link>
-          <Link href="#tarifs">Tarifs</Link>
-        </nav>
-        <div className="lp-nav-actions">
-          <Link href="/connexion" className="lp-nav-login">
-            Connexion
-          </Link>
-          <Link href="/onboarding" className="lp-nav-cta">
-            Essai gratuit
-          </Link>
-        </div>
-      </header>
+      <EntetePublic surAccueil />
 
       {/* ---------------- 2. Zone héros ---------------- */}
       <section className="lp-hero">

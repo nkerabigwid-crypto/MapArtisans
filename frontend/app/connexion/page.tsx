@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Field } from "@base-ui/react/field";
 import Link from "next/link";
 import { Form } from "@base-ui/react/form";
-import Logo from "@/components/Logo";
 import { useQueryParam } from "@/lib/useQueryParam";
 import ChampMotDePasse from "@/components/ChampMotDePasse";
+import EntetePublic from "@/components/EntetePublic";
 
 export default function LoginPage() {
   const suite = useQueryParam("suite");
@@ -44,11 +44,7 @@ export default function LoginPage() {
     <div className="app ob-app">
       {/* Le logo est aussi le retour vers le site. Une page de connexion sans
           issue enferme celui qui s'y est trompé de porte. */}
-      <header className="auth-tete">
-        <Link href="/" aria-label="Retour à l'accueil MapArtisans">
-          <Logo taille={1.15} />
-        </Link>
-      </header>
+      <EntetePublic masquerConnexion />
       <main className="ob-main">
         <Form className="ob-form" onSubmit={handleSubmit}>
           <h1 className="ob-title">Connexion</h1>

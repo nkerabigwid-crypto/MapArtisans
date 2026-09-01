@@ -1,5 +1,4 @@
-import Link from "next/link";
-import Logo from "@/components/Logo";
+import EntetePublic from "@/components/EntetePublic";
 import PiedDePage from "@/components/PiedDePage";
 import { champsManquants, DERNIERE_REVISION } from "@/lib/legal";
 
@@ -26,15 +25,7 @@ export default function PageLegale({
 
   return (
     <div className="lp">
-      <header className="lp-nav">
-        <Link href="/" aria-label="Retour à l'accueil MapArtisans">
-          <Logo taille={1.25} className="lp-logo" />
-        </Link>
-        <nav className="lp-nav-links">
-          <Link href="/questions">Questions</Link>
-          <Link href="/#tarifs">Tarifs</Link>
-        </nav>
-      </header>
+      <EntetePublic />
 
       <main className="legal">
         <h1 className="legal-h1">{titre}</h1>

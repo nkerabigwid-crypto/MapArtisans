@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Logo from "@/components/Logo";
 import OnboardingStepper from "@/components/onboarding/OnboardingStepper";
 import StepBusiness, { type BusinessDraft } from "@/components/onboarding/StepBusiness";
 import StepContact, { type ContactDraft } from "@/components/onboarding/StepContact";
 import StepGoogle from "@/components/onboarding/StepGoogle";
+import EntetePublic from "@/components/EntetePublic";
 
 const STEPS = ["Entreprise", "Contact", "Google"];
 
@@ -103,17 +103,10 @@ export default function OnboardingPage() {
 
   return (
     <div className="app ob-app">
-      <header className="auth-tete">
-        <Link href="/" aria-label="Retour à l'accueil MapArtisans">
-          <Logo taille={1.15} />
-        </Link>
-        {/* Le cas inverse de la page de connexion : un client déjà inscrit qui
-            clique sur « Essai gratuit » par habitude doit pouvoir rejoindre sa
-            page de connexion sans repasser par l'accueil. */}
-        <Link href="/connexion" className="auth-lien">
-          J&apos;ai déjà un compte
-        </Link>
-      </header>
+      {/* Le lien « Connexion » de l'en-tête commun remplace l'ancien « J'ai déjà
+          un compte » : un client déjà inscrit qui clique sur « Essai gratuit »
+          par habitude y retrouve sa page de connexion. */}
+      <EntetePublic />
       <OnboardingStepper current={step} labels={STEPS} />
       <main className="ob-main">
         {step === 0 && (
