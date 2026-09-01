@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRepo } from "@/lib/server/repo";
+import { SITE_URL } from "@/lib/site";
 
 export const runtime = "nodejs";
 
@@ -28,24 +29,31 @@ export async function POST(request: NextRequest) {
   const brut = form?.get("phone");
 
   if (typeof brut !== "string") {
-    return NextResponse.redirect(new URL("/stop?e=1", request.url), 303);
+    return NextResponse.redirect(new URL("/stop?e=1", SITE_URL), 303);
   }
 
   // Les espaces, points et tirets sont fréquents dans un numéro recopié à la
   // main : les refuser ferait échouer un désabonnement légitime.
   const numero = brut.replace(/[\s.\-()]/g, "");
   if (!E164.test(numero)) {
-    return NextResponse.redirect(new URL("/stop?e=1", request.url), 303);
+    return NextResponse.redirect(new URL("/stop?e=1", SITE_URL), 303);
   }
 
   try {
     await getRepo().enregistrerDesabonnement(numero);
   } catch (erreur) {
     console.error("[stop] désabonnement échoué :", erreur);
-    return NextResponse.redirect(new URL("/stop?e=2", request.url), 303);
+    return NextResponse.redirect(new URL("/stop?e=2", SITE_URL), 303);
   }
 
-  // 303 : la redirection après POST évite qu'un rafraîchissement renvoie le
-  // formulaire.
-  return NextResponse.redirect(new URL("/stop?ok=1", request.url), 303);
+  /*
+   * 303 : la redirection après POST évite qu'un rafraîchissement renvoie le
+   * formulaire.
+   *
+   * La destination vient de SITE_URL et NON de `request.url`. Derrière Caddy,
+   * `request.url` porte l'adresse interne du conteneur — la redirection
+   * renvoyait vers https://0.0.0.0:3000/stop, une page morte. Constaté en
+   * testant le parcours en production.
+   */
+  return NextResponse.redirect(new URL("/stop?ok=1", SITE_URL), 303);
 }
