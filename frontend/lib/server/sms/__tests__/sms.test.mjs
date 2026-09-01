@@ -883,45 +883,40 @@ describe("Rappel de fin d'essai", () => {
   let rappel;
   before(async () => { rappel = await import("../finEssai.ts"); });
 
-  test("tient en UN segment, même avec un nom long", () => {
-    // Trois segments à chaque essai, c'est le coût de la conversion multiplié
-    // par trois — pour un compte qui n'a rien versé.
-    for (const nom of [
-      "MapArtisans",
-      "Valtransfer Nkerabigwi",
-      "Entreprise au nom vraiment tres long de plomberie et chauffage",
-    ]) {
-      const m = rappel.composeRappelEssai({ businessName: nom });
-      assert.ok(
-        rappel.rappelFitsOneSegment(m),
-        `${m.length} caracteres pour « ${nom} » : ${JSON.stringify(m)}`,
-      );
-    }
+  test("tient en un seul segment", () => {
+    const m = rappel.composeRappelEssai();
+    assert.ok(
+      rappel.rappelFitsOneSegment(m),
+      `${m.length} caracteres : ${JSON.stringify(m)}`,
+    );
+  });
+
+  test("ne répète PAS le nom de l'artisan", () => {
+    // Ce SMS s'adresse à l'artisan, pas à ses clients : il sait qui il est.
+    // La première version le préfixait, ce qui donnait « MapArtisans : votre
+    // essai MapArtisans se termine demain ».
+    const m = rappel.composeRappelEssai();
+    const occurrences = m.split("MapArtisans").length - 1;
+    assert.equal(occurrences, 1, `« MapArtisans » apparaît ${occurrences} fois`);
+  });
+
+  test("identifie l'expéditeur en premier", () => {
+    // Un SMS d'un numéro inconnu se lit d'abord par son premier mot.
+    assert.ok(rappel.composeRappelEssai().startsWith("MapArtisans"));
   });
 
   test("ne pose AUCUNE question", () => {
     // Aucun traitement des SMS entrants n'existe : l'artisan répondrait dans
-    // le vide, et un message resté sans réponse la veille d'une décision
-    // d'achat fait plus de mal que pas de message du tout.
-    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
+    // le vide, la veille d'une décision d'achat.
+    const m = rappel.composeRappelEssai();
     assert.ok(!m.includes("?"), `le message ne doit pas interroger : ${m}`);
   });
 
   test("dit ce qui est CONSERVÉ, pas seulement ce qui s'arrête", () => {
-    // Un artisan qui craint de perdre son travail hésite à convertir.
-    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
-    assert.match(m, /gard/i);
+    assert.match(rappel.composeRappelEssai(), /gard/i);
   });
 
   test("porte un lien vers les formules", () => {
-    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
-    assert.match(m, /mapartisans\.com\/abonnement/);
-  });
-
-  test("un nom trop long est coupé sur un espace, pas au milieu d'un mot", () => {
-    const coupe = rappel.nomTronque("Plomberie Sanitaire Chauffage Valais Central", 32);
-    assert.ok(coupe.length <= 32);
-    assert.ok(!coupe.endsWith(" "), "pas d'espace final");
-    assert.ok(!/\S$/.test(coupe) || !coupe.includes("Valai"), "coupe sur un mot entier");
+    assert.match(rappel.composeRappelEssai(), /mapartisans\.com\/abonnement/);
   });
 });

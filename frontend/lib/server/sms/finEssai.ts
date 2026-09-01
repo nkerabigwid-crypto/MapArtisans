@@ -4,52 +4,40 @@ import { measureSms } from "./gsm7";
 /**
  * SMS de rappel, la veille de la fin d'essai.
  *
- * ON N'Y POSE PAS DE QUESTION, ET C'EST DÉLIBÉRÉ
+ * IL NE PORTE PAS LE NOM DE L'ARTISAN, CONTRAIREMENT AUX AUTRES SMS
  *
- * « Êtes-vous content du service ? » appelle une réponse. Or aucun traitement
- * des SMS entrants n'existe : l'artisan répondrait dans le vide, et un message
- * resté sans réponse fait plus de mal que pas de message du tout — surtout
- * envoyé la veille d'une décision d'achat.
+ * La demande d'avis et le rapport hebdomadaire commencent par le nom de
+ * l'entreprise, parce qu'ils s'adressent à ses CLIENTS, qui doivent
+ * reconnaître l'expéditeur. Celui-ci s'adresse à l'artisan lui-même : il sait
+ * qui il est, et ce qu'il doit savoir, c'est qui lui écrit.
  *
- * Le message dit donc ce qui se passe, ce qui est conservé, et où agir. La
- * conversation, elle, est possible par e-mail, où quelqu'un lit vraiment.
+ * La première version le préfixait quand même, ce qui donnait « MapArtisans :
+ * votre essai MapArtisans se termine demain ». Supprimer le nom règle la
+ * répétition, économise une trentaine de caractères, et rend inutile toute
+ * logique de troncature.
  *
- * UN SEUL SEGMENT
+ * ON N'Y POSE AUCUNE QUESTION
  *
- * 160 caractères en GSM-7. Le nom de l'artisan est tronqué avant d'en sortir :
- * un rappel facturé en trois segments à chaque essai, c'est le coût de la
- * conversion multiplié par trois.
+ * « Êtes-vous content du service ? » appelle une réponse, et aucun traitement
+ * des SMS entrants n'existe : l'artisan répondrait dans le vide. Un message
+ * resté sans réponse la veille d'une décision d'achat fait plus de mal que pas
+ * de message du tout.
  */
-
-/** Adresse courte de la page des formules. */
-const LIEN = "mapartisans.com/abonnement";
 
 /**
- * Longueur maximale du nom affiché.
+ * Le message, en clair et sans variable.
  *
- * Le reste du message fait 118 caractères, lien compris. Il reste donc 42
- * caractères — on s'arrête à 32 pour garder une marge si le texte évolue.
+ * Aucune interpolation : rien ne peut donc l'allonger au-delà de la mesure
+ * faite ici, et un test vérifie qu'il tient en un segment. Les accents sont
+ * conservés — é et è appartiennent au jeu GSM-7, ils ne coûtent rien.
  */
-const NOM_MAX = 32;
+export const MESSAGE_RAPPEL_ESSAI =
+  "MapArtisans : votre essai se termine demain. " +
+  "Vos avis et réglages sont gardés. " +
+  "Continuer : mapartisans.com/abonnement";
 
-export function nomTronque(nom: string, max = NOM_MAX): string {
-  const propre = nom.trim();
-  if (propre.length <= max) return propre;
-  // Coupe sur un espace pour ne pas laisser un mot à moitié.
-  const coupe = propre.slice(0, max);
-  const espace = coupe.lastIndexOf(" ");
-  return (espace > max / 2 ? coupe.slice(0, espace) : coupe).trimEnd();
-}
-
-export interface RappelEssaiData {
-  businessName: string;
-}
-
-export function composeRappelEssai(data: RappelEssaiData): string {
-  const nom = nomTronque(data.businessName);
-  // « demain » plutôt qu'une date : lisible sans calcul, et deux caractères
-  // au lieu de dix.
-  return `${nom} : votre essai MapArtisans se termine demain. Vos avis et reglages sont gardes. Continuer : ${LIEN}`;
+export function composeRappelEssai(): string {
+  return MESSAGE_RAPPEL_ESSAI;
 }
 
 /** Garde-fou de coût, comme pour les autres SMS du produit. */

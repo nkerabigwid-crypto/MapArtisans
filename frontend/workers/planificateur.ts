@@ -37,7 +37,7 @@ async function envoyerRappelsEssai(repo: Repo) {
 
   const sender = resolveSmsSender();
   for (const essai of aRappeler) {
-    const message = composeRappelEssai({ businessName: essai.companyName });
+    const message = composeRappelEssai();
     if (!rappelFitsOneSegment(message)) {
       console.error(`[planificateur] rappel à plus d'un segment pour ${essai.companyId}`);
       continue;
