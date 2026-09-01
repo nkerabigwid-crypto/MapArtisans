@@ -177,19 +177,34 @@ describe("Configuration de facturation", () => {
     assert.deepEqual(config.regimeTvaCourant(), { assujetti: false });
   });
 
-  test("renseigner l'IDE suffit à basculer : une seule variable", () => {
-    process.env.FACTURATION_IDE = "CHE-123.456.789 TVA";
+  test("l'IDE SEUL ne rend pas assujetti", () => {
+    /*
+     * Toute entreprise inscrite au registre du commerce reçoit un IDE, y
+     * compris une raison individuelle très en dessous du seuil de 100 000 CHF.
+     * Déduire l'assujettissement de l'IDE ferait apparaître de la TVA sur les
+     * factures d'un non-assujetti — et en percevoir sans être inscrit au
+     * registre des assujettis est une infraction.
+     */
+    process.env.FACTURATION_IDE = "CHE-307.804.188";
+    delete process.env.FACTURATION_TVA;
+    assert.deepEqual(config.regimeTvaCourant(), { assujetti: false });
+    delete process.env.FACTURATION_IDE;
+  });
+
+  test("c'est le numéro de TVA qui fait basculer", () => {
+    process.env.FACTURATION_TVA = "CHE-123.456.789 TVA";
     assert.deepEqual(config.regimeTvaCourant(), {
       assujetti: true,
       numeroIde: "CHE-123.456.789 TVA",
     });
-    delete process.env.FACTURATION_IDE;
+    delete process.env.FACTURATION_TVA;
   });
 
   test("aucun état « assujetti sans IDE » n'est représentable", () => {
-    // Un drapeau booléen séparé permettrait une facture assujettie sans numéro,
-    // c'est-à-dire non conforme. Lier les deux rend ce cas impossible.
-    process.env.FACTURATION_IDE = "   ";
+    // Un drapeau booléen séparé permettrait une facture assujettie sans
+    // numéro, c'est-à-dire non conforme. Lier l'assujettissement au numéro de
+    // TVA rend ce cas impossible.
+    process.env.FACTURATION_TVA = "   ";
     assert.equal(config.regimeTvaCourant().assujetti, false);
     delete process.env.FACTURATION_IDE;
   });

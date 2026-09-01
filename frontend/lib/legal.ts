@@ -19,7 +19,11 @@ export interface IdentiteEditeur {
   raisonSociale: string;
   adresse: string[];
   email: string;
-  /** Numéro IDE, si l'entreprise est inscrite. */
+  /**
+   * Numéro IDE (CHE-xxx.xxx.xxx), si l'entreprise est inscrite au registre du
+   * commerce. Distinct du numéro de TVA : toute entreprise inscrite au RC a un
+   * IDE, seules les assujetties ont un numéro de TVA.
+   */
   ide: string | null;
   /** Directeur de la publication. */
   responsable: string | null;

@@ -44,9 +44,26 @@ function requis(nom: string): string {
  * conforme. Lier les deux rend cet état impossible.
  */
 export function regimeTvaCourant(): RegimeTva {
-  const ide = process.env.FACTURATION_IDE?.trim();
-  if (!ide) return { assujetti: false };
-  return { assujetti: true, numeroIde: ide };
+  /*
+   * L'IDE NE SIGNIFIE PAS ASSUJETTI À LA TVA.
+   *
+   * Toute entreprise inscrite au registre du commerce reçoit un IDE
+   * (CHE-xxx.xxx.xxx), y compris une raison individuelle très en dessous du
+   * seuil de TVA de 100 000 CHF. Le numéro de TVA, lui, est ce même IDE suivi
+   * de la mention « TVA », et il n'est attribué qu'à l'inscription au registre
+   * des assujettis.
+   *
+   * Le code déduisait l'assujettissement de la seule présence de l'IDE. Pour
+   * un exploitant inscrit au RC mais non assujetti — le cas ici — cela aurait
+   * fait apparaître de la TVA sur ses factures. Percevoir de la TVA sans être
+   * inscrit au registre des assujettis est une infraction.
+   *
+   * D'où deux variables distinctes : `FACTURATION_IDE` identifie l'entreprise,
+   * `FACTURATION_TVA` déclare l'assujettissement.
+   */
+  const numeroTva = process.env.FACTURATION_TVA?.trim();
+  if (!numeroTva) return { assujetti: false };
+  return { assujetti: true, numeroIde: numeroTva };
 }
 
 /** Coordonnées de l'émetteur, telles qu'elles doivent figurer sur la facture. */
