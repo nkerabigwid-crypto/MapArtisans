@@ -1103,10 +1103,32 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
    réassurance se lit d'un bloc, ou ne rassure pas. */
 
 /* Titres de section */
+/* Étiquette de section.
+   Elle était en 0,68 rem, en couleur d'accent sur fond crème : lisible sur une
+   maquette, invisible à la lecture réelle — c'est ce qu'a signalé l'exploitant.
+   Devenue une pastille : fond teinté, texte plus grand et plus gras. Elle
+   annonce la section au lieu de flotter au-dessus. */
 .lp-label {
-  font-family: var(--font-mono), monospace; font-size: 0.68rem;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent);
-  margin: 0 0 0.7rem;
+  display: inline-block;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border-radius: var(--r-full, 999px);
+  padding: 0.3rem 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.lp-label-invert {
+  color: var(--accent-ink);
+  /* Sur fond sombre, la pastille claire deviendrait un bloc éblouissant :
+     on garde le texte seul, légèrement atténué. */
+  background: transparent;
+  padding: 0;
+  opacity: 0.8;
 }
 .lp-h2 {
   font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700;
@@ -1463,7 +1485,6 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   padding: 3.5rem 1.5rem; text-align: center;
 }
 .lp-agency-band > * { max-width: 720px; margin-left: auto; margin-right: auto; }
-.lp-label-invert { color: var(--accent-ink); opacity: 0.75; }
 .lp-h2-invert { color: var(--accent-ink); }
 .lp-agency-d {
   font-size: 1rem; line-height: 1.55; opacity: 0.92; margin: 0 auto 1.6rem; max-width: 60ch;
@@ -2506,4 +2527,22 @@ a.btn { text-decoration: none; }
   color: var(--accent);
   font-weight: 650;
   white-space: nowrap;
+}
+
+
+/* Bloc d'introduction de section, centré.
+   Réservé aux textes qui s'adressent au lecteur — une affirmation se lit d'un
+   bloc. Les listes et les cartes qui suivent restent alignées à gauche : on
+   les parcourt, et un texte centré se parcourt mal. */
+.lp-intro {
+  max-width: 46rem;
+  margin: 0 auto 2.4rem;
+  text-align: center;
+}
+
+/* `.lp-lede` porte un `max-width: 62ch` et une marge nulle à gauche : sans ce
+   recentrage, le paragraphe resterait collé au bord du bloc centré. */
+.lp-intro .lp-lede {
+  margin-left: auto;
+  margin-right: auto;
 }

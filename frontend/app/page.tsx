@@ -137,17 +137,23 @@ export default function LandingPage() {
       {/* ---------------- 3. Le problème ---------------- */}
       <section className="lp-section lp-proof">
         <BlurFade delay={0.05} inView>
-          <p className="lp-label">Le problème</p>
-          <h2 className="lp-h2">
-            Vous êtes le meilleur sur le terrain.
-            <br />
-            Encore faut-il qu&apos;on vous trouve.
-          </h2>
-          <p className="lp-lede">
-            Sortez votre téléphone, cherchez votre métier dans votre ville. Comptez combien
-            d&apos;entreprises apparaissent avant de devoir appuyer sur « Plus de résultats ».
-            Google n&apos;en montre que trois.
-          </p>
+          {/* Bloc d'introduction centré, à la différence des trois cartes qui
+              suivent : c'est une affirmation adressée au lecteur, pas une liste
+              à parcourir. Centrée, elle se lit d'un bloc ; alignée à gauche au
+              milieu d'une page large, elle se perdait sur le côté. */}
+          <div className="lp-intro">
+            <p className="lp-label">Le problème</p>
+            <h2 className="lp-h2">
+              Vous êtes le meilleur sur le terrain.
+              <br />
+              Encore faut-il qu&apos;on vous trouve.
+            </h2>
+            <p className="lp-lede">
+              Sortez votre téléphone, cherchez votre métier dans votre ville. Comptez combien
+              d&apos;entreprises apparaissent avant de devoir appuyer sur « Plus de résultats ».
+              Google n&apos;en montre que trois.
+            </p>
+          </div>
         </BlurFade>
 
         <div className="lp-pains">
