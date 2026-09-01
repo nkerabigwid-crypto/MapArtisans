@@ -39,6 +39,18 @@ export interface DemandeAvisData {
  */
 const NOM_MAX = 34;
 
+/**
+ * Page de désabonnement.
+ *
+ * POURQUOI UN LIEN ET PAS « RÉPONDEZ STOP »
+ *
+ * Les SMS partent d'un expéditeur alphanumérique — « MapArtisans » et non un
+ * numéro. Android l'affiche lui-même au destinataire : « l'expéditeur ne peut
+ * pas accepter de réponses ». Un « répondez STOP » serait donc une consigne
+ * impossible à suivre, ce qui est pire que rien.
+ */
+const LIEN_DESABONNEMENT = "mapartisans.com/stop";
+
 function nomTronque(nom: string): string {
   const propre = nom.trim();
   if (propre.length <= NOM_MAX) return propre;
@@ -58,13 +70,36 @@ export function composeDemandeAvis(data: DemandeAvisData): string {
   const nom = nomTronque(data.brandName?.trim() || data.businessName);
   // « merci » plutôt qu'une formule longue : chaque caractère économisé
   // éloigne du basculement à deux segments.
-  return `${nom} vous remercie. Votre avis en 10 secondes : ${reviewUrl(data.placeId)}`;
+  return (
+    `${nom} vous remercie. Votre avis en 10 secondes : ${reviewUrl(data.placeId)}` +
+    `\nNe plus recevoir : ${LIEN_DESABONNEMENT}`
+  );
 }
 
 /** Vérifie qu'une demande tient en un segment GSM-7. */
-export function demandeFitsOneSegment(corps: string): boolean {
+/**
+ * Budget de la demande d'avis : DEUX segments, délibérément.
+ *
+ * Le lien Google fait 79 caractères à lui seul ; avec le nom de l'entreprise
+ * et le texte, on atteignait déjà 157 sur 160. Le lien de désabonnement ne
+ * pouvait donc pas tenir dans un segment.
+ *
+ * Trois voies existaient. Raccourcir le lien Google par une redirection maison
+ * aurait libéré la place, mais affaibli la garantie — vérifiée par un test —
+ * que le lien pointe DIRECTEMENT vers Google, sans page intermédiaire : c'est
+ * elle qui prouve qu'aucun tri de clients n'a lieu, et elle compte dans le
+ * dossier d'accès à l'API. Ne rien mettre laissait le produit sans trace de
+ * consentement.
+ *
+ * Reste le second segment. Il double le coût de CE message — au plafond du
+ * palier d'entrée, la facture SMS reste à 16 % du prix de l'abonnement. Le
+ * calcul n'est pas serré.
+ */
+export const SEGMENTS_MAX_DEMANDE = 2;
+
+export function demandeFitsBudget(corps: string): boolean {
   const cout = measureSms(corps);
-  return cout.segments === 1 && cout.encoding === "GSM-7";
+  return cout.segments <= SEGMENTS_MAX_DEMANDE && cout.encoding === "GSM-7";
 }
 
 export type RefusDemande =

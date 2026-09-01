@@ -26,12 +26,22 @@ import type { PlanId } from "@/lib/data";
  * quotidien, et le premier client à le heurter aurait raison de se plaindre.
  */
 export const PLAFOND_MENSUEL: Record<PlanId, number> = {
-  // Relevé de 30 à 120 le jour où la demande d'avis est passée en Basique :
-  // 30 couvrait le seul rapport hebdomadaire. Laisser ce plafond aurait vendu
-  // une fonctionnalité que le quota bloquait dès la trentième intervention.
-  basique: 120,
-  essentiel: 250,
-  professionnel: 500,
+  /*
+   * CES PLAFONDS SONT DES PLAFONDS DE DÉPENSE, PAS DE RATIONNEMENT.
+   *
+   * La demande d'avis tient sur DEUX segments depuis qu'elle porte le lien de
+   * désabonnement : chaque envoi coûte donc le double. Les plafonds
+   * précédents — 120, 250, 500 — laissaient la facture SMS atteindre 38 à
+   * 53 % du prix de l'abonnement, ce qui n'était pas tenable.
+   *
+   * À 50 / 100 / 200, le pire cas reste entre 17 et 22 % du prix, quel que
+   * soit le palier. Un artisan qui envoie une demande après chaque chantier
+   * reste largement en dessous ; celui qui les dépasse a une activité qui
+   * justifie le palier supérieur — le plafond le lui dit au bon moment.
+   */
+  basique: 50,
+  essentiel: 100,
+  professionnel: 200,
 };
 
 /**

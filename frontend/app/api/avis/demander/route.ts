@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRepo } from "@/lib/server/repo";
 import { verifySession, sessionCookie } from "@/lib/server/session";
-import { autoriserDemande, composeDemandeAvis, demandeFitsOneSegment } from "@/lib/server/sms/demandeAvis";
+import {
+  autoriserDemande,
+  composeDemandeAvis,
+  demandeFitsBudget,
+  SEGMENTS_MAX_DEMANDE,
+} from "@/lib/server/sms/demandeAvis";
 import { autoriserEnvoi, messageQuota } from "@/lib/server/sms/quota";
 import { assertAffordable, resolveSmsSender } from "@/lib/server/sms/twilio";
 
@@ -111,11 +116,13 @@ export async function POST(request: NextRequest) {
   // Garde-fou de coût avant l'envoi, comme pour le rapport hebdomadaire : un
   // message devenu trop long doit échouer visiblement, pas partir en trois
   // segments facturés à chaque intervention.
-  if (!demandeFitsOneSegment(message)) {
-    console.error(`[avis] message à plus d'un segment pour ${fiche.id}`);
+  if (!demandeFitsBudget(message)) {
+    console.error(`[avis] message au-delà du budget de segments pour ${fiche.id}`);
     return NextResponse.json({ error: "Message trop long." }, { status: 500 });
   }
-  assertAffordable(message, 1);
+  // Deux segments : le lien de désabonnement ne tient pas dans un seul, le
+  // lien Google occupant à lui seul la moitié du message.
+  assertAffordable(message, SEGMENTS_MAX_DEMANDE);
 
   try {
     await resolveSmsSender().send(numero, message);

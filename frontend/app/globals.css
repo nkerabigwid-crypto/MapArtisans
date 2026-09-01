@@ -2406,3 +2406,47 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    autres par un soulignement, et la ligne de trois cartes perdrait son
    alignement visuel. */
 a.btn { text-decoration: none; }
+
+/* --- Désabonnement SMS ----------------------------------------------------
+   Atteinte depuis un lien reçu par SMS, donc presque toujours sur téléphone,
+   par quelqu'un qui n'a aucun compte et veut en finir vite. Un champ, un
+   bouton, rien d'autre. */
+.stop {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-4) var(--s-8);
+}
+
+.stop-titre { margin: 0 0 var(--s-3); font-size: var(--t-xl); color: var(--ink); }
+
+.stop-texte {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.stop-form { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.stop-cta { width: 100%; margin-top: var(--s-3); }
+
+.stop-note {
+  margin: var(--s-5) 0 0;
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.stop-ok {
+  padding: var(--s-4);
+  border: 1px solid var(--status-good);
+  border-radius: var(--r-md);
+  background: var(--status-good-bg);
+}
+
+.stop-ok-titre {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  color: var(--ink);
+}

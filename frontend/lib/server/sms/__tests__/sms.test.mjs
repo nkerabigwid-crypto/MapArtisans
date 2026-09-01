@@ -652,7 +652,7 @@ describe("Demande d'avis par SMS", () => {
     // ferait basculer en UCS-2, ou la limite tombe a 70 : le SMS partirait
     // systematiquement en trois segments.
     const corps = avis.composeDemandeAvis(base);
-    assert.ok(avis.demandeFitsOneSegment(corps), corps);
+    assert.ok(avis.demandeFitsBudget(corps), corps);
     assert.match(corps, /search\.google\.com\/local\/writereview/);
   });
 
@@ -664,7 +664,7 @@ describe("Demande d'avis par SMS", () => {
       "A".repeat(120),
     ]) {
       const corps = avis.composeDemandeAvis({ ...base, businessName: nom });
-      assert.ok(avis.demandeFitsOneSegment(corps), `${corps.length} caracteres`);
+      assert.ok(avis.demandeFitsBudget(corps), `${corps.length} caracteres`);
     }
   });
 
@@ -918,5 +918,70 @@ describe("Rappel de fin d'essai", () => {
 
   test("porte un lien vers les formules", () => {
     assert.match(rappel.composeRappelEssai(), /mapartisans\.com\/abonnement/);
+  });
+});
+
+describe("Lien de désabonnement dans la demande d'avis", () => {
+  /*
+   * Les SMS partent d'un expéditeur alphanumérique : le téléphone du
+   * destinataire affiche lui-même « l'expéditeur ne peut pas accepter de
+   * réponses ». Un « répondez STOP » serait donc une consigne impossible à
+   * suivre — pire que pas de consigne du tout.
+   */
+  let avis2;
+  before(async () => { avis2 = await import("../demandeAvis.ts"); });
+
+  const CTX = { placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4", businessName: "Dupont Plomberie" };
+
+  test("le message porte le lien de désabonnement", () => {
+    assert.match(avis2.composeDemandeAvis(CTX), /mapartisans\.com\/stop/);
+  });
+
+  test("le lien Google reste DIRECT, sans page intermédiaire", () => {
+    // C'est cette garantie qui prouve qu'aucun tri de clients n'a lieu, et
+    // elle compte dans le dossier d'accès à l'API Google. La raccourcir par une
+    // redirection maison aurait libéré la place du désabonnement, au prix de
+    // cet argument.
+    assert.match(avis2.composeDemandeAvis(CTX), /https:\/\/search\.google\.com\/local\/writereview/);
+  });
+
+  test("tient dans le budget de DEUX segments, nom long compris", () => {
+    for (const nom of [
+      "Ex",
+      "Dupont Plomberie",
+      "Plomberie Sanitaire Chauffage Valais Central Sarl",
+    ]) {
+      const m = avis2.composeDemandeAvis({ ...CTX, businessName: nom });
+      assert.ok(
+        avis2.demandeFitsBudget(m),
+        `${m.length} caracteres pour « ${nom} »`,
+      );
+    }
+  });
+
+  test("le budget est de deux segments, pas davantage", () => {
+    // Trois segments tripleraient le coût du message le plus envoyé du produit.
+    assert.equal(avis2.SEGMENTS_MAX_DEMANDE, 2);
+  });
+});
+
+describe("Plafonds mensuels révisés", () => {
+  let q2;
+  before(async () => { q2 = await import("../quota.ts"); });
+
+  test("50 / 100 / 200 : la facture SMS reste sous un quart du prix", () => {
+    // La demande d'avis coûte deux segments depuis qu'elle porte le lien de
+    // désabonnement. Aux anciens plafonds — 120 / 250 / 500 — la facture
+    // atteignait 38 à 53 % du prix de l'abonnement.
+    assert.equal(q2.PLAFOND_MENSUEL.basique, 50);
+    assert.equal(q2.PLAFOND_MENSUEL.essentiel, 100);
+    assert.equal(q2.PLAFOND_MENSUEL.professionnel, 200);
+
+    const SEG = 0.08;
+    for (const [plan, prix] of [["basique", 49], ["essentiel", 99], ["professionnel", 149]]) {
+      const cap = q2.PLAFOND_MENSUEL[plan];
+      const cout = (5 + (cap - 5) * 2) * SEG;
+      assert.ok(cout / prix < 0.25, `${plan} : ${(cout / prix * 100).toFixed(0)} % du prix`);
+    }
   });
 });
