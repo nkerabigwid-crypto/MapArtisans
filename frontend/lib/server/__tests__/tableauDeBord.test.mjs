@@ -308,3 +308,28 @@ describe("Répertoire clients", () => {
     assert.deepEqual(d.clients.map((c) => c.phone), ["+41795555555"]);
   });
 });
+
+describe("Choix de formule", () => {
+  /*
+   * La page d'abonnement affichait « Formule actuelle » sur le palier d'entrée
+   * pendant l'ESSAI, et son bouton était grisé : le client ne pouvait pas
+   * choisir la formule qu'il n'avait jamais achetée.
+   *
+   * `plan_id` vaut « basique » dès l'inscription — c'est le tarif de référence
+   * qui s'appliquera à la conversion, pas une souscription.
+   */
+  test("un compte en essai n'a souscrit à AUCUNE formule", async () => {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("formule@exemple.test", "mot-de-passe-long-12");
+    await repo.createCompany({
+      userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
+    });
+    const d = await tdb.chargerTableauDeBord(u.id);
+
+    assert.equal(d.company.subscription_status, "trialing");
+    // Le palier est renseigné — c'est le tarif de référence…
+    assert.equal(d.company.plan_id, "basique");
+    // …mais il ne vaut pas souscription : l'écran doit rester achetable.
+    assert.notEqual(d.company.subscription_status, "active");
+  });
+});

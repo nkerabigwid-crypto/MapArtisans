@@ -69,6 +69,18 @@ export function getStripe(): Stripe {
  * Couvre les quatre préfixes : `sk_test_`, `rk_test_` sont des clés d'essai ;
  * `sk_live_`, `rk_live_` prélèvent réellement.
  */
+/**
+ * Le paiement est-il ouvert ?
+ *
+ * Sert à ne PAS afficher un bouton d'achat qui ne mènera nulle part : un
+ * client qui clique et voit une erreur conclut que le produit ne sait pas
+ * encaisser, ce qui est exactement ce qu'on ne veut pas suggérer au moment de
+ * l'achat.
+ */
+export function stripeConfigure(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(env.STRIPE_SECRET_KEY?.trim());
+}
+
 export function estEnModeTest(): boolean {
   return /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? "");
 }
