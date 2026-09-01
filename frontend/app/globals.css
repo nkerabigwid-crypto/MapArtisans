@@ -626,17 +626,22 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   gap: 0.25rem;
   background: none;
   border: none;
-  padding: 0.4rem 0.2rem;
+  padding: 0.5rem 0.2rem;
   cursor: pointer;
   color: var(--ink-faint);
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600;
-  font-size: 0.68rem;
+  /* Le libellé suit l'icône : 0.68rem se lisait mal sous une icône agrandie. */
+  font-size: 0.74rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-.navitem .nav-ic { width: 20px; height: 20px; }
-.navitem .nav-ic svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.8; }
+/* 26 px et non 20 : signalé par un artisan sur le terrain, « trop petites pour
+   les voir ». Ces icônes sont regardées d'un coup d'œil, souvent en extérieur,
+   parfois à bout de bras — la place ne manque pas dans une barre à cinq
+   entrées, et deux pixels de trait en plus les rendent lisibles au soleil. */
+.navitem .nav-ic { width: 26px; height: 26px; }
+.navitem .nav-ic svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 2; }
 .navitem.active { color: var(--accent); }
 .navitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
 
@@ -2365,3 +2370,32 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
      quand la place vient à manquer. */
   gap: 1.5rem;
 }
+
+
+/* --- Attente de l'ouverture du rattachement Google ------------------------
+   Remplace le bouton tant que Google n'a pas accordé l'accès à son API. Un
+   bouton qui redirige et revient sans rien faire est pire que pas de bouton :
+   le client clique, la page cligne, et il conclut que le produit est cassé. */
+.vide-attente {
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--accent-wash);
+}
+
+.vide-attente-titre {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.vide-attente-texte {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-xs);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.vide-attente-texte:last-child { margin-bottom: 0; }
+.vide-attente-texte a { color: var(--accent); }

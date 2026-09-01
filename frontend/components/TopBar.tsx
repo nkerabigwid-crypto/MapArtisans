@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { GearIcon } from "./icons";
-import { LogoMark } from "./Logo";
+import Logo from "./Logo";
 
 interface TopBarProps {
   companyName: string;
@@ -27,11 +27,14 @@ export default function TopBar({
 }: TopBarProps) {
   return (
     <header className="topbar">
-      {/* Le logo ramène au site. Sans lui, le tableau de bord n'avait aucune
-          sortie : ni retour à l'accueil, ni accès aux tarifs ou à l'aide —
-          l'artisan devait retaper l'adresse à la main. */}
+      {/* Le logo COMPLET, comme sur les pages publiques. La pastille seule ne
+          se reconnaissait pas : l'en-tête du tableau de bord semblait
+          appartenir à un autre produit que le site.
+
+          Il ramène aussi au site : sans lui, le tableau de bord n'a aucune
+          sortie, et l'artisan doit retaper l'adresse à la main. */}
       <Link href="/" className="topbar-accueil" aria-label="Retour à l'accueil MapArtisans">
-        <LogoMark taille={1.35} />
+        <Logo taille={1.1} />
       </Link>
       <div className="brand">
         <span className="company-name">{companyName}</span>

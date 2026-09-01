@@ -11,7 +11,13 @@
  * Il dit ce qui manque, pourquoi, et ce qui se passe ensuite. Un tableau de
  * bord vide sans explication se lit comme une panne.
  */
-export default function AucuneFiche({ companyName }: { companyName: string }) {
+export default function AucuneFiche({
+  companyName,
+  googleDisponible,
+}: {
+  companyName: string;
+  googleDisponible: boolean;
+}) {
   return (
     <div className="vide">
       <h1 className="vide-titre">Bienvenue, {companyName}</h1>
@@ -27,14 +33,38 @@ export default function AucuneFiche({ companyName }: { companyName: string }) {
         <li>Le premier relevé de position arrive sous 24 heures.</li>
       </ol>
 
-      <a className="vide-cta" href="/api/auth/google">
-        Connecter ma fiche Google
-      </a>
-
-      <p className="vide-note">
-        Vous gardez le contrôle : l&apos;autorisation se retire à tout moment depuis
-        votre compte Google, et rien n&apos;est publié sans votre accord.
-      </p>
+      {googleDisponible ? (
+        <>
+          <a className="vide-cta" href="/api/auth/google">
+            Connecter ma fiche Google
+          </a>
+          <p className="vide-note">
+            Vous gardez le contrôle : l&apos;autorisation se retire à tout moment
+            depuis votre compte Google, et rien n&apos;est publié sans votre accord.
+          </p>
+        </>
+      ) : (
+        /*
+         * Aucun bouton tant que Google n'a pas accordé l'accès à son API.
+         *
+         * Un bouton qui redirige et revient sans rien faire est pire que pas de
+         * bouton : le client clique, la page cligne, et il conclut que le
+         * produit est cassé. Mieux vaut dire ce qui se passe.
+         */
+        <div className="vide-attente" role="status">
+          <p className="vide-attente-titre">Rattachement en cours d&apos;ouverture</p>
+          <p className="vide-attente-texte">
+            Google valide actuellement notre accès à son API. Vous serez prévenu
+            dès que le rattachement sera possible — vous n&apos;avez rien à faire
+            d&apos;ici là, et votre période d&apos;essai ne démarre vraiment qu&apos;à
+            ce moment-là.
+          </p>
+          <p className="vide-attente-texte">
+            Une question ? Écrivez-nous à{" "}
+            <a href="mailto:contact@mapartisans.com">contact@mapartisans.com</a>.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

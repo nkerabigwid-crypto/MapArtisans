@@ -266,7 +266,10 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
       {view === "home" && (
         <main>
           {donnees.sansFiche || !googleProfile ? (
-            <AucuneFiche companyName={activeCompany.company_name} />
+            <AucuneFiche
+              companyName={activeCompany.company_name}
+              googleDisponible={donnees.googleDisponible}
+            />
           ) : (
             <ViewGate skeleton={<HomeSkeleton />} what="votre visibilité">
               {/* geoGrid et weekStats restent des exemples : rank_trackings

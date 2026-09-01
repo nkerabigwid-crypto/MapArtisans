@@ -4,6 +4,7 @@ import { getRepo } from "@/lib/server/repo";
 import { resolveTradeOrDefault } from "@/lib/trades";
 import { PLANS } from "@/lib/data";
 import { accesAutorise, messageBlocage } from "@/lib/server/essai";
+import { googleConfigure } from "@/lib/server/google/oauth";
 import type {
   Company,
   GoogleProfile,
@@ -69,6 +70,15 @@ export interface DonneesTableauDeBord {
   accesOuvert: boolean;
   /** Message à afficher quand l'accès est fermé. */
   messageAcces: string | null;
+  /**
+   * Le rattachement de fiche Google est-il ouvert ?
+   *
+   * `false` tant que les identifiants OAuth ne sont pas configurés — c'est-à-dire
+   * tant que Google n'a pas accordé l'accès à son API. Proposer alors un bouton
+   * qui ne peut rien faire est le pire des deux mondes : le client clique, la
+   * page cligne, et il conclut que le produit est cassé.
+   */
+  googleDisponible: boolean;
 }
 
 function versDateIso(d: Date | null): string | null {
@@ -133,6 +143,7 @@ export async function chargerTableauDeBord(
       joursEssai: verdict.joursRestants,
       accesOuvert: verdict.ok,
       messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
+      googleDisponible: googleConfigure(),
     };
   }
 
@@ -210,5 +221,6 @@ export async function chargerTableauDeBord(
     joursEssai: verdict.joursRestants,
     accesOuvert: verdict.ok,
     messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
+    googleDisponible: googleConfigure(),
   };
 }
