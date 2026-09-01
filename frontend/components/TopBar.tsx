@@ -35,6 +35,7 @@ export default function TopBar({
       </Link>
       <div className="brand">
         <span className="company-name">{companyName}</span>
+        {sousTitre ? <span className="brand-sous-titre">{sousTitre}</span> : null}
         <span className={`sub-badge ${subTone}`}>{subLabel}</span>
       </div>
       <button className="gear-btn" aria-label="Réglages" onClick={onOpenSettings}>
