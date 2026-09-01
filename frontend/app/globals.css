@@ -973,15 +973,17 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-section { max-width: 1040px; margin: 0 auto; padding: 4.5rem 1.5rem; }
 
 /* Barre de navigation */
+/* La BARRE occupe toute la largeur ; c'est son contenu qui est borné et
+   centré, dans .lp-nav-inner. Les pages d'inscription et de connexion vivent
+   dans une colonne de 460 px : sans cette séparation, l'en-tête héritait de
+   cette largeur et son contenu débordait du fond blanc. */
 .lp-nav {
   position: sticky; top: 0; z-index: 40;
-  display: flex; align-items: center; justify-content: space-between;
   /* `space-between` seul ne garantit RIEN quand le conteneur est étroit : sur
      les pages d'inscription et de connexion, dont la colonne est bien plus
      resserrée que la page d'accueil, les trois blocs se retrouvaient collés —
      « MapArtisansFonctionnalités TarifsConnexion ». Le gap est un minimum,
      l'espacement réparti vient en plus. */
-  gap: 1.5rem;
   padding: 0.9rem 1.5rem;
   /* Blanc plutôt que le crème du fond : la barre se détache sans qu'on ait
      besoin d'une ombre lourde. Le voile translucide reste, pour que le contenu
@@ -2343,4 +2345,20 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    chevaucher. */
 @media (max-width: 760px) {
   .lp-nav-links { display: none; }
+}
+
+
+/* Contenu de l'en-tête : borné et centré, quelle que soit la largeur du parent.
+   La barre, elle, reste pleine largeur — c'est ce qui fait qu'un fond blanc
+   traverse l'écran alors que le logo et le bouton restent alignés sur le
+   contenu de la page. */
+.lp-nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* `space-between` seul ne garantit rien : un `gap` impose un minimum même
+     quand la place vient à manquer. */
+  gap: 1.5rem;
 }

@@ -41,10 +41,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="app ob-app">
-      {/* Le logo est aussi le retour vers le site. Une page de connexion sans
-          issue enferme celui qui s'y est trompé de porte. */}
+    <>
+      {/* L'en-tête est HORS de la colonne de 460 px : c'est une barre de site,
+          elle traverse l'écran. Dedans, elle héritait de la largeur du
+          formulaire et son contenu débordait. */}
       <EntetePublic masquerConnexion />
+      <div className="app ob-app">
       <main className="ob-main">
         <Form className="ob-form" onSubmit={handleSubmit}>
           <h1 className="ob-title">Connexion</h1>
@@ -91,6 +93,7 @@ export default function LoginPage() {
         </Form>
       </main>
     </div>
+    </>
   );
 }
 

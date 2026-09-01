@@ -38,6 +38,12 @@ export default function EntetePublic({
 
   return (
     <header className="lp-nav">
+      {/* Barre pleine largeur, contenu centré et borné.
+          Sans ce conteneur interne, l'en-tête héritait de la largeur de son
+          parent — 460 px sur les pages d'inscription et de connexion — et son
+          contenu débordait du fond blanc : le bouton « Essai gratuit »
+          flottait à côté de la barre au lieu d'être dedans. */}
+      <div className="lp-nav-inner">
       <Link href="/" aria-label="Accueil MapArtisans">
         <Logo className="lp-logo" taille={1.25} />
       </Link>
@@ -54,6 +60,7 @@ export default function EntetePublic({
         <Link href="/onboarding" className="lp-nav-cta">
           Essai gratuit
         </Link>
+      </div>
       </div>
     </header>
   );

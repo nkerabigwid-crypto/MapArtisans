@@ -102,12 +102,17 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="app ob-app">
-      {/* Le lien « Connexion » de l'en-tête commun remplace l'ancien « J'ai déjà
-          un compte » : un client déjà inscrit qui clique sur « Essai gratuit »
-          par habitude y retrouve sa page de connexion. */}
+    <>
+      {/* L'en-tête est HORS de la colonne de 460 px : c'est une barre de site,
+          elle traverse l'écran. Dedans, elle héritait de la largeur du
+          formulaire et son contenu débordait du fond blanc.
+
+          Le lien « Connexion » remplace l'ancien « J'ai déjà un compte » : un
+          client déjà inscrit qui clique sur « Essai gratuit » par habitude y
+          retrouve sa page de connexion. */}
       <EntetePublic />
-      <OnboardingStepper current={step} labels={STEPS} />
+      <div className="app ob-app">
+        <OnboardingStepper current={step} labels={STEPS} />
       <main className="ob-main">
         {step === 0 && (
           <StepBusiness
@@ -133,7 +138,8 @@ export default function OnboardingPage() {
             onBack={() => setStep(1)}
           />
         )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }
