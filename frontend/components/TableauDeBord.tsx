@@ -25,6 +25,7 @@ import type { Review, Post, Company } from "@/lib/data";
 import type { DonneesTableauDeBord } from "@/lib/server/tableauDeBord";
 import AucuneFiche from "@/components/AucuneFiche";
 import AgendaView from "@/components/AgendaView";
+import BandeauEssai, { AccesFerme } from "@/components/BandeauEssai";
 import ListeClients from "@/components/ListeClients";
 import { TRADES } from "@/lib/trades";
 import { companyVariants, geoGrid, weekStats } from "@/lib/data";
@@ -118,7 +119,16 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
     : undefined;
   const company = reactivated ? activeCompany : (simulated ?? activeCompany);
 
-  const isBlocked = company.subscription_status === "canceled";
+  /*
+   * L'accès vient du serveur, pas d'un test refait ici. Deux calculs séparés
+   * finiraient par diverger, et celui de l'écran est le plus facile à
+   * contourner — c'est celui qui ouvre les données.
+   */
+  const isBlocked = !donnees.accesOuvert || company.subscription_status === "canceled";
+  // Le bandeau n'apparaît qu'au dernier tiers : affiché dès le premier jour, il
+  // transformerait la semaine d'essai en compte à rebours anxieux.
+  const essaiAAnnoncer =
+    donnees.joursEssai !== null && donnees.joursEssai > 0 && donnees.joursEssai <= 3;
   const isPastDue = company.subscription_status === "past_due";
 
   const needsReviewCount = reviews.filter((r) => r.status === "needs_review").length;
@@ -232,6 +242,10 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
         <BandeauGoogle />
       </Suspense>
 
+      {essaiAAnnoncer && (
+        <BandeauEssai jours={donnees.joursEssai!} onVoirFormules={() => setView("settings")} />
+      )}
+
       {isPastDue && (
         <SubscriptionBanner company={company} onFixPayment={() => setView("settings")} />
       )}
@@ -241,7 +255,11 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
           naviguer entre des écrans inertes n'a pas de sens. */}
       {isBlocked ? (
         <main>
-          <SubscriptionBlocked company={company} onReactivate={() => setReactivated(true)} />
+          {donnees.messageAcces ? (
+            <AccesFerme message={donnees.messageAcces} />
+          ) : (
+            <SubscriptionBlocked company={company} onReactivate={() => setReactivated(true)} />
+          )}
         </main>
       ) : (
         <>

@@ -9,6 +9,7 @@
 // `export const runtime = "nodejs"`.
 import type { MagicLinkRecord } from "./magicLink";
 import { genererWidgetKey } from "./assistant/access";
+import { finEssai } from "./essai";
 import { hashPassword } from "./password";
 import type { AgencyBrandingRecord } from "./branding";
 import { pgRepo } from "./pgRepo";
@@ -135,6 +136,15 @@ export interface CompanyRecord {
   paymentFailedAt: Date | null;
   gracePeriodEndsAt: Date | null;
   canceledAt: Date | null;
+  /**
+   * Fin de l'essai gratuit. `null` = aucun essai en cours.
+   *
+   * Distinct de `gracePeriodEndsAt` : la grâce couvre un client PAYANT dont le
+   * prélèvement a échoué, l'essai couvre quelqu'un qui n'a jamais payé. Les
+   * confondre rendrait impossible de distinguer « votre carte a été refusée »
+   * de « votre essai est terminé ».
+   */
+  trialEndsAt: Date | null;
 }
 
 export interface GoogleProfileRecord {
@@ -607,6 +617,8 @@ async function seed() {
     paymentFailedAt: null,
     gracePeriodEndsAt: null,
     canceledAt: null,
+    // Entreprises de démonstration : abonnées, donc hors essai.
+    trialEndsAt: null,
   });
   profiles.set("g-001", {
     id: "g-001",
@@ -644,6 +656,8 @@ async function seed() {
     paymentFailedAt: null,
     gracePeriodEndsAt: null,
     canceledAt: null,
+    // Entreprises de démonstration : abonnées, donc hors essai.
+    trialEndsAt: null,
   });
   profiles.set("g-002", {
     id: "g-002",
@@ -689,6 +703,8 @@ async function seed() {
     paymentFailedAt: null,
     gracePeriodEndsAt: null,
     canceledAt: null,
+    // Entreprises de démonstration : abonnées, donc hors essai.
+    trialEndsAt: null,
   });
   profiles.set("g-003", {
     id: "g-003",
@@ -806,10 +822,13 @@ export const memoryRepo: Repo = {
       // Un compte neuf naît en essai, au tarif du palier d'entrée. Le webhook
       // Stripe le fera passer en `active` au premier paiement encaissé.
       planAmount: 49,
-      subscriptionStatus: "incomplete",
+      // L'essai démarre à la création : c'est ce que le site promet depuis
+      // l'origine, et ce que rien n'implémentait.
+      subscriptionStatus: "trialing",
       paymentFailedAt: null,
       gracePeriodEndsAt: null,
       canceledAt: null,
+      trialEndsAt: finEssai(),
     };
     companies.set(c.id, c);
     return c;

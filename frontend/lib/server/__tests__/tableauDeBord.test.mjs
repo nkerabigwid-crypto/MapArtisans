@@ -78,7 +78,7 @@ describe("Chargement", () => {
     assert.notEqual(d.company.company_name, "Dupont Plomberie");
   });
 
-  test("un compte neuf est « à activer », pas actif ni en essai", async () => {
+  test("un compte neuf démarre l'essai de sept jours", async () => {
     const repo = repoMod.getRepo();
     const u = await repo.createUser("essai@exemple.test", "mot-de-passe-long-12");
     await repo.createCompany({
@@ -89,9 +89,10 @@ describe("Chargement", () => {
     });
 
     const d = await tdb.chargerTableauDeBord(u.id);
-    // `incomplete` : créé, jamais payé. Annoncer un essai qu'on n'offre pas
-    // serait une promesse que rien ne tient.
-    assert.equal(d.company.subscription_status, "incomplete");
+    assert.equal(d.company.subscription_status, "trialing");
+    // L'accès est ouvert, et il reste sept jours.
+    assert.equal(d.accesOuvert, true);
+    assert.equal(d.joursEssai, 7);
     assert.equal(d.company.plan_id, "basique");
   });
 

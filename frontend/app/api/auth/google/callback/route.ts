@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
+import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
 import { encryptToken } from "@/lib/server/crypto";
 import { echangerCode, lireConfig } from "@/lib/server/google/oauth";
 import { COOKIE_ETAT, verifierEtat } from "@/lib/server/google/etat";
@@ -112,6 +113,25 @@ export async function GET(request: NextRequest) {
        * dans le HTML du site de l'artisan.
        */
       await repo.creerReglagesAssistant(fiche.id);
+    }
+
+    /*
+     * PREMIER RAPPORT IMMÉDIAT, sans attendre le lundi suivant.
+     *
+     * L'essai dure sept jours. Un artisan qui connecte sa fiche un mardi ne
+     * recevrait le rapport hebdomadaire que le lundi d'après — soit après la
+     * fin de son essai. Il n'aurait donc jamais vu l'argument central du
+     * produit avant de décider s'il paie.
+     *
+     * La mise en file est déduplicée par semaine ISO : si le planificateur
+     * passe ensuite dans la même semaine, aucun doublon n'est créé.
+     */
+    try {
+      await enqueueWeeklyReports(repo);
+    } catch (erreur) {
+      // Un rapport non parti ne doit pas faire échouer le rattachement, qui
+      // vient de réussir et qui est ce que l'artisan attendait.
+      console.error("[google] premier rapport non mis en file :", erreur);
     }
 
     return retour("connecte");

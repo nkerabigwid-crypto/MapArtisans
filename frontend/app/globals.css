@@ -2250,3 +2250,72 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   line-height: 1.45;
   color: var(--ink-faint);
 }
+
+/* --- Essai gratuit -------------------------------------------------------- */
+.essai-bandeau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: 0.8rem 1.1rem;
+  background: var(--accent-wash);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Les deux derniers jours changent de ton, pas de place : un bandeau qui se
+   déplace au dernier moment fait rater le bouton. */
+.essai-bandeau--urgent { background: var(--status-warn-bg); }
+
+.essai-texte { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.essai-titre { font-size: var(--t-sm); font-weight: 650; color: var(--ink); }
+
+.essai-corps { font-size: var(--t-xs); line-height: 1.4; color: var(--ink-soft); }
+
+.essai-cta {
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.essai-ferme {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-4);
+}
+
+.essai-ferme-titre { margin: 0 0 var(--s-3); font-size: var(--t-xl); color: var(--ink); }
+
+.essai-ferme-texte {
+  margin: 0 0 var(--s-5);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.essai-ferme-cta {
+  display: block;
+  padding: 0.85rem 1.2rem;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--t-sm);
+  font-weight: 650;
+  text-align: center;
+  text-decoration: none;
+}
+
+.essai-ferme-note {
+  margin: var(--s-3) 0 0;
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+  text-align: center;
+}

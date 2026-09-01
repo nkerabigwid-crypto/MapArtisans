@@ -3,6 +3,7 @@
 import { getRepo } from "@/lib/server/repo";
 import { resolveTradeOrDefault } from "@/lib/trades";
 import { PLANS } from "@/lib/data";
+import { accesAutorise, messageBlocage } from "@/lib/server/essai";
 import type {
   Company,
   GoogleProfile,
@@ -62,6 +63,12 @@ export interface DonneesTableauDeBord {
   clients: ClientAffiche[];
   /** `true` tant qu'aucune fiche Google n'est rattachée. */
   sansFiche: boolean;
+  /** Jours d'essai restants. `null` hors essai (abonné, ou essai terminé). */
+  joursEssai: number | null;
+  /** Le produit travaille-t-il pour ce compte ? */
+  accesOuvert: boolean;
+  /** Message à afficher quand l'accès est fermé. */
+  messageAcces: string | null;
 }
 
 function versDateIso(d: Date | null): string | null {
@@ -80,6 +87,18 @@ export async function chargerTableauDeBord(
   if (!entreprise) return null;
 
   const plan = PLANS.find((p) => p.id === entreprise.planId);
+
+  /*
+   * L'accès est décidé ICI, une fois, et transmis à l'écran. Le recalculer
+   * dans chaque vue laisserait un jour l'une d'elles l'oublier — et une vue
+   * qui affiche les données d'un essai expiré offre gratuitement ce qu'on
+   * facture.
+   */
+  const verdict = accesAutorise({
+    subscriptionStatus: entreprise.subscriptionStatus,
+    trialEndsAt: entreprise.trialEndsAt,
+    gracePeriodEndsAt: entreprise.gracePeriodEndsAt,
+  });
 
   const company: Company = {
     id: entreprise.id,
@@ -111,6 +130,9 @@ export async function chargerTableauDeBord(
       rendezVous: [],
       clients: [],
       sansFiche: true,
+      joursEssai: verdict.joursRestants,
+      accesOuvert: verdict.ok,
+      messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
     };
   }
 
@@ -185,5 +207,8 @@ export async function chargerTableauDeBord(
         }
       : null,
     sansFiche: false,
+    joursEssai: verdict.joursRestants,
+    accesOuvert: verdict.ok,
+    messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
   };
 }

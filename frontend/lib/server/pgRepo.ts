@@ -19,6 +19,7 @@ import type {
 } from "./repo";
 import { normalizeEmail } from "./repo";
 import { genererWidgetKey } from "./assistant/access";
+import { finEssai } from "./essai";
 
 /**
  * Dépôt PostgreSQL — l'implémentation de production.
@@ -178,6 +179,7 @@ function versEntreprise(r: any): CompanyRecord {
     paymentFailedAt: r.payment_failed_at ?? null,
     gracePeriodEndsAt: r.grace_period_ends_at ?? null,
     canceledAt: r.canceled_at ?? null,
+    trialEndsAt: r.trial_ends_at ?? null,
   } as CompanyRecord;
 }
 
@@ -230,10 +232,16 @@ export const pgRepo: Repo = {
     // un pays hors liste ou une devise autre que CHF fait échouer l'insertion
     // plutôt que d'enregistrer une facturation impossible.
     const r = await q(
-      `INSERT INTO companies (user_id, company_name, trade_type, country, currency, plan_id)
-       VALUES ($1, $2, $3, $4, 'CHF', 'basique')
+      // L'essai démarre à la création, sans carte bancaire : c'est la promesse
+      // affichée sur le site depuis l'origine, et que rien n'implémentait.
+      // `plan_amount` porte le tarif du palier d'entrée, celui qui s'appliquera
+      // à la conversion.
+      `INSERT INTO companies
+         (user_id, company_name, trade_type, country, currency, plan_id,
+          plan_amount, subscription_status, trial_ends_at)
+       VALUES ($1, $2, $3, $4, 'CHF', 'basique', 49, 'trialing', $5)
        RETURNING *`,
-      [input.userId, input.companyName, input.tradeType, input.country],
+      [input.userId, input.companyName, input.tradeType, input.country, finEssai()],
     );
     return versEntreprise(r[0]);
   },

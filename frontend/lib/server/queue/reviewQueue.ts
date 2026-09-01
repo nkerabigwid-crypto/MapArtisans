@@ -10,6 +10,7 @@
 import { Queue } from "bullmq";
 import { getRedisConnection } from "./connection";
 import type { Repo } from "@/lib/server/repo";
+import { accesAutorise } from "@/lib/server/essai";
 
 export const REVIEW_REPLY_QUEUE = "review-replies";
 
@@ -57,6 +58,21 @@ export async function enqueuePendingReviews(repo: Repo): Promise<number> {
 
   let enqueued = 0;
   for (const profile of profiles) {
+    /*
+     * Un essai expiré ne doit plus rien consommer. Chaque avis traité coûte un
+     * appel OpenAI facturé, et ce compte n'a jamais payé : sans ce contrôle, un
+     * inscrit d'un jour continuerait de générer des réponses indéfiniment.
+     */
+    const entreprise = await repo.getCompanyForProfile(profile.id);
+    if (entreprise) {
+      const verdict = accesAutorise({
+        subscriptionStatus: entreprise.subscriptionStatus,
+        trialEndsAt: entreprise.trialEndsAt,
+        gracePeriodEndsAt: entreprise.gracePeriodEndsAt,
+      });
+      if (!verdict.ok) continue;
+    }
+
     const pending = await repo.listPendingReviews(profile.id);
     for (const review of pending) {
       // jobId = reviewId : une mise en file répétée du même avis (le

@@ -2,6 +2,7 @@
 import { Queue } from "bullmq";
 import { getRedisConnection } from "./connection";
 import type { Repo } from "@/lib/server/repo";
+import { accesAutorise } from "@/lib/server/essai";
 
 export const WEEKLY_REPORT_QUEUE = "weekly-reports";
 
@@ -40,6 +41,22 @@ export async function enqueueWeeklyReports(repo: Repo, when = new Date()): Promi
 
   const stats = await repo.listWeeklyStats();
   for (const s of stats) {
+    /*
+     * Même règle que pour les avis : un SMS coûte cinq à dix centimes, et un
+     * essai expiré n'a jamais rien payé. Le contrôle est ici, à la mise en
+     * file, plutôt que dans le worker : un job créé puis abandonné aurait déjà
+     * traversé Redis pour rien.
+     */
+    const entreprise = await repo.getCompanyForProfile(s.googleProfileId);
+    if (entreprise) {
+      const verdict = accesAutorise({
+        subscriptionStatus: entreprise.subscriptionStatus,
+        trialEndsAt: entreprise.trialEndsAt,
+        gracePeriodEndsAt: entreprise.gracePeriodEndsAt,
+      });
+      if (!verdict.ok) continue;
+    }
+
     await q.add(
       "report",
       { profileId: s.googleProfileId },

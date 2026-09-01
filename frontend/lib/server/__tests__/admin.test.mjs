@@ -61,10 +61,9 @@ describe("Statistiques", () => {
       userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
     });
     const s = await repo.statistiquesAdmin();
-    // Un compte neuf naît « incomplete » — créé, jamais payé. C'est la valeur
-    // par défaut en base, et le code l'ignorait : le tableau de bord affichait
-    // « INCOMPLETE » en brut à chaque inscription.
-    assert.ok(s.abonnements.incomplete >= 1);
+    // Un compte neuf naît en essai : c'est ce que le site promet depuis
+    // l'origine — sept jours, sans carte bancaire.
+    assert.ok(s.abonnements.trialing >= 1);
     assert.ok(s.paliers.basique >= 1);
   });
 
