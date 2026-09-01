@@ -71,6 +71,9 @@ services:
       TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      # Préféré au numéro quand il est renseigné : le service choisit
+      # l'expéditeur selon le pays du destinataire.
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -125,6 +128,9 @@ services:
       TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      # Préféré au numéro quand il est renseigné : le service choisit
+      # l'expéditeur selon le pays du destinataire.
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -150,6 +156,9 @@ services:
       TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
       TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      # Préféré au numéro quand il est renseigné : le service choisit
+      # l'expéditeur selon le pays du destinataire.
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

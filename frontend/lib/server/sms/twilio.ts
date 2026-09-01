@@ -52,17 +52,32 @@ export const notConfiguredSender: SmsSender = {
 export function resolveSmsSender(): SmsSender {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const from = process.env.TWILIO_FROM_NUMBER;
-  if (!accountSid || !from) return notConfiguredSender;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim();
+  // L'un OU l'autre suffit : le service se passe de numéro, et un numéro se
+  // passe de service.
+  if (!accountSid || (!from && !messagingServiceSid)) return notConfiguredSender;
 
   const keySid = process.env.TWILIO_API_KEY_SID;
   const keySecret = process.env.TWILIO_API_KEY_SECRET;
   if (keySid && keySecret) {
-    return createTwilioSender({ accountSid, username: keySid, password: keySecret, from });
+    return createTwilioSender({
+      accountSid,
+      username: keySid,
+      password: keySecret,
+      from: from ?? "",
+      messagingServiceSid,
+    });
   }
 
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   if (authToken) {
-    return createTwilioSender({ accountSid, username: accountSid, password: authToken, from });
+    return createTwilioSender({
+      accountSid,
+      username: accountSid,
+      password: authToken,
+      from: from ?? "",
+      messagingServiceSid,
+    });
   }
 
   return notConfiguredSender;
@@ -94,7 +109,31 @@ export interface TwilioConfig {
    * reçu. Le moyen de se désabonner doit alors figurer dans le message ou
    * passer par un autre canal.
    */
+  /**
+   * Expéditeur. Deux formes acceptées par Twilio dans ce champ :
+   *
+   *   · un NUMÉRO E.164 (« +41766014450 ») — le destinataire peut répondre ;
+   *   · un EXPÉDITEUR ALPHANUMÉRIQUE (« MapArtisans »), 11 caractères au plus.
+   *
+   * Ignoré si `messagingServiceSid` est renseigné : le service choisit alors
+   * lui-même l'expéditeur.
+   */
   from: string;
+  /**
+   * Messaging Service (MG…), préféré au champ `From` quand il existe.
+   *
+   * POURQUOI IL VAUT MIEUX
+   *
+   * Le service contient plusieurs expéditeurs — numéros et noms — et choisit
+   * automatiquement celui qui convient au pays du destinataire. Le jour où le
+   * numéro suisse est validé, il suffit de l'ajouter au service : aucune ligne
+   * de code ne change, et les SMS suisses partiront du numéro suisse pendant
+   * que les autres gardent le nom.
+   *
+   * Avec `From` en dur, il aurait fallu redéployer pour chaque changement
+   * d'expéditeur.
+   */
+  messagingServiceSid?: string;
 }
 
 export function createTwilioSender(config: TwilioConfig): SmsSender {
@@ -114,7 +153,13 @@ export function createTwilioSender(config: TwilioConfig): SmsSender {
             Authorization: `Basic ${auth}`,
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          body: new URLSearchParams({ To: to, From: config.from, Body: body }),
+          // Le service prime sur le numéro : renseigner les deux ferait
+        // refuser la requête par Twilio.
+        body: new URLSearchParams(
+          config.messagingServiceSid
+            ? { To: to, MessagingServiceSid: config.messagingServiceSid, Body: body }
+            : { To: to, From: config.from, Body: body },
+        ),
         });
 
         if (response.ok) return;
