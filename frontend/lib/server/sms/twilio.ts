@@ -74,6 +74,26 @@ export interface TwilioConfig {
   username: string;
   /** Secret de la clé API, ou Auth Token du compte. */
   password: string;
+  /**
+   * Expéditeur affiché sur le téléphone du destinataire.
+   *
+   * Twilio accepte deux formes dans ce champ :
+   *
+   *   · un NUMÉRO au format E.164 (« +41766014450 ») — le destinataire peut
+   *     répondre ;
+   *   · un EXPÉDITEUR ALPHANUMÉRIQUE (« MapArtisans »), 11 caractères au plus,
+   *     qui affiche un nom au lieu d'un numéro. Aucune réponse n'est alors
+   *     possible, et aucun numéro n'a besoin d'être loué — donc aucun dossier
+   *     réglementaire à faire valider.
+   *
+   * La seconde forme est préférable pour un envoi à sens unique : un artisan
+   * suisse dont le SMS arrive d'un numéro américain se fait filtrer comme
+   * indésirable, quand un nom lisible passe et inspire confiance.
+   *
+   * CONSÉQUENCE À NE PAS OUBLIER : sans numéro, le « STOP » ne peut pas être
+   * reçu. Le moyen de se désabonner doit alors figurer dans le message ou
+   * passer par un autre canal.
+   */
   from: string;
 }
 
