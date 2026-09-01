@@ -223,3 +223,87 @@ describe("Agenda", () => {
     assert.deepEqual(d.rendezVous, []);
   });
 });
+
+describe("Répertoire clients", () => {
+  /*
+   * Il n'existe PAS de table « clients », et c'est délibéré : tenir un fichier
+   * clients créerait une base de données personnelles à protéger, déclarer et
+   * purger, pour une valeur que les rendez-vous et les demandes d'avis donnent
+   * déjà. La liste est donc reconstruite depuis ces deux sources.
+   */
+  async function ficheAvecCompte() {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("clients@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
+    });
+    const f = await repo.upsertGoogleProfile({
+      companyId: c.id, googleLocationId: "locations/clients", placeId: "ChIJclients",
+      businessName: "Ex", address: null, city: "Sion",
+      latitude: null, longitude: null, accessTokenEnc: null, refreshTokenEnc: null,
+    });
+    return { repo, userId: u.id, ficheId: f.id };
+  }
+
+  test("un client apparaît dès la première demande d'avis", async () => {
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.enregistrerDemandeAvis({
+      profileId: ficheId, clientPhone: "+41791111111", statut: "sent",
+    });
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.equal(d.clients.length, 1);
+    assert.equal(d.clients[0].phone, "+41791111111");
+    assert.ok(d.clients[0].dernierAvisDemande, "la date doit être renseignée");
+  });
+
+  test("les deux sources se rejoignent sur UNE ligne par numéro", async () => {
+    // Un client venu par l'assistant puis sollicité pour un avis ne doit pas
+    // apparaître deux fois : l'artisan croirait à un doublon dans ses données.
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.creerRendezVous({
+      profileId: ficheId, clientName: "Paul", clientPhone: "+41792222222",
+      requestedAt: new Date(Date.now() + 86_400_000),
+    });
+    await repo.enregistrerDemandeAvis({
+      profileId: ficheId, clientPhone: "+41792222222", statut: "sent",
+    });
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.equal(d.clients.length, 1);
+    assert.equal(d.clients[0].name, "Paul", "le nom vient de la source qui l'avait");
+  });
+
+  test("un envoi ÉCHOUÉ ne crée pas de client", async () => {
+    // Le SMS n'est jamais parti : personne n'a été contacté.
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.enregistrerDemandeAvis({
+      profileId: ficheId, clientPhone: "+41793333333",
+      statut: "failed", motifEchec: "numéro invalide",
+    });
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.deepEqual(d.clients, []);
+  });
+
+  test("un désabonnement est signalé, pas masqué", async () => {
+    // Masquer la ligne ferait croire à une panne : l'artisan réessaierait.
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.enregistrerDemandeAvis({
+      profileId: ficheId, clientPhone: "+41794444444", statut: "sent",
+    });
+    await repo.enregistrerDesabonnement("+41794444444");
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.equal(d.clients.length, 1);
+    assert.equal(d.clients[0].desabonne, true);
+  });
+
+  test("les clients d'un autre artisan ne remontent pas", async () => {
+    const { repo, userId, ficheId } = await ficheAvecCompte();
+    await repo.enregistrerDemandeAvis({
+      profileId: ficheId, clientPhone: "+41795555555", statut: "sent",
+    });
+    await repo.enregistrerDemandeAvis({
+      profileId: "fiche-d-un-autre", clientPhone: "+41796666666", statut: "sent",
+    });
+    const d = await tdb.chargerTableauDeBord(userId);
+    assert.deepEqual(d.clients.map((c) => c.phone), ["+41795555555"]);
+  });
+});

@@ -26,7 +26,10 @@ import type { PlanId } from "@/lib/data";
  * quotidien, et le premier client à le heurter aurait raison de se plaindre.
  */
 export const PLAFOND_MENSUEL: Record<PlanId, number> = {
-  basique: 30,
+  // Relevé de 30 à 120 le jour où la demande d'avis est passée en Basique :
+  // 30 couvrait le seul rapport hebdomadaire. Laisser ce plafond aurait vendu
+  // une fonctionnalité que le quota bloquait dès la trentième intervention.
+  basique: 120,
   essentiel: 250,
   professionnel: 500,
 };

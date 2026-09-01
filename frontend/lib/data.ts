@@ -96,7 +96,7 @@ export const PLANS: Plan[] = [
     name: "Basique",
     amount: 49,
     audience:
-      "L'indépendant qui veut être trouvé sans y passer de temps. Un seul établissement.",
+      "L'indépendant qui veut des avis après chaque chantier et être trouvé, sans y passer de temps.",
     features: [
       "1 établissement",
       "Chaque avis reçoit sa réponse, dans le vocabulaire de votre métier et de votre ville",
@@ -106,6 +106,11 @@ export const PLANS: Plan[] = [
       // pas. L'ambiguïté serait lue par un examinateur Google au moment du
       // dossier d'accès à l'API.
       "Avis mitigé ? Vous relisez notre réponse avant qu'elle ne parte",
+      // Descendu du palier Essentiel : demander un avis après chaque chantier
+      // est le geste qui fait vivre une fiche. Le réserver au palier
+      // intermédiaire privait de résultats ceux qui en ont le plus besoin —
+      // et un artisan sans avis n'a rien à quoi nos réponses puissent répondre.
+      "Chantier terminé ? Un bouton, et votre client reçoit la demande d'avis par SMS",
       "Suivi Geo-Grid : 1 mot-clé",
       "Rapport SMS chaque semaine",
     ],

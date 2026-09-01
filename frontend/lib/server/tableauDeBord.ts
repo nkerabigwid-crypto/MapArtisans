@@ -42,6 +42,14 @@ export interface RendezVousAffiche {
   status: "confirmed" | "honored" | "canceled";
 }
 
+export interface ClientAffiche {
+  phone: string;
+  name: string | null;
+  dernierAvisDemande: string | null;
+  dernierRendezVous: string | null;
+  desabonne: boolean;
+}
+
 export interface DonneesTableauDeBord {
   company: Company;
   /** Identifiant interne de la fiche, requis par les routes API. `null` sans fiche. */
@@ -51,6 +59,7 @@ export interface DonneesTableauDeBord {
   posts: Post[];
   qrCode: QrCode | null;
   rendezVous: RendezVousAffiche[];
+  clients: ClientAffiche[];
   /** `true` tant qu'aucune fiche Google n'est rattachée. */
   sansFiche: boolean;
 }
@@ -100,14 +109,16 @@ export async function chargerTableauDeBord(
       posts: [],
       qrCode: null,
       rendezVous: [],
+      clients: [],
       sansFiche: true,
     };
   }
 
-  const [avis, publications, rdv] = await Promise.all([
+  const [avis, publications, rdv, clients] = await Promise.all([
     repo.listReviewsForProfile(fiche.id),
     repo.listerPosts(fiche.id),
     repo.listerRendezVous(fiche.id),
+    repo.listerClients(fiche.id),
   ]);
 
   const profile: GoogleProfile = {
@@ -157,6 +168,13 @@ export async function chargerTableauDeBord(
       requestedAt: r.requestedAt.toISOString(),
       details: r.details,
       status: r.status,
+    })),
+    clients: clients.map((c) => ({
+      phone: c.phone,
+      name: c.name,
+      dernierAvisDemande: c.dernierAvisDemande?.toISOString() ?? null,
+      dernierRendezVous: c.dernierRendezVous?.toISOString() ?? null,
+      desabonne: c.desabonne,
     })),
     qrCode: fiche.placeId
       ? {

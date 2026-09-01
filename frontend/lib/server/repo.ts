@@ -39,6 +39,19 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface ClientRecord {
+  /** E.164. Sert de clé : c'est la seule donnée toujours présente. */
+  phone: string;
+  /** Nom si l'assistant l'a recueilli, sinon `null`. */
+  name: string | null;
+  /** Dernière demande d'avis ENVOYÉE, ou `null`. */
+  dernierAvisDemande: Date | null;
+  /** Dernier rendez-vous connu, ou `null`. */
+  dernierRendezVous: Date | null;
+  /** `true` si ce numéro a demandé à ne plus être sollicité. */
+  desabonne: boolean;
+}
+
 export interface RendezVousRecord {
   id: string;
   googleProfileId: string;
@@ -393,6 +406,19 @@ export interface Repo {
    * consommés — se lit très bien en agrégat.
    */
   statistiquesAdmin(): Promise<StatistiquesAdmin>;
+
+  // --- Répertoire clients.
+  /**
+   * Les personnes que cet artisan a servies, un numéro par ligne.
+   *
+   * Reconstruit à partir des rendez-vous et des demandes d'avis déjà envoyées :
+   * il n'existe PAS de table « clients », et c'est délibéré. Tenir un fichier
+   * clients créerait une base de données personnelles à protéger, déclarer et
+   * purger, pour une valeur que ces deux sources donnent déjà.
+   *
+   * Le numéro sert de clé : c'est la seule donnée toujours présente.
+   */
+  listerClients(profileId: string, limite?: number): Promise<ClientRecord[]>;
 
   // --- Plafond mensuel de SMS.
   /** SMS déjà envoyés ce mois-ci par cette entreprise, tous types confondus. */
@@ -1006,6 +1032,52 @@ export const memoryRepo: Repo = {
       facturesEmises: factures.size,
       montantFactureCentimes: montant,
     };
+  },
+
+  async listerClients(profileId, limite = 100) {
+    await seed();
+    const parNumero = new Map<string, ClientRecord>();
+
+    const obtenir = (phone: string) => {
+      let c = parNumero.get(phone);
+      if (!c) {
+        c = {
+          phone,
+          name: null,
+          dernierAvisDemande: null,
+          dernierRendezVous: null,
+          desabonne: desabonnes.has(phone),
+        };
+        parNumero.set(phone, c);
+      }
+      return c;
+    };
+
+    for (const r of rendezVous.values()) {
+      if (r.googleProfileId !== profileId) continue;
+      const c = obtenir(r.clientPhone);
+      c.name = c.name ?? r.clientName;
+      if (!c.dernierRendezVous || r.requestedAt > c.dernierRendezVous) {
+        c.dernierRendezVous = r.requestedAt;
+      }
+    }
+
+    for (const d of demandesAvis) {
+      if (d.profileId !== profileId || d.statut !== "sent") continue;
+      const c = obtenir(d.clientPhone);
+      c.name = c.name ?? d.clientName;
+      if (!c.dernierAvisDemande || d.envoyeeA > c.dernierAvisDemande) {
+        c.dernierAvisDemande = d.envoyeeA;
+      }
+    }
+
+    return [...parNumero.values()]
+      .sort((a, b) => {
+        const da = a.dernierRendezVous ?? a.dernierAvisDemande ?? new Date(0);
+        const db = b.dernierRendezVous ?? b.dernierAvisDemande ?? new Date(0);
+        return db.getTime() - da.getTime();
+      })
+      .slice(0, limite);
   },
 
   async compterSmsDuMois(companyId) {

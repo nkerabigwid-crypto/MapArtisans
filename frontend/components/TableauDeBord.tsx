@@ -25,6 +25,7 @@ import type { Review, Post, Company } from "@/lib/data";
 import type { DonneesTableauDeBord } from "@/lib/server/tableauDeBord";
 import AucuneFiche from "@/components/AucuneFiche";
 import AgendaView from "@/components/AgendaView";
+import ListeClients from "@/components/ListeClients";
 import { TRADES } from "@/lib/trades";
 import { companyVariants, geoGrid, weekStats } from "@/lib/data";
 
@@ -130,6 +131,25 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
    * ferait disparaître un rendez-vous de l'écran alors qu'il est toujours en
    * base, et l'artisan le retrouverait au rechargement suivant sans comprendre.
    */
+  /**
+   * Relance une demande d'avis vers un client déjà servi.
+   *
+   * Renvoie le message d'erreur du serveur plutôt qu'un texte générique : il
+   * explique le plafond mensuel atteint, le délai de trois mois entre deux
+   * sollicitations ou le désabonnement — trois cas où l'artisan doit
+   * comprendre, pas seulement constater que ça ne part pas.
+   */
+  async function handleDemanderAvis(phone: string): Promise<string | null> {
+    if (!donnees.profileId) return "Connectez d'abord votre fiche Google.";
+    const reponse = await fetch("/api/avis/demander", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: donnees.profileId, clientPhone: phone }),
+    });
+    const data = await reponse.json().catch(() => ({}));
+    return reponse.ok ? null : (data.error ?? "L'envoi a échoué.");
+  }
+
   async function handleStatutRdv(id: string, statut: "honored" | "canceled") {
     if (!donnees.profileId) return;
     const reponse = await fetch("/api/rendez-vous", {
@@ -264,7 +284,10 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
       {view === "clients" && (
         <main>
           <ViewGate skeleton={<ClientsSkeleton />} what="vos retours clients">
-            <ClientsView qrCode={qrCode ?? QR_VIDE} />
+            <>
+              <ListeClients clients={donnees.clients} onDemanderAvis={handleDemanderAvis} />
+              <ClientsView qrCode={qrCode ?? QR_VIDE} />
+            </>
           </ViewGate>
         </main>
       )}

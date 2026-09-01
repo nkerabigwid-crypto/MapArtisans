@@ -5,6 +5,7 @@ import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
   AssistantSettingsRecord,
+  ClientRecord,
   RendezVousRecord,
   StatistiquesAdmin,
   PostRecord,
@@ -615,6 +616,58 @@ export const pgRepo: Repo = {
       facturesEmises: Number(l.factures),
       montantFactureCentimes: Number(l.montant),
     } satisfies StatistiquesAdmin;
+  },
+
+  async listerClients(profileId, limite = 100) {
+    /*
+     * UNE requête, deux sources réunies. Il n'existe pas de table « clients »,
+     * et c'est délibéré : tenir un fichier clients créerait une base de données
+     * personnelles à protéger, déclarer et purger, pour une valeur que les
+     * rendez-vous et les demandes d'avis donnent déjà.
+     *
+     * Le numéro sert de clé — seule donnée toujours présente. Le nom vient de
+     * la source qui l'a recueilli, `max()` retenant simplement une valeur non
+     * nulle quand les deux en ont une.
+     */
+    const r = await q<{
+      phone: string;
+      name: string | null;
+      dernier_avis: Date | null;
+      dernier_rdv: Date | null;
+      desabonne: boolean;
+    }>(
+      `WITH contacts AS (
+         SELECT client_phone AS phone, client_name AS name,
+                NULL::timestamptz AS avis, requested_at AS rdv
+           FROM appointments WHERE google_profile_id = $1
+         UNION ALL
+         SELECT client_phone, client_name,
+                COALESCE(sent_at, created_at), NULL::timestamptz
+           FROM review_requests
+          WHERE google_profile_id = $1 AND status = 'sent'
+       )
+       SELECT c.phone,
+              max(c.name)                       AS name,
+              max(c.avis)                       AS dernier_avis,
+              max(c.rdv)                        AS dernier_rdv,
+              (o.phone IS NOT NULL)             AS desabonne
+         FROM contacts c
+         LEFT JOIN sms_optouts o ON o.phone = c.phone
+        GROUP BY c.phone, o.phone
+        ORDER BY COALESCE(max(c.rdv), max(c.avis)) DESC NULLS LAST
+        LIMIT $2`,
+      [profileId, limite],
+    );
+
+    return r.map(
+      (x): ClientRecord => ({
+        phone: x.phone,
+        name: x.name ?? null,
+        dernierAvisDemande: x.dernier_avis ?? null,
+        dernierRendezVous: x.dernier_rdv ?? null,
+        desabonne: Boolean(x.desabonne),
+      }),
+    );
   },
 
   async compterSmsDuMois(companyId) {
