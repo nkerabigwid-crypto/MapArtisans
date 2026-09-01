@@ -969,19 +969,21 @@ describe("Plafonds mensuels révisés", () => {
   let q2;
   before(async () => { q2 = await import("../quota.ts"); });
 
-  test("50 / 100 / 200 : la facture SMS reste sous un quart du prix", () => {
+  test("60 / 150 / 300 : la facture SMS reste sous un tiers du prix", () => {
     // La demande d'avis coûte deux segments depuis qu'elle porte le lien de
     // désabonnement. Aux anciens plafonds — 120 / 250 / 500 — la facture
     // atteignait 38 à 53 % du prix de l'abonnement.
-    assert.equal(q2.PLAFOND_MENSUEL.basique, 50);
-    assert.equal(q2.PLAFOND_MENSUEL.essentiel, 100);
-    assert.equal(q2.PLAFOND_MENSUEL.professionnel, 200);
+    assert.equal(q2.PLAFOND_MENSUEL.basique, 60);
+    assert.equal(q2.PLAFOND_MENSUEL.essentiel, 150);
+    assert.equal(q2.PLAFOND_MENSUEL.professionnel, 300);
 
     const SEG = 0.08;
     for (const [plan, prix] of [["basique", 49], ["essentiel", 99], ["professionnel", 149]]) {
       const cap = q2.PLAFOND_MENSUEL[plan];
       const cout = (5 + (cap - 5) * 2) * SEG;
-      assert.ok(cout / prix < 0.25, `${plan} : ${(cout / prix * 100).toFixed(0)} % du prix`);
+      // Un tiers : le plafond est généreux à dessein, il arrête l'anormal et
+      // ne doit jamais gêner un usage normal.
+      assert.ok(cout / prix < 0.34, `${plan} : ${(cout / prix * 100).toFixed(0)} % du prix`);
     }
   });
 });

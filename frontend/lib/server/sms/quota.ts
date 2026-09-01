@@ -34,14 +34,19 @@ export const PLAFOND_MENSUEL: Record<PlanId, number> = {
    * précédents — 120, 250, 500 — laissaient la facture SMS atteindre 38 à
    * 53 % du prix de l'abonnement, ce qui n'était pas tenable.
    *
-   * À 50 / 100 / 200, le pire cas reste entre 17 et 22 % du prix, quel que
-   * soit le palier. Un artisan qui envoie une demande après chaque chantier
-   * reste largement en dessous ; celui qui les dépasse a une activité qui
-   * justifie le palier supérieur — le plafond le lui dit au bon moment.
+   * À 60 / 150 / 300, le pire cas reste sous un tiers du prix — 19 % en
+   * Basique, 32 % en Professionnel. C'est plus généreux que le strict
+   * nécessaire, et c'est délibéré : un plafond sert à arrêter l'anormal, pas à
+   * rationner l'usage normal. Un artisan qui envoie une demande après chaque
+   * chantier ne doit jamais le rencontrer.
+   *
+   * Le pire cas suppose en outre que TOUT le plafond parte en demandes d'avis
+   * à deux segments. En pratique, une trentaine d'envois par mois coûtent
+   * environ 5 CHF, soit 3 à 11 % selon le palier.
    */
-  basique: 50,
-  essentiel: 100,
-  professionnel: 200,
+  basique: 60,
+  essentiel: 150,
+  professionnel: 300,
 };
 
 /**
