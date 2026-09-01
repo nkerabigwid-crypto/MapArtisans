@@ -24,7 +24,13 @@ export interface Company {
   /** Toujours CHF : l'éditeur est suisse et facture dans sa devise. */
   currency: "CHF";
   plan_id: PlanId;
-  subscription_status: "trialing" | "active" | "past_due" | "canceled";
+  /**
+   * `incomplete` est le statut d'un compte créé mais jamais payé — c'est la
+   * VALEUR PAR DÉFAUT en base depuis l'origine, et elle manquait ici. Le
+   * tableau de bord affichait donc « INCOMPLETE » en brut à chaque nouvel
+   * inscrit, faute de libellé correspondant.
+   */
+  subscription_status: "incomplete" | "trialing" | "active" | "past_due" | "canceled";
   plan_amount: number;
   /** Date du premier échec de prélèvement — alimente le bandeau `past_due`. */
   payment_failed_at: string | null;

@@ -131,6 +131,26 @@ export async function POST(request: NextRequest) {
   const PAYS = ["CH", "FR", "BE", "LU", "CA", "MC"];
   const paysValide = typeof country === "string" && PAYS.includes(country) ? country : "CH";
 
+  /*
+   * Le nom d'entreprise ne doit pas être une adresse e-mail.
+   *
+   * Constaté sur un compte réel : l'artisan a saisi son adresse dans ce champ.
+   * Ce nom n'est pas décoratif — il s'affiche en tête du tableau de bord, et
+   * surtout il part dans le SMS envoyé à SES clients (« … vous remercie »).
+   * Publier l'adresse e-mail de l'artisan à ses propres clients serait une
+   * fuite, et la corriger après coup suppose de repasser en base.
+   */
+  if (typeof companyName === "string" && EMAIL.test(companyName.trim())) {
+    return NextResponse.json(
+      {
+        error:
+          "Le nom de votre entreprise ne peut pas être une adresse e-mail. " +
+          "Indiquez le nom sous lequel vos clients vous connaissent.",
+      },
+      { status: 400 },
+    );
+  }
+
   const utilisateur = await repo.createUser(adresse, password);
 
   // L'entreprise n'est créée que si le formulaire l'a fournie. Une inscription

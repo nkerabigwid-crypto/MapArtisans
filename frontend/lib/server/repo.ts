@@ -118,7 +118,7 @@ export interface CompanyRecord {
   // maintenant : le tableau de bord affichait un abonnement de démonstration.
   country: string;
   planAmount: number;
-  subscriptionStatus: "trialing" | "active" | "past_due" | "canceled";
+  subscriptionStatus: "incomplete" | "trialing" | "active" | "past_due" | "canceled";
   paymentFailedAt: Date | null;
   gracePeriodEndsAt: Date | null;
   canceledAt: Date | null;
@@ -780,7 +780,7 @@ export const memoryRepo: Repo = {
       // Un compte neuf naît en essai, au tarif du palier d'entrée. Le webhook
       // Stripe le fera passer en `active` au premier paiement encaissé.
       planAmount: 49,
-      subscriptionStatus: "trialing",
+      subscriptionStatus: "incomplete",
       paymentFailedAt: null,
       gracePeriodEndsAt: null,
       canceledAt: null,

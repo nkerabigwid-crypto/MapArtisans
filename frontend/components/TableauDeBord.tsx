@@ -25,6 +25,7 @@ import type { Review, Post, Company } from "@/lib/data";
 import type { DonneesTableauDeBord } from "@/lib/server/tableauDeBord";
 import AucuneFiche from "@/components/AucuneFiche";
 import AgendaView from "@/components/AgendaView";
+import { TRADES } from "@/lib/trades";
 import { companyVariants, geoGrid, weekStats } from "@/lib/data";
 
 /**
@@ -45,7 +46,24 @@ const PROFIL_VIDE = {
 
 const QR_VIDE = { label: "", scans_count: 0, code_slug: "", place_id: null };
 
+/**
+ * Libellé lisible du métier, pour le sous-titre de l'en-tête.
+ *
+ * `trade_type` porte un identifiant technique (« vtc », « electricien ») :
+ * l'afficher tel quel donnerait « vtc · Sion » en tête de chaque écran.
+ */
+const METIER_LABEL: Record<string, string> = Object.fromEntries(
+  TRADES.map((t) => [t.value, t.court]),
+);
+
 const SUB_LABEL: Record<string, string> = {
+  /*
+   * `incomplete` : compte créé, aucun paiement. C'est l'état de TOUT nouvel
+   * inscrit, et il n'avait pas de libellé — l'écran affichait « INCOMPLETE »
+   * en brut, ce qui se lit comme un défaut du compte plutôt que comme une
+   * étape restante.
+   */
+  incomplete: "Abonnement à activer",
   active: "Abonnement actif",
   trialing: "Période d'essai",
   past_due: "Paiement en retard",
@@ -53,6 +71,8 @@ const SUB_LABEL: Record<string, string> = {
 };
 
 const SUB_TONE: Record<string, "good" | "warn" | "bad"> = {
+  // `warn` et non `bad` : rien n'est cassé, il reste une étape à faire.
+  incomplete: "warn",
   active: "good",
   trialing: "good",
   past_due: "warn",
@@ -178,6 +198,11 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
     <div className="app">
       <TopBar
         companyName={company.company_name}
+        sousTitre={
+          googleProfile?.city
+            ? `${METIER_LABEL[company.trade_type] ?? company.trade_type} · ${googleProfile.city}`
+            : null
+        }
         subLabel={SUB_LABEL[company.subscription_status] ?? company.subscription_status}
         subTone={SUB_TONE[company.subscription_status] ?? "good"}
         onOpenSettings={() => setView("settings")}

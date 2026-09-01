@@ -4,13 +4,27 @@ import { LogoMark } from "./Logo";
 
 interface TopBarProps {
   companyName: string;
+  /**
+   * Métier et ville, sous le nom. Vide tant qu'aucune fiche n'est rattachée.
+   *
+   * L'en-tête est le SEUL élément présent sur les cinq écrans : c'est donc lui
+   * qui donne à l'ensemble un air habité. Un nom seul, surmontant une page
+   * vide, ressemble à une application qui n'a pas fini de charger.
+   */
+  sousTitre?: string | null;
   subLabel: string;
   /** Couleur du badge — doit refléter le statut, pas être décorative. */
   subTone: "good" | "warn" | "bad";
   onOpenSettings: () => void;
 }
 
-export default function TopBar({ companyName, subLabel, subTone, onOpenSettings }: TopBarProps) {
+export default function TopBar({
+  companyName,
+  sousTitre,
+  subLabel,
+  subTone,
+  onOpenSettings,
+}: TopBarProps) {
   return (
     <header className="topbar">
       {/* Le logo ramène au site. Sans lui, le tableau de bord n'avait aucune
