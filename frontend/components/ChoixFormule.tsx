@@ -1,7 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { Accordion } from "@base-ui/react/accordion";
 import { PLANS, type PlanId } from "@/lib/data";
+
+/**
+ * Questions posées au moment de payer.
+ *
+ * Elles répondent aux trois hésitations réelles — la devise, la sortie, ce que
+ * devient la fiche — et non à des questions inventées pour remplir la page.
+ */
+const FAQ = [
+  {
+    q: "Pourquoi une facturation en francs suisses ?",
+    a: "MapArtisans est édité en Suisse et facture dans sa devise, quel que soit votre pays. Si vous payez avec une carte en euros, votre banque applique son taux de change du jour — le montant prélevé peut donc varier légèrement d'un mois à l'autre.",
+  },
+  {
+    q: "Puis-je résilier quand je veux ?",
+    a: "Oui, depuis vos réglages, en un clic. L'abonnement reste actif jusqu'à la fin du mois déjà payé, sans frais de sortie.",
+  },
+  {
+    q: "Que devient ma fiche si j'arrête ?",
+    a: "Elle reste la vôtre. MapArtisans cesse d'y publier, mais rien n'est supprimé : vos avis et vos posts déjà en ligne restent en place.",
+  },
+  {
+    q: "Y a-t-il un engagement ?",
+    a: "Aucun. La facturation est mensuelle et s'arrête le mois où vous résiliez.",
+  },
+];
 
 interface ChoixFormuleProps {
   planActuel: PlanId;
@@ -137,10 +164,12 @@ export default function ChoixFormule({
                 )}
 
                 <h2 className="plan-name">{plan.name}</h2>
+                {/* Classes d'origine : `plan-cur` et `plan-per`. Les avoir
+                    renommées faisait perdre tout le style — le prix s'affichait
+                    « 49CHF/ mois », collé et sans hiérarchie. */}
                 <div className="plan-price">
-                  <span className="plan-amount">{plan.amount}</span>
-                  <span className="plan-currency">CHF</span>
-                  <span className="plan-period">/ mois</span>
+                  {plan.amount} <span className="plan-cur">CHF</span>
+                  <span className="plan-per"> / mois</span>
                 </div>
                 <p className="plan-audience">{plan.audience}</p>
                 {plan.highlight && <p className="plan-highlight">{plan.highlight}</p>}
@@ -180,6 +209,37 @@ export default function ChoixFormule({
             );
           })}
         </div>
+
+        <p className="plan-secure">
+          Le paiement est traité par Stripe. Vos coordonnées bancaires ne passent
+          jamais par MapArtisans.
+        </p>
+
+        <h2 className="plan-faq-title">Questions fréquentes</h2>
+        <Accordion.Root className="faq">
+          {FAQ.map(({ q, a }) => (
+            <Accordion.Item key={q} className="faq-item">
+              <Accordion.Header>
+                <Accordion.Trigger className="faq-trigger">
+                  <span>{q}</span>
+                  <span className="faq-mark" aria-hidden="true">
+                    ＋
+                  </span>
+                </Accordion.Trigger>
+              </Accordion.Header>
+              <Accordion.Panel className="faq-panel">
+                <div className="faq-body">{a}</div>
+              </Accordion.Panel>
+            </Accordion.Item>
+          ))}
+        </Accordion.Root>
+
+        {/* SANS CE LIEN, LA PAGE EST UN CUL-DE-SAC.
+            Ma réécriture l'avait supprimé : arrivé ici, l'artisan n'avait plus
+            aucun moyen de revenir à son tableau de bord sans retaper l'adresse. */}
+        <Link href="/tableau-de-bord" className="plan-back">
+          Retour au tableau de bord
+        </Link>
       </main>
     </div>
   );
