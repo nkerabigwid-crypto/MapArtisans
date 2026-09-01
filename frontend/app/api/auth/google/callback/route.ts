@@ -3,6 +3,7 @@ import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
 import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
 import { encryptToken } from "@/lib/server/crypto";
+import { finEssai } from "@/lib/server/essai";
 import { echangerCode, lireConfig } from "@/lib/server/google/oauth";
 import { COOKIE_ETAT, verifierEtat } from "@/lib/server/google/etat";
 import { listerEtablissements } from "@/lib/server/google/etablissements";
@@ -113,6 +114,24 @@ export async function GET(request: NextRequest) {
        * dans le HTML du site de l'artisan.
        */
       await repo.creerReglagesAssistant(fiche.id);
+    }
+
+    /*
+     * L'ESSAI DÉMARRE ICI, PAS À L'INSCRIPTION.
+     *
+     * Tant qu'aucune fiche n'est rattachée, le produit ne fait rien pour
+     * l'artisan : ni avis, ni position, ni rapport. Laisser courir ses
+     * quatorze jours pendant qu'il attend l'accord de Google revient à les lui
+     * prendre.
+     *
+     * L'opération ne s'applique qu'une fois : reconnecter sa fiche ne
+     * prolonge pas l'essai.
+     */
+    const nouvelleFin = await repo.demarrerEssaiSiPremiereFiche(entreprise.id, finEssai());
+    if (nouvelleFin) {
+      console.log(
+        `[google] essai démarré pour ${entreprise.id}, fin le ${nouvelleFin.toISOString().slice(0, 10)}`,
+      );
     }
 
     /*

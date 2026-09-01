@@ -872,10 +872,43 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.15rem; margin: 2rem 0 0.7rem;
 }
+/* Sortie de la page des tarifs.
+   Un lien souligné en petit se confondait avec le pied de page, au bout de
+   trois écrans de défilement. C'est pourtant la seule issue pour qui vient
+   comparer les formules et repart sans acheter — la majorité des visites.
+   Cible pleine largeur, encadrée, hauteur tactile. */
 .plan-back {
-  display: block; text-align: center; margin-top: 1.6rem;
-  font-size: 0.86rem; color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 2.2rem;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--card);
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+  text-decoration: none;
 }
+
+.plan-back:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* La flèche recule au survol : le mouvement dit « on repart » sans un mot. */
+.plan-back-fleche {
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: transform 0.16s ease;
+}
+
+.plan-back:hover .plan-back-fleche { transform: translateX(-3px); }
 
 /* FAQ (Accordion) */
 .faq {

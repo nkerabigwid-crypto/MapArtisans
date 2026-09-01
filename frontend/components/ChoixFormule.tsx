@@ -234,10 +234,16 @@ export default function ChoixFormule({
           ))}
         </Accordion.Root>
 
-        {/* SANS CE LIEN, LA PAGE EST UN CUL-DE-SAC.
-            Ma réécriture l'avait supprimé : arrivé ici, l'artisan n'avait plus
-            aucun moyen de revenir à son tableau de bord sans retaper l'adresse. */}
+        {/* SORTIE DE PAGE.
+            Un lien souligné en petit, au bout d'une longue page de tarifs, se
+            confond avec le pied de page. C'est pourtant la seule issue pour
+            quelqu'un qui vient regarder les formules et repart sans acheter —
+            la majorité des visites. Une cible pleine largeur, avec une flèche,
+            se voit après trois écrans de défilement. */}
         <Link href="/tableau-de-bord" className="plan-back">
+          <span className="plan-back-fleche" aria-hidden="true">
+            ←
+          </span>
           Retour au tableau de bord
         </Link>
       </main>

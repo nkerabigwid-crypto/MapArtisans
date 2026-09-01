@@ -152,6 +152,11 @@ export interface CompanyRecord {
    * de « votre essai est terminé ».
    */
   trialEndsAt: Date | null;
+  /**
+   * Rattachement de la première fiche : moment où l'essai commence vraiment.
+   * `null` tant qu'aucune fiche n'est rattachée.
+   */
+  trialStartedAt: Date | null;
 }
 
 export interface GoogleProfileRecord {
@@ -437,6 +442,19 @@ export interface Repo {
    */
   listerClients(profileId: string, limite?: number): Promise<ClientRecord[]>;
 
+  /**
+   * Démarre l'essai au rattachement de la PREMIÈRE fiche.
+   *
+   * Tant qu'aucune fiche n'est rattachée, le produit ne fait rien pour
+   * l'artisan : ni avis, ni position, ni rapport. Faire courir ses quatorze
+   * jours pendant cette attente revient à les lui prendre.
+   *
+   * Ne s'applique qu'une fois — sans quoi débrancher puis rebrancher sa fiche
+   * prolongerait l'essai indéfiniment. Renvoie la nouvelle date de fin, ou
+   * `null` si l'essai avait déjà démarré ou si le compte n'est plus en essai.
+   */
+  demarrerEssaiSiPremiereFiche(companyId: string, fin: Date): Promise<Date | null>;
+
   // --- Rappel de fin d'essai.
   /**
    * Essais qui expirent dans moins de 24 h et dont le rappel n'est pas parti.
@@ -640,6 +658,7 @@ async function seed() {
     canceledAt: null,
     // Entreprises de démonstration : abonnées, donc hors essai.
     trialEndsAt: null,
+    trialStartedAt: null,
   });
   profiles.set("g-001", {
     id: "g-001",
@@ -679,6 +698,7 @@ async function seed() {
     canceledAt: null,
     // Entreprises de démonstration : abonnées, donc hors essai.
     trialEndsAt: null,
+    trialStartedAt: null,
   });
   profiles.set("g-002", {
     id: "g-002",
@@ -726,6 +746,7 @@ async function seed() {
     canceledAt: null,
     // Entreprises de démonstration : abonnées, donc hors essai.
     trialEndsAt: null,
+    trialStartedAt: null,
   });
   profiles.set("g-003", {
     id: "g-003",
@@ -850,6 +871,7 @@ export const memoryRepo: Repo = {
       gracePeriodEndsAt: null,
       canceledAt: null,
       trialEndsAt: finEssai(),
+      trialStartedAt: null,
     };
     companies.set(c.id, c);
     return c;
@@ -979,11 +1001,24 @@ export const memoryRepo: Repo = {
   },
   async majAbonnement(input) {
     await seed();
+    /*
+     * Cette implémentation ne faisait RIEN : elle se contentait de réussir.
+     * Les tests exerçaient donc le flux sans que l'état change, et un test
+     * vérifiant qu'un client devenu payant n'est pas replongé en essai
+     * échouait — non pas à cause du code de production, mais parce que le
+     * dépôt en mémoire ne reflétait pas le vrai.
+     *
+     * Un double d'essai qui ne se comporte pas comme l'original ne teste rien.
+     */
     for (const c of companies.values()) {
       if (c.userId !== input.userId) continue;
-      // Le dépôt en mémoire ne porte pas ces colonnes ; l'important ici est
-      // que l'appel réussisse pour que les tests exercent le flux complet.
-      if (input.planId) (c as { tradeType: string }).tradeType = c.tradeType;
+      c.subscriptionStatus = input.statut;
+      if (input.planId) c.planId = input.planId;
+      // Mêmes règles que la requête SQL : la date d'échec est effacée au retour
+      // à l'état actif, et posée au passage en impayé.
+      if (input.statut === "active") c.paymentFailedAt = null;
+      if (input.statut === "past_due") c.paymentFailedAt = new Date();
+      if (input.statut === "canceled") c.canceledAt = new Date();
     }
   },
   async estDesabonne(phone) {
@@ -1118,6 +1153,15 @@ export const memoryRepo: Repo = {
         return db.getTime() - da.getTime();
       })
       .slice(0, limite);
+  },
+
+  async demarrerEssaiSiPremiereFiche(companyId, fin) {
+    await seed();
+    const c = companies.get(companyId);
+    if (!c || c.subscriptionStatus !== "trialing" || c.trialStartedAt) return null;
+    c.trialStartedAt = new Date();
+    c.trialEndsAt = fin;
+    return fin;
   },
 
   async listerEssaisARappeler(maintenant = new Date()) {

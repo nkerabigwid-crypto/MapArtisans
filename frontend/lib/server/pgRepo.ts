@@ -181,6 +181,7 @@ function versEntreprise(r: any): CompanyRecord {
     gracePeriodEndsAt: r.grace_period_ends_at ?? null,
     canceledAt: r.canceled_at ?? null,
     trialEndsAt: r.trial_ends_at ?? null,
+    trialStartedAt: r.trial_started_at ?? null,
   } as CompanyRecord;
 }
 
@@ -677,6 +678,29 @@ export const pgRepo: Repo = {
         desabonne: Boolean(x.desabonne),
       }),
     );
+  },
+
+  async demarrerEssaiSiPremiereFiche(companyId, fin) {
+    /*
+     * UNE seule instruction, donc atomique et idempotente.
+     *
+     * `trial_started_at IS NULL` est la garde : sans elle, chaque reconnexion
+     * de fiche repousserait la fin de l'essai, et un artisan pourrait le
+     * prolonger indéfiniment en débranchant puis rebranchant sa fiche.
+     *
+     * La condition sur le statut évite de réveiller un essai chez un client
+     * devenu payant ou résilié.
+     */
+    const r = await q<{ trial_ends_at: Date }>(
+      `UPDATE companies
+          SET trial_started_at = now(), trial_ends_at = $2
+        WHERE id = $1
+          AND subscription_status = 'trialing'
+          AND trial_started_at IS NULL
+        RETURNING trial_ends_at`,
+      [companyId, fin],
+    );
+    return r[0]?.trial_ends_at ?? null;
   },
 
   async listerEssaisARappeler(maintenant = new Date()) {

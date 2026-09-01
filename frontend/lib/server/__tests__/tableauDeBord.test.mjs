@@ -333,3 +333,61 @@ describe("Choix de formule", () => {
     assert.notEqual(d.company.subscription_status, "active");
   });
 });
+
+describe("L'essai démarre au rattachement de la fiche", () => {
+  /*
+   * Constaté sur un client réel : inscrit le 1er septembre, essai courant
+   * jusqu'au 15, et rien d'utilisable entre-temps — sa fiche ne pouvait pas
+   * être rattachée tant que Google n'avait pas accordé l'accès à son API.
+   *
+   * Ses quatorze jours s'écoulaient pendant que le produit ne faisait rien
+   * pour lui.
+   */
+  async function compteNeuf() {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("essai@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id, companyName: "Ex", tradeType: "plombier", country: "CH",
+    });
+    return { repo, company: c };
+  }
+
+  test("un compte neuf n'a pas encore démarré son essai", async () => {
+    const { company } = await compteNeuf();
+    assert.equal(company.trialStartedAt, null);
+  });
+
+  test("le rattachement fixe une nouvelle date de fin", async () => {
+    const { repo, company } = await compteNeuf();
+    const fin = new Date(Date.now() + 14 * 24 * 3600 * 1000);
+    const obtenue = await repo.demarrerEssaiSiPremiereFiche(company.id, fin);
+    assert.equal(obtenue.getTime(), fin.getTime());
+  });
+
+  test("une SECONDE fiche ne prolonge pas l'essai", async () => {
+    /*
+     * Sans cette garde, débrancher puis rebrancher sa fiche repousserait la fin
+     * indéfiniment — un essai gratuit à vie, en trois clics.
+     */
+    const { repo, company } = await compteNeuf();
+    const premiere = new Date(Date.now() + 14 * 24 * 3600 * 1000);
+    await repo.demarrerEssaiSiPremiereFiche(company.id, premiere);
+
+    const plusTard = new Date(Date.now() + 40 * 24 * 3600 * 1000);
+    const seconde = await repo.demarrerEssaiSiPremiereFiche(company.id, plusTard);
+    assert.equal(seconde, null, "le second appel ne doit rien changer");
+
+    const apres = await repo.findCompanyForUser(company.userId);
+    assert.equal(apres.trialEndsAt.getTime(), premiere.getTime());
+  });
+
+  test("un compte déjà payant n'est pas replongé en essai", async () => {
+    const { repo, company } = await compteNeuf();
+    await repo.majAbonnement({ userId: company.userId, statut: "active" });
+    const r = await repo.demarrerEssaiSiPremiereFiche(
+      company.id,
+      new Date(Date.now() + 14 * 24 * 3600 * 1000),
+    );
+    assert.equal(r, null);
+  });
+});
