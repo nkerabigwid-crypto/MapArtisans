@@ -242,6 +242,19 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
         <BandeauGoogle />
       </Suspense>
 
+      {/* Avertissement de plafond SMS.
+          Discret et non bloquant : il informe et propose, il n'interrompt
+          rien. L'artisan reste libre de ne rien faire — mais il ne découvre
+          plus la limite au moment de l'atteindre. */}
+      {donnees.messageQuotaSms && (
+        <div className="quota-bandeau" role="status">
+          <span className="quota-texte">{donnees.messageQuotaSms}</span>
+          <a className="quota-lien" href="/abonnement">
+            Voir les formules
+          </a>
+        </div>
+      )}
+
       {essaiAAnnoncer && (
         <BandeauEssai jours={donnees.joursEssai!} onVoirFormules={() => setView("settings")} />
       )}

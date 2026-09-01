@@ -2450,3 +2450,27 @@ a.btn { text-decoration: none; }
   font-weight: 650;
   color: var(--ink);
 }
+
+/* --- Avertissement de plafond SMS ----------------------------------------
+   N'apparaît qu'à partir de 80 % de consommation. Un compteur affiché en
+   permanence transformerait un plafond que presque personne n'atteint en
+   préoccupation quotidienne. */
+.quota-bandeau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 0.7rem 1.1rem;
+  background: var(--status-warn-bg);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-xs);
+}
+
+.quota-texte { color: var(--ink); line-height: 1.4; }
+
+.quota-lien {
+  color: var(--accent);
+  font-weight: 650;
+  white-space: nowrap;
+}

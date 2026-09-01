@@ -849,10 +849,41 @@ describe("Plafond mensuel de SMS", () => {
     assert.equal(quota.plafondPour("palier-supprime"), quota.PLAFOND_MENSUEL.basique);
   });
 
-  test("le message dit quand le plafond repart, pas seulement qu'il bloque", () => {
+  test("le message dit quand le compteur repart", () => {
     const m = quota.messageQuota("essentiel");
-    assert.match(m, /mois prochain/);
+    assert.match(m, /repart le 1er/);
     assert.match(m, new RegExp(String(quota.PLAFOND_MENSUEL.essentiel)));
+  });
+
+  test("il PROPOSE le palier supérieur au lieu de demander d'écrire", () => {
+    /*
+     * L'artisan qui heurte le plafond vient de finir un chantier et veut
+     * demander un avis : c'est le moment où son intention est maximale.
+     * Lui répondre par une adresse e-mail, c'est perdre une vente.
+     */
+    const m = quota.messageQuota("basique");
+    assert.match(m, /Essentiel/);
+    assert.match(m, new RegExp(String(quota.PLAFOND_MENSUEL.essentiel)));
+    assert.ok(!/écrivez-nous/.test(m), "aucune impasse par e-mail sur un palier non terminal");
+  });
+
+  test("au sommet de la grille, le contact direct redevient la bonne réponse", () => {
+    const m = quota.messageQuota("professionnel");
+    assert.match(m, /écrivez-nous/);
+    assert.equal(quota.palierSuivant("professionnel"), null);
+  });
+
+  test("l'avertissement arrive AVANT le mur, avec le nombre restant", () => {
+    // Découvrir la limite en pleine journée de chantier est le pire moment.
+    const cap = quota.PLAFOND_MENSUEL.basique;
+    const m = quota.messageApproche("basique", cap - 7);
+    assert.match(m, /7 SMS/);
+    assert.match(m, /Essentiel/);
+  });
+
+  test("aucun avertissement une fois le plafond franchi", () => {
+    // C'est messageQuota qui parle à ce moment-là, pas messageApproche.
+    assert.equal(quota.messageApproche("basique", quota.PLAFOND_MENSUEL.basique), null);
   });
 });
 

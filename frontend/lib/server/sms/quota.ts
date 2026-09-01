@@ -104,10 +104,60 @@ export function autoriserEnvoi(
 }
 
 /** Message rendu à l'artisan. Il doit comprendre quoi faire, pas seulement que ça bloque. */
+/** Libellés affichés. Un identifiant technique ne se montre jamais au client. */
+const LIBELLE: Record<PlanId, string> = {
+  basique: "Basique",
+  essentiel: "Essentiel",
+  professionnel: "Professionnel",
+};
+
+/**
+ * Palier immédiatement supérieur, ou `null` au sommet de la grille.
+ */
+export function palierSuivant(plan: string): PlanId | null {
+  const ordre: PlanId[] = ["basique", "essentiel", "professionnel"];
+  const i = ordre.indexOf(plan as PlanId);
+  return i >= 0 && i < ordre.length - 1 ? ordre[i + 1] : null;
+}
+
+/**
+ * Message affiché quand le plafond est atteint.
+ *
+ * IL PROPOSE LE PALIER SUPÉRIEUR, IL NE DEMANDE PAS D'ÉCRIRE
+ *
+ * La version précédente disait « pour l'augmenter, écrivez-nous » — une
+ * impasse au moment précis où l'artisan est le plus engagé : il vient de finir
+ * un chantier et veut demander un avis. Lui répondre par une adresse e-mail,
+ * c'est perdre une vente quand l'intention est maximale.
+ *
+ * Au sommet de la grille il n'y a rien à proposer : le contact direct redevient
+ * la bonne réponse.
+ */
 export function messageQuota(plan: string): string {
   const plafond = plafondPour(plan);
+  const suivant = palierSuivant(plan);
+  const base = `Vous avez envoyé vos ${plafond} SMS du mois. Le compteur repart le 1er.`;
+  if (!suivant) return `${base} Pour un plafond plus élevé, écrivez-nous.`;
   return (
-    `Vous avez atteint la limite de ${plafond} SMS pour ce mois. ` +
-    "Elle repart à zéro le 1er du mois prochain. Pour l'augmenter, écrivez-nous."
+    `${base} La formule ${LIBELLE[suivant]} en inclut ${PLAFOND_MENSUEL[suivant]} : ` +
+    "vous pouvez y passer dès maintenant, sans interruption."
   );
+}
+
+/**
+ * Message d'avertissement, AVANT le mur.
+ *
+ * Prévenir à 80 % laisse le temps de décider ; découvrir la limite en pleine
+ * journée de chantier, non. C'est aussi le moment où la montée en gamme est la
+ * mieux reçue : l'artisan constate de lui-même qu'il utilise beaucoup le
+ * produit — personne n'a besoin de le lui dire.
+ */
+export function messageApproche(plan: string, envoyes: number): string | null {
+  const plafond = plafondPour(plan);
+  const restants = plafond - envoyes;
+  if (restants <= 0) return null;
+  const suivant = palierSuivant(plan);
+  const base = `Il vous reste ${restants} SMS ce mois-ci sur ${plafond}.`;
+  if (!suivant) return base;
+  return `${base} La formule ${LIBELLE[suivant]} en inclut ${PLAFOND_MENSUEL[suivant]}.`;
 }

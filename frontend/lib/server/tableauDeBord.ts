@@ -4,6 +4,7 @@ import { getRepo } from "@/lib/server/repo";
 import { resolveTradeOrDefault } from "@/lib/trades";
 import { PLANS } from "@/lib/data";
 import { accesAutorise, messageBlocage } from "@/lib/server/essai";
+import { autoriserEnvoi, messageApproche } from "@/lib/server/sms/quota";
 import { googleConfigure } from "@/lib/server/google/oauth";
 import type {
   Company,
@@ -71,6 +72,13 @@ export interface DonneesTableauDeBord {
   /** Message à afficher quand l'accès est fermé. */
   messageAcces: string | null;
   /**
+   * Avertissement de plafond SMS, à partir de 80 % de consommation.
+   *
+   * `null` en dessous : un compteur affiché en permanence transformerait un
+   * plafond que presque personne n'atteint en préoccupation quotidienne.
+   */
+  messageQuotaSms: string | null;
+  /**
    * Le rattachement de fiche Google est-il ouvert ?
    *
    * `false` tant que les identifiants OAuth ne sont pas configurés — c'est-à-dire
@@ -126,6 +134,17 @@ export async function chargerTableauDeBord(
     canceled_at: versDateIso(entreprise.canceledAt),
   };
 
+  /*
+   * Consommation SMS du mois. Le signal existait dans quota.ts depuis sa
+   * création et n'était affiché nulle part : l'artisan heurtait le plafond
+   * sans avertissement, en pleine journée de chantier.
+   */
+  const smsEnvoyes = await repo.compterSmsDuMois(entreprise.id);
+  const quota = autoriserEnvoi(entreprise.planId, smsEnvoyes, "demande-avis");
+  const messageQuotaSms = quota.proche
+    ? messageApproche(entreprise.planId, smsEnvoyes)
+    : null;
+
   const fiches = await repo.listProfilesForUser(userId);
   const fiche = fiches[0] ?? null;
 
@@ -144,6 +163,7 @@ export async function chargerTableauDeBord(
       accesOuvert: verdict.ok,
       messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
       googleDisponible: googleConfigure(),
+      messageQuotaSms,
     };
   }
 
@@ -222,5 +242,6 @@ export async function chargerTableauDeBord(
     accesOuvert: verdict.ok,
     messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
     googleDisponible: googleConfigure(),
+    messageQuotaSms,
   };
 }
