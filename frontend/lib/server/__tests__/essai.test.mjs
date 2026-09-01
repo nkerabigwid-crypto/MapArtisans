@@ -21,14 +21,15 @@ const JOUR = 24 * 3600 * 1000;
 const T0 = new Date("2026-09-01T10:00:00Z");
 
 describe("Durée", () => {
-  test("sept jours, et pas trois", () => {
-    // Le rapport hebdomadaire est l'argument central : sur trois jours,
-    // l'artisan ne le recevrait jamais.
-    assert.equal(DUREE_ESSAI_JOURS, 7);
+  test("quatorze jours : deux rapports hebdomadaires, pas un", () => {
+    // Un seul rapport est une photo de la position. Deux font apparaître un
+    // MOUVEMENT — et c'est le mouvement qu'on vend.
+    assert.equal(DUREE_ESSAI_JOURS, 14);
+    assert.ok(DUREE_ESSAI_JOURS >= 14, "en dessous, un seul rapport arrive");
   });
 
-  test("la fin d'essai tombe sept jours plus tard", () => {
-    assert.equal(finEssai(T0).getTime(), T0.getTime() + 7 * JOUR);
+  test("la fin d'essai tombe quatorze jours plus tard", () => {
+    assert.equal(finEssai(T0).getTime(), T0.getTime() + 14 * JOUR);
   });
 });
 

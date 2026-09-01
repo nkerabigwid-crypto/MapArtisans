@@ -78,7 +78,7 @@ describe("Chargement", () => {
     assert.notEqual(d.company.company_name, "Dupont Plomberie");
   });
 
-  test("un compte neuf démarre l'essai de sept jours", async () => {
+  test("un compte neuf démarre l'essai de quatorze jours", async () => {
     const repo = repoMod.getRepo();
     const u = await repo.createUser("essai@exemple.test", "mot-de-passe-long-12");
     await repo.createCompany({
@@ -90,9 +90,9 @@ describe("Chargement", () => {
 
     const d = await tdb.chargerTableauDeBord(u.id);
     assert.equal(d.company.subscription_status, "trialing");
-    // L'accès est ouvert, et il reste sept jours.
+    // L'accès est ouvert, et il reste quatorze jours.
     assert.equal(d.accesOuvert, true);
-    assert.equal(d.joursEssai, 7);
+    assert.equal(d.joursEssai, 14);
     assert.equal(d.company.plan_id, "basique");
   });
 

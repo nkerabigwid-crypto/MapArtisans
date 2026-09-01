@@ -5,7 +5,7 @@
  *
  * CE MODULE EXISTE PARCE QUE LA PROMESSE ÉTAIT PUBLIQUE ET NON TENUE
  *
- * Le site annonçait « essai gratuit de 7 jours, sans carte bancaire ». Rien ne
+ * Le site annonçait un essai gratuit sans carte bancaire, et rien ne
  * l'implémentait : ni date de fin, ni accès accordé, ni coupure. Un compte
  * naissait `incomplete` et n'obtenait jamais rien.
  *
@@ -17,11 +17,20 @@
 /**
  * Durée de l'essai.
  *
- * Sept jours et non trois : le rapport hebdomadaire est l'argument central du
- * produit, et sur trois jours l'artisan ne le recevrait JAMAIS. Un essai qui
- * cache la fonctionnalité qu'on vend ne convertit pas.
+ * QUATORZE JOURS, ET LA RAISON N'EST PAS « PLUS DE TEMPS »
+ *
+ * Avec sept jours, l'artisan reçoit UN rapport hebdomadaire : une photo de sa
+ * position. Avec quatorze, il en reçoit DEUX — et deux relevés font apparaître
+ * un mouvement. C'est le mouvement qu'on vend, pas la photo.
+ *
+ * S'y ajoute une réalité du métier : une semaine de chantiers passe sans qu'on
+ * ouvre quoi que ce soit. Quatorze jours laissent la place à un imprévu sans
+ * que l'essai soit perdu.
+ *
+ * Le coût de l'allongement est faible — quelques francs d'IA et de SMS par
+ * essai — face à un abonnement à 49 CHF par mois.
  */
-export const DUREE_ESSAI_JOURS = 7;
+export const DUREE_ESSAI_JOURS = 14;
 
 export interface EtatAbonnement {
   subscriptionStatus: "incomplete" | "trialing" | "active" | "past_due" | "canceled";
@@ -114,6 +123,6 @@ export function messageBlocage(motif: MotifBlocage): string {
     case "resilie":
       return "Votre abonnement est arrêté. Réactivez-le pour retrouver votre fiche et son historique.";
     case "jamais-active":
-      return "Activez votre essai gratuit de sept jours pour commencer, sans carte bancaire.";
+      return "Activez votre essai gratuit de quatorze jours pour commencer, sans carte bancaire.";
   }
 }

@@ -177,7 +177,7 @@ export const FAQ_PUBLIQUE: SectionFaq[] = [
         question: "Puis-je arrêter quand je veux ?",
         reponse:
           "<p>Oui, en un clic depuis vos réglages, sans engagement ni frais de sortie. " +
-          "L'essai de sept jours ne demande pas de carte bancaire.</p>" +
+          "L'essai de quatorze jours ne demande pas de carte bancaire.</p>" +
           "<p>Votre fiche Google reste la vôtre : nous cessons d'y publier, rien n'est " +
           "supprimé.</p>",
       },

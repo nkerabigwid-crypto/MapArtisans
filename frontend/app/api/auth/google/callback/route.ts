@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     /*
      * PREMIER RAPPORT IMMÉDIAT, sans attendre le lundi suivant.
      *
-     * L'essai dure sept jours. Un artisan qui connecte sa fiche un mardi ne
+     * L'essai dure quatorze jours. Un artisan qui connecte sa fiche un mardi ne
      * recevrait le rapport hebdomadaire que le lundi d'après — soit après la
      * fin de son essai. Il n'aurait donc jamais vu l'argument central du
      * produit avant de décider s'il paie.

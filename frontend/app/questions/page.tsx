@@ -86,7 +86,7 @@ export default function QuestionsPage() {
       <section className="lp-final">
         <h2 className="lp-final-h">Une question qui n&apos;est pas ici ?</h2>
         <p className="lp-final-p">
-          Essayez sept jours, sans carte bancaire. Vous verrez votre position réelle avant de
+          Essayez quatorze jours, sans carte bancaire. Vous verrez votre position réelle avant de
           décider quoi que ce soit.
         </p>
         <Link href="/onboarding" className="lp-btn lp-nav-cta">

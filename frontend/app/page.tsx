@@ -121,7 +121,7 @@ export default function LandingPage() {
                 shimmerColor="#ffffff"
                 borderRadius="10px"
               >
-                Activer mon essai gratuit de 7 jours
+                Activer mon essai gratuit de 14 jours
               </ShimmerButton>
             </Link>
             <Link href="#tarifs" className="lp-btn-ghost">
@@ -241,7 +241,7 @@ export default function LandingPage() {
           <div className="lp-inline-cta">
             <div>
               <div className="lp-inline-t">Deux minutes suffisent pour commencer</div>
-              <div className="lp-inline-d">Sept jours d&apos;essai, sans carte bancaire.</div>
+              <div className="lp-inline-d">Quatorze jours d&apos;essai, sans carte bancaire.</div>
             </div>
             <Link href="/onboarding" className="lp-btn">
               Connecter ma fiche
@@ -271,7 +271,7 @@ export default function LandingPage() {
           <p className="lp-label">Tarifs</p>
           <h2 className="lp-h2">Abonnement sans engagement. Résiliable en un clic.</h2>
           <p className="lp-lede">
-            Sept jours d&apos;essai gratuit, sans carte bancaire. Tarifs en francs suisses.
+            Quatorze jours d&apos;essai gratuit, sans carte bancaire. Tarifs en francs suisses.
           </p>
         </BlurFade>
 
@@ -294,7 +294,7 @@ export default function LandingPage() {
                   href="/onboarding"
                   className={`lp-btn lp-plan-cta${plan.recommended ? "" : " ghost"}`}
                 >
-                  Essayer 7 jours
+                  Essayer 14 jours
                 </Link>
               </div>
             </BlurFade>
@@ -338,7 +338,7 @@ export default function LandingPage() {
               shimmerColor="#ffffff"
               borderRadius="10px"
             >
-              Activer mon essai gratuit de 7 jours
+              Activer mon essai gratuit de 14 jours
             </ShimmerButton>
           </Link>
           <p className="lp-reassure">

@@ -99,7 +99,7 @@ export default function CgvPage() {
 
       <h2 className="legal-h2">4. Essai gratuit</h2>
       <p>
-        Sept jours, sans carte bancaire. À l&apos;issue de l&apos;essai, aucun prélèvement
+        Quatorze jours, sans carte bancaire. À l&apos;issue de l&apos;essai, aucun prélèvement
         n&apos;a lieu sans une souscription explicite.
       </p>
 

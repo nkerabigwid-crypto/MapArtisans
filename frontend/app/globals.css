@@ -976,6 +976,12 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-nav {
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; justify-content: space-between;
+  /* `space-between` seul ne garantit RIEN quand le conteneur est étroit : sur
+     les pages d'inscription et de connexion, dont la colonne est bien plus
+     resserrée que la page d'accueil, les trois blocs se retrouvaient collés —
+     « MapArtisansFonctionnalités TarifsConnexion ». Le gap est un minimum,
+     l'espacement réparti vient en plus. */
+  gap: 1.5rem;
   padding: 0.9rem 1.5rem;
   /* Blanc plutôt que le crème du fond : la barre se détache sans qu'on ait
      besoin d'une ombre lourde. Le voile translucide reste, pour que le contenu
@@ -1361,7 +1367,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    ========================================================================= */
 
 /* Navigation à trois zones */
-.lp-nav-links { display: flex; gap: 1.6rem; }
+.lp-nav-links { display: flex; gap: 1.6rem; white-space: nowrap; }
 .lp-nav-links a {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: 0.95rem; color: var(--ink-soft);
@@ -2318,4 +2324,23 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-size: var(--t-xs);
   color: var(--ink-faint);
   text-align: center;
+}
+
+
+/* --- En-tête public : priorité quand la place manque ----------------------
+   Le bouton d'appel à l'action ne se casse JAMAIS en deux lignes : « Essai
+   gratuit » sur deux lignes fait douter de la qualité du site au moment précis
+   où l'on demande de cliquer. */
+.lp-nav-cta,
+.lp-nav-login,
+.lp-nav-link {
+  white-space: nowrap;
+}
+
+/* Sous 760 px — conteneurs étroits de l'inscription et de la connexion
+   compris — les liens secondaires s'effacent. Le logo ramène à l'accueil, le
+   bouton reste : c'est l'essentiel. Les masquer vaut mieux que les laisser se
+   chevaucher. */
+@media (max-width: 760px) {
+  .lp-nav-links { display: none; }
 }
