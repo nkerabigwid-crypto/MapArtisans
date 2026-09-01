@@ -114,7 +114,7 @@ export const PLANS: Plan[] = [
       "Suivi Geo-Grid : 1 mot-clé",
       "Rapport SMS chaque semaine",
     ],
-    highlight: null,
+    highlight: "Fini les avis oubliés : un geste après chaque chantier, et c'est tout.",
     recommended: false,
     maxProfiles: 1,
   },
@@ -139,7 +139,11 @@ export const PLANS: Plan[] = [
       "Support prioritaire",
       "Tout ce que contient Basique",
     ],
-    highlight: "Envoyé à tous vos clients, sans tri : la seule méthode que Google autorise.",
+    // La promesse porte désormais sur la COUVERTURE : la demande d'avis est
+    // passée en Basique. Un artisan qui intervient sur cinq communes ne se
+    // classe pas pareil partout, et un seul mot-clé suivi le lui cache.
+    highlight:
+      "Cinq mots-clés suivis : vous voyez enfin les quartiers où vous n'apparaissez pas.",
     recommended: true,
     maxProfiles: 1,
   },
