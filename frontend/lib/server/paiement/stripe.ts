@@ -2,6 +2,7 @@
 // lib/server/ — voir la note détaillée dans ai/openai.ts.
 import Stripe from "stripe";
 import { PLANS, type PlanId } from "@/lib/data";
+import { DUREE_ESSAI_JOURS } from "@/lib/server/essai";
 
 /**
  * Passerelle Stripe.
@@ -131,7 +132,17 @@ export async function creerSessionCheckout(
       },
     ],
     subscription_data: {
-      trial_period_days: 7,
+      /*
+       * LA MÊME DURÉE QUE LA NÔTRE, TOUJOURS.
+       *
+       * Cette valeur était figée à 7 alors que DUREE_ESSAI_JOURS était passée
+       * à 14 : l'artisan aurait vu quatorze jours dans le produit et sept chez
+       * Stripe, avec un prélèvement une semaine trop tôt. L'écart ne se serait
+       * découvert qu'à la première réclamation.
+       *
+       * La constante partagée le rend impossible.
+       */
+      trial_period_days: DUREE_ESSAI_JOURS,
       metadata: { planId: plan.id, userId: demande.userId },
     },
     // « Aucune carte bancaire requise » : la promesse de la page d'accueil.

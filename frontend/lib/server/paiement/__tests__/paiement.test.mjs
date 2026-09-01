@@ -133,3 +133,25 @@ describe("Idempotence des événements", () => {
     assert.equal(resultats.filter(Boolean).length, 1, "un seul traitement autorisé");
   });
 });
+
+describe("Durée d'essai envoyée à Stripe", () => {
+  /*
+   * Elle était figée à 7 pendant que DUREE_ESSAI_JOURS passait à 14 : le
+   * client aurait vu quatorze jours dans le produit et sept chez Stripe, avec
+   * un prélèvement une semaine trop tôt. Un écart qu'on ne découvre qu'à la
+   * première réclamation.
+   */
+  test("la session Checkout reprend la constante partagée", async () => {
+    const essai = await import("../../essai.ts");
+    const source = (await import("node:fs")).readFileSync(
+      "lib/server/paiement/stripe.ts",
+      "utf8",
+    );
+    assert.match(
+      source,
+      /trial_period_days: DUREE_ESSAI_JOURS/,
+      "la durée ne doit jamais être écrite en dur dans la session Stripe",
+    );
+    assert.equal(essai.DUREE_ESSAI_JOURS, 14);
+  });
+});
