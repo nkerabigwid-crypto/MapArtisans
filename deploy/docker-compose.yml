@@ -117,6 +117,14 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      # Le planificateur envoie lui-même le rappel de fin d'essai — il ne se
+      # contente plus de remplir les files. Sans ces variables, l'envoi
+      # échouerait en silence, exactement le jour où l'artisan décide s'il paie.
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_API_KEY_SID: ${TWILIO_API_KEY_SID}
+      TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

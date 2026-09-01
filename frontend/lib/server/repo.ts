@@ -40,6 +40,13 @@ export interface UserRecord {
   phoneNumber: string | null;
 }
 
+export interface EssaiARappeler {
+  companyId: string;
+  companyName: string;
+  /** Mobile du titulaire. Les comptes sans numéro sont écartés en amont. */
+  phoneNumber: string;
+}
+
 export interface ClientRecord {
   /** E.164. Sert de clé : c'est la seule donnée toujours présente. */
   phone: string;
@@ -430,6 +437,19 @@ export interface Repo {
    */
   listerClients(profileId: string, limite?: number): Promise<ClientRecord[]>;
 
+  // --- Rappel de fin d'essai.
+  /**
+   * Essais qui expirent dans moins de 24 h et dont le rappel n'est pas parti.
+   *
+   * Le filtre sur `trial_reminder_sent_at` est INDISPENSABLE : le planificateur
+   * passe toutes les cinq minutes, et sans lui le rappel repartirait à chaque
+   * tour pendant vingt-quatre heures — près de 300 SMS par artisan.
+   */
+  listerEssaisARappeler(maintenant?: Date): Promise<EssaiARappeler[]>;
+
+  /** Horodate l'envoi du rappel. Sert de verrou et de trace. */
+  marquerRappelEssai(companyId: string): Promise<void>;
+
   // --- Plafond mensuel de SMS.
   /** SMS déjà envoyés ce mois-ci par cette entreprise, tous types confondus. */
   compterSmsDuMois(companyId: string): Promise<number>;
@@ -566,6 +586,7 @@ const usageAssistant = new Map<string, number>();
 const rendezVous = new Map<string, RendezVousRecord>();
 const posts = new Map<string, PostRecord>();
 const usageSms = new Map<string, number>();
+const rappelsEssai = new Set<string>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
 
@@ -1099,6 +1120,32 @@ export const memoryRepo: Repo = {
       .slice(0, limite);
   },
 
+  async listerEssaisARappeler(maintenant = new Date()) {
+    await seed();
+    const limite = maintenant.getTime() + 24 * 3600 * 1000;
+    const resultat = [];
+    for (const c of companies.values()) {
+      if (c.subscriptionStatus !== "trialing" || !c.trialEndsAt) continue;
+      if (rappelsEssai.has(c.id)) continue;
+      const fin = c.trialEndsAt.getTime();
+      if (fin <= maintenant.getTime() || fin > limite) continue;
+      const u = users.get(c.userId);
+      // Sans mobile, pas de rappel : on écarte plutôt que d'échouer.
+      if (!u?.phoneNumber) continue;
+      resultat.push({
+        companyId: c.id,
+        companyName: c.companyName,
+        phoneNumber: u.phoneNumber,
+      });
+    }
+    return resultat;
+  },
+
+  async marquerRappelEssai(companyId) {
+    await seed();
+    rappelsEssai.add(companyId);
+  },
+
   async compterSmsDuMois(companyId) {
     await seed();
     return usageSms.get(`${companyId}:${new Date().toISOString().slice(0, 7)}`) ?? 0;
@@ -1347,5 +1394,6 @@ export function __resetRepo() {
   rendezVous.clear();
   posts.clear();
   usageSms.clear();
+  rappelsEssai.clear();
   seeded = false;
 }

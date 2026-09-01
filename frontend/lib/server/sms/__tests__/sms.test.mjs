@@ -873,3 +873,55 @@ describe("Compteur mensuel (dépôt)", () => {
     assert.equal(await repo.compterSmsDuMois("c-002"), 0);
   });
 });
+
+describe("Rappel de fin d'essai", () => {
+  /*
+   * Envoyé la veille de l'expiration. C'est le SMS le plus cher du produit en
+   * proportion : il part vers quelqu'un qui n'a encore rien payé, et c'est lui
+   * qui décide de la conversion.
+   */
+  let rappel;
+  before(async () => { rappel = await import("../finEssai.ts"); });
+
+  test("tient en UN segment, même avec un nom long", () => {
+    // Trois segments à chaque essai, c'est le coût de la conversion multiplié
+    // par trois — pour un compte qui n'a rien versé.
+    for (const nom of [
+      "MapArtisans",
+      "Valtransfer Nkerabigwi",
+      "Entreprise au nom vraiment tres long de plomberie et chauffage",
+    ]) {
+      const m = rappel.composeRappelEssai({ businessName: nom });
+      assert.ok(
+        rappel.rappelFitsOneSegment(m),
+        `${m.length} caracteres pour « ${nom} » : ${JSON.stringify(m)}`,
+      );
+    }
+  });
+
+  test("ne pose AUCUNE question", () => {
+    // Aucun traitement des SMS entrants n'existe : l'artisan répondrait dans
+    // le vide, et un message resté sans réponse la veille d'une décision
+    // d'achat fait plus de mal que pas de message du tout.
+    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
+    assert.ok(!m.includes("?"), `le message ne doit pas interroger : ${m}`);
+  });
+
+  test("dit ce qui est CONSERVÉ, pas seulement ce qui s'arrête", () => {
+    // Un artisan qui craint de perdre son travail hésite à convertir.
+    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
+    assert.match(m, /gard/i);
+  });
+
+  test("porte un lien vers les formules", () => {
+    const m = rappel.composeRappelEssai({ businessName: "MapArtisans" });
+    assert.match(m, /mapartisans\.com\/abonnement/);
+  });
+
+  test("un nom trop long est coupé sur un espace, pas au milieu d'un mot", () => {
+    const coupe = rappel.nomTronque("Plomberie Sanitaire Chauffage Valais Central", 32);
+    assert.ok(coupe.length <= 32);
+    assert.ok(!coupe.endsWith(" "), "pas d'espace final");
+    assert.ok(!/\S$/.test(coupe) || !coupe.includes("Valai"), "coupe sur un mot entier");
+  });
+});

@@ -7,13 +7,53 @@
  *
  * Démarrage : npm run planificateur
  */
-import { getRepo } from "@/lib/server/repo";
+import { getRepo, type Repo } from "@/lib/server/repo";
+import { composeRappelEssai, rappelFitsOneSegment } from "@/lib/server/sms/finEssai";
+import { resolveSmsSender } from "@/lib/server/sms/twilio";
 import { enqueuePendingReviews } from "@/lib/server/queue/reviewQueue";
 import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
 import {
   INTERVALLE_TICK_MS,
   fenetreRapportHebdo,
 } from "@/lib/server/queue/planification";
+
+/**
+ * Rappels de fin d'essai.
+ *
+ * Envoyés la veille de l'expiration. C'est le SMS le plus cher du produit en
+ * proportion : il part vers quelqu'un qui n'a encore rien payé, et c'est lui
+ * qui décide de la conversion.
+ *
+ * Le verrou est en base (`trial_reminder_sent_at`), pas en mémoire : ce
+ * processus redémarre à chaque déploiement, et un verrou local renverrait le
+ * rappel à chaque redémarrage.
+ *
+ * Le marquage se fait APRÈS l'envoi réussi. Marquer avant priverait de rappel
+ * l'artisan dont le SMS a échoué, et c'est justement le moment où il décide.
+ */
+async function envoyerRappelsEssai(repo: Repo) {
+  const aRappeler = await repo.listerEssaisARappeler();
+  if (aRappeler.length === 0) return;
+
+  const sender = resolveSmsSender();
+  for (const essai of aRappeler) {
+    const message = composeRappelEssai({ businessName: essai.companyName });
+    if (!rappelFitsOneSegment(message)) {
+      console.error(`[planificateur] rappel à plus d'un segment pour ${essai.companyId}`);
+      continue;
+    }
+    try {
+      await sender.send(essai.phoneNumber, message);
+      await repo.marquerRappelEssai(essai.companyId);
+      await repo.incrementerSmsDuMois(essai.companyId);
+      console.log(`[planificateur] rappel de fin d'essai envoyé à ${essai.companyId}`);
+    } catch (erreur) {
+      // Un échec ne marque rien : le tick suivant réessaiera dans cinq minutes,
+      // et il reste vingt-quatre heures de fenêtre.
+      console.error(`[planificateur] rappel échoué pour ${essai.companyId} :`, erreur);
+    }
+  }
+}
 
 let enCours = false;
 let arret = false;
@@ -34,6 +74,8 @@ async function tick() {
 
     const avis = await enqueuePendingReviews(repo);
     if (avis > 0) console.log(`[planificateur] ${avis} avis mis en file`);
+
+    await envoyerRappelsEssai(repo);
 
     if (fenetreRapportHebdo(new Date())) {
       const rapports = await enqueueWeeklyReports(repo);

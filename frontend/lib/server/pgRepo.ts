@@ -5,6 +5,7 @@ import type { MagicLinkRecord } from "./magicLink";
 import type { AgencyBrandingRecord } from "./branding";
 import type {
   AssistantSettingsRecord,
+  EssaiARappeler,
   ClientRecord,
   RendezVousRecord,
   StatistiquesAdmin,
@@ -676,6 +677,34 @@ export const pgRepo: Repo = {
         desabonne: Boolean(x.desabonne),
       }),
     );
+  },
+
+  async listerEssaisARappeler(maintenant = new Date()) {
+    const r = await q<{ id: string; company_name: string; phone_number: string }>(
+      `SELECT c.id, c.company_name, u.phone_number
+         FROM companies c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.subscription_status = 'trialing'
+          AND c.trial_ends_at IS NOT NULL
+          AND c.trial_reminder_sent_at IS NULL
+          AND c.trial_ends_at >  $1
+          AND c.trial_ends_at <= $1 + interval '24 hours'
+          -- Sans mobile, pas de rappel : on écarte plutôt que d'échouer sur
+          -- un compte qui ne bloque personne d'autre.
+          AND u.phone_number IS NOT NULL AND u.phone_number <> ''`,
+      [maintenant],
+    );
+    return r.map(
+      (x): EssaiARappeler => ({
+        companyId: x.id,
+        companyName: x.company_name,
+        phoneNumber: x.phone_number,
+      }),
+    );
+  },
+
+  async marquerRappelEssai(companyId) {
+    await q("UPDATE companies SET trial_reminder_sent_at = now() WHERE id = $1", [companyId]);
   },
 
   async compterSmsDuMois(companyId) {
