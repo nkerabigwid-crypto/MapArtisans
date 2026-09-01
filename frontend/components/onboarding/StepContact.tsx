@@ -2,6 +2,7 @@
 
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
+import ChampMotDePasse from "@/components/ChampMotDePasse";
 
 export interface ContactDraft {
   email: string;
@@ -60,16 +61,13 @@ export default function StepContact({ draft, onChange, onNext, onBack, erreur, e
       </Field.Root>
 
       <Field.Root name="password" className="field">
-        <Field.Label className="field-label">Mot de passe</Field.Label>
-        <Field.Control
-          type="password"
-          required
-          minLength={12}
-          autoComplete="new-password"
+        <ChampMotDePasse
+          label="Mot de passe"
           value={draft.password}
-          onChange={(e) => onChange({ password: e.target.value })}
+          onChange={(v) => onChange({ password: v })}
+          autoComplete="new-password"
+          minLength={12}
           placeholder="Au moins 12 caractères"
-          className="field-control"
         />
         {/* Une phrase plutot qu'un mot compliqué : la longueur protège mieux
             que les symboles, et se retape sur un clavier de téléphone. */}

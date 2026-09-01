@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Form } from "@base-ui/react/form";
 import Logo from "@/components/Logo";
 import { useQueryParam } from "@/lib/useQueryParam";
+import ChampMotDePasse from "@/components/ChampMotDePasse";
 
 export default function LoginPage() {
   const suite = useQueryParam("suite");
@@ -66,14 +67,11 @@ export default function LoginPage() {
           </Field.Root>
 
           <Field.Root name="password" className="field">
-            <Field.Label className="field-label">Mot de passe</Field.Label>
-            <Field.Control
-              type="password"
-              required
-              autoComplete="current-password"
+            <ChampMotDePasse
+              label="Mot de passe"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="field-control"
+              onChange={setPassword}
+              autoComplete="current-password"
             />
           </Field.Root>
 

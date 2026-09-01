@@ -2121,3 +2121,47 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   margin-left: auto;
   color: var(--ink-faint);
 }
+
+/* --- Champ mot de passe avec bascule d'affichage -------------------------
+   La bascule vit au-dessus du champ, alignée à droite du libellé, et non à
+   l'intérieur : posée dans le champ, elle recouvre la fin du texte saisi —
+   précisément ce que l'utilisateur veut relire — et se heurte à l'icône que
+   les gestionnaires de mots de passe y ajoutent d'eux-mêmes. */
+.mdp-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.mdp-bascule {
+  border: 0;
+  background: none;
+  padding: 0.25rem 0;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  /* Cible tactile confortable sans déformer l'alignement du libellé. */
+  min-height: 32px;
+  min-width: 64px;
+  text-align: right;
+}
+
+.mdp-bascule:hover { text-decoration: underline; }
+
+.mdp-bascule:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Toujours dans le flux, même vide : le message d'avertissement ne doit pas
+   faire sauter la mise en page en apparaissant. */
+.mdp-aide {
+  display: block;
+  min-height: 1.1em;
+  margin-top: 0.3rem;
+  font-size: var(--t-xs);
+  color: var(--status-warn);
+}
