@@ -162,6 +162,73 @@ describe("Listes nominatives", () => {
   });
 });
 
+describe("SMS par client", () => {
+  test("le detail par entreprise s'accorde avec le total", async () => {
+    /*
+     * Le SMS est le seul cout variable non borne du produit. Un total qui ne
+     * correspond pas au detail ferait douter du chiffre au moment meme ou on
+     * s'en sert pour decider — proposer un palier, ou appeler un client.
+     */
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("sms@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id,
+      companyName: "Depannage Express",
+      tradeType: "plombier",
+      country: "CH",
+    });
+
+    await repo.incrementerSmsDuMois(c.id);
+    await repo.incrementerSmsDuMois(c.id);
+    await repo.incrementerSmsDuMois(c.id);
+
+    const s = await repo.statistiquesAdmin();
+    const ligne = s.smsParEntreprise.find((l) => l.entreprise === "Depannage Express");
+    assert.ok(ligne, "l'entreprise doit apparaitre dans le detail");
+    assert.equal(ligne.envoyes, 3);
+    assert.equal(
+      s.smsParEntreprise.reduce((n, l) => n + l.envoyes, 0),
+      s.smsCeMois,
+      "le detail doit sommer au total",
+    );
+  });
+
+  test("le plus gros consommateur vient en premier", async () => {
+    // C'est lui qui decide de la facture Twilio, et souvent celui a qui
+    // proposer le palier au-dessus.
+    const repo = repoMod.getRepo();
+    const u1 = await repo.createUser("petit@exemple.test", "mot-de-passe-long-12");
+    const u2 = await repo.createUser("gros@exemple.test", "mot-de-passe-long-12");
+    const petit = await repo.createCompany({
+      userId: u1.id, companyName: "Petit", tradeType: "plombier", country: "CH",
+    });
+    const gros = await repo.createCompany({
+      userId: u2.id, companyName: "Gros", tradeType: "plombier", country: "CH",
+    });
+
+    await repo.incrementerSmsDuMois(petit.id);
+    for (let i = 0; i < 5; i += 1) await repo.incrementerSmsDuMois(gros.id);
+
+    const s = await repo.statistiquesAdmin();
+    const noms = s.smsParEntreprise.map((l) => l.entreprise);
+    assert.ok(noms.indexOf("Gros") < noms.indexOf("Petit"));
+  });
+
+  test("aucune coordonnee dans le detail SMS", async () => {
+    // Meme regle que partout ailleurs sur cette page : on nomme l'entreprise,
+    // jamais de quoi joindre la personne.
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("discret@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id, companyName: "Discret SA", tradeType: "plombier", country: "CH",
+    });
+    await repo.incrementerSmsDuMois(c.id);
+
+    const s = await repo.statistiquesAdmin();
+    assert.ok(!JSON.stringify(s.smsParEntreprise).includes("@"));
+  });
+});
+
 describe("Rôle", () => {
   test("un compte naît SANS privilège", async () => {
     // Le rôle admin ne s'obtient que depuis le serveur, jamais à l'inscription.

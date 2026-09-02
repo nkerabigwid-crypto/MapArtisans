@@ -105,6 +105,25 @@ export interface LigneEntreprise {
   joursRestants: number | null;
 }
 
+/**
+ * Consommation SMS d'une entreprise sur le mois en cours.
+ *
+ * Le SMS est le seul coût variable non borné du produit : cinq à dix centimes
+ * pièce, dix à cinquante fois une réponse générée par l'IA. C'est donc la
+ * seule ligne dont un dépassement se voit sur la facture Twilio avant de se
+ * voir ailleurs.
+ *
+ * Le compteur porte sur l'ENTREPRISE et non sur la fiche : le plafond découle
+ * du palier souscrit, et une agence détenant plusieurs fiches consomme un
+ * seul plafond.
+ */
+export interface LigneSms {
+  entreprise: string;
+  /** Palier souscrit — c'est lui qui détermine le plafond. */
+  palier: string | null;
+  envoyes: number;
+}
+
 export interface StatistiquesAdmin {
   // --- Abonnements. Ce sont les chiffres qu'on regarde le matin.
   /** Comptes qui PAIENT : `active` ou `past_due`. */
@@ -157,6 +176,14 @@ export interface StatistiquesAdmin {
    * dans les essais, ni dans les abonnés.
    */
   attenteFiche: LigneEntreprise[];
+  /**
+   * SMS du mois, par entreprise, le plus gros consommateur en tête.
+   *
+   * `smsCeMois` donne le total ; celui-ci dit d'où il vient. Un total qui
+   * double sans qu'on sache quel compte l'a fait doubler ne permet aucune
+   * décision.
+   */
+  smsParEntreprise: LigneSms[];
 }
 
 export interface PostRecord {
@@ -1245,6 +1272,17 @@ export const memoryRepo: Repo = {
       demandesAvis: demandesAvis.length,
       desabonnements: desabonnes.size,
       smsCeMois: [...usageSms.values()].reduce((n, v) => n + v, 0),
+      smsParEntreprise: [...usageSms.entries()]
+        .filter(([cle]) => cle.endsWith(`:${new Date().toISOString().slice(0, 7)}`))
+        .map(([cle, envoyes]) => {
+          const c = companies.get(cle.slice(0, cle.lastIndexOf(":")));
+          return {
+            entreprise: c?.companyName ?? "—",
+            palier: c?.planId ?? null,
+            envoyes,
+          };
+        })
+        .sort((a, b) => b.envoyes - a.envoyes),
       facturesEmises: factures.size,
       montantFactureCentimes: montant,
     };

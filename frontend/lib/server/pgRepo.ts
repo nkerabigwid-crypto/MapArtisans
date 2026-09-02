@@ -727,6 +727,34 @@ export const pgRepo: Repo = {
       )
       .map(enLigne);
 
+    /*
+     * SMS du mois, par entreprise.
+     *
+     * `smsCeMois` dit combien ; cette liste dit d'où ça vient. Un total qui
+     * double sans qu'on sache quel compte l'a fait doubler ne permet aucune
+     * décision — et c'est le seul coût variable non borné du produit.
+     *
+     * Tri décroissant : le plus gros consommateur est celui qui décide de la
+     * facture Twilio, et souvent celui à qui proposer le palier au-dessus.
+     *
+     * Jointure sur `companies` plutôt que sur `users` : aucune coordonnée ne
+     * doit remonter jusqu'à la page.
+     */
+    const sms = await q<{ company_name: string; plan_id: string | null; envoyes: string }>(
+      `SELECT c.company_name, c.plan_id, s.envoyes::text
+         FROM sms_usage s
+         JOIN companies c ON c.id = s.company_id
+        WHERE s.mois = date_trunc('month', current_date)::date
+          AND s.envoyes > 0
+        ORDER BY s.envoyes DESC
+        LIMIT 50`,
+    );
+    const smsParEntreprise = sms.map((x) => ({
+      entreprise: x.company_name,
+      palier: x.plan_id,
+      envoyes: Number(x.envoyes),
+    }));
+
     const abonnements: Record<string, number> = {};
     for (const x of parStatut) abonnements[x.subscription_status] = Number(x.n);
     const paliers: Record<string, number> = {};
@@ -749,6 +777,7 @@ export const pgRepo: Repo = {
       abonnes,
       essais,
       attenteFiche,
+      smsParEntreprise,
 
       abonnesActifs: Number(abo[0].actifs),
       essaisEnCours: Number(abo[0].essais),

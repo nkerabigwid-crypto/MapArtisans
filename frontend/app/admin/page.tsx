@@ -4,7 +4,7 @@ import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
 import GraphiqueAdmin from "@/components/GraphiqueAdmin";
 import { PLANS } from "@/lib/data";
-import type { LigneEntreprise } from "@/lib/server/repo";
+import { plafondPour, SEUIL_ALERTE } from "@/lib/server/sms/quota";
 
 /**
  * Console d'administration — lecture seule.
@@ -52,11 +52,11 @@ export const metadata = {
  * Le cas vide n'est pas escamoté : une section absente se confond avec une
  * panne, alors qu'un « aucun » explicite est une information juste.
  */
-function listeEntreprises(
+function listeEntreprises<T extends { entreprise: string }>(
   titre: string,
-  lignes: LigneEntreprise[],
+  lignes: T[],
   vide: string,
-  droite: (l: LigneEntreprise) => { texte: string; urgent?: boolean },
+  droite: (l: T) => { texte: string; urgent?: boolean },
 ) {
   return (
     <section className="admin-bloc">
@@ -206,6 +206,25 @@ export default async function Page() {
         {ligne("Demandes d'avis envoyées", s.demandesAvis)}
         {ligne("Désabonnements SMS", s.desabonnements)}
       </section>
+
+      {/* D'où vient le total. Un chiffre global qui double sans qu'on sache
+          quel compte l'a fait doubler ne permet aucune décision. */}
+      {listeEntreprises(
+        "SMS ce mois, par client",
+        s.smsParEntreprise,
+        "Aucun SMS envoyé ce mois.",
+        (l) => {
+          // Le plafond avec le compteur : « 42 » ne dit rien, « 42 / 150 » dit
+          // s'il faut s'en inquiéter.
+          const plafond = plafondPour(l.palier ?? "basique");
+          return {
+            texte: `${l.envoyes} / ${plafond}`,
+            // Au-delà de 80 %, c'est le moment de proposer le palier
+            // au-dessus — avant que le client ne se heurte au mur.
+            urgent: l.envoyes >= plafond * SEUIL_ALERTE,
+          };
+        },
+      )}
 
       <section className="admin-bloc">
         <h2 className="admin-section">Coûts et facturation</h2>
