@@ -104,6 +104,21 @@ export default async function Page() {
   const francs = (centimes: number) =>
     `${(centimes / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF`;
   const nomPalier = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id;
+  /*
+   * Les statuts viennent de Stripe et sont en anglais. Les afficher bruts
+   * donnait « — dont « trialing » » : lisible pour qui a écrit le code, opaque
+   * pour qui lit la page. Le défaut n'est pas cosmétique — un tableau de bord
+   * qu'on doit traduire mentalement est un tableau de bord qu'on cesse de
+   * lire.
+   */
+  const nomStatut = (id: string) =>
+    ({
+      trialing: "en essai",
+      active: "abonnement actif",
+      past_due: "paiement en échec",
+      canceled: "résilié",
+      incomplete: "inscription non terminée",
+    })[id] ?? id;
 
   return (
     <main className="admin">
@@ -189,7 +204,7 @@ export default async function Page() {
         {/* Compté à part : un essai expiré non converti est un client perdu,
             et c'est le chiffre qui doit inquiéter quand il monte. */}
         {ligne("Essais expirés, non convertis", s.essaisExpires)}
-        {Object.entries(s.abonnements).map(([k, v]) => ligne(`— dont « ${k} »`, v))}
+        {Object.entries(s.abonnements).map(([k, v]) => ligne(`— dont ${nomStatut(k)}`, v))}
       </section>
 
       <section className="admin-bloc">
