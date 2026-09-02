@@ -9,7 +9,6 @@
 // `export const runtime = "nodejs"`.
 import type { MagicLinkRecord } from "./magicLink";
 import { genererWidgetKey } from "./assistant/access";
-import { finEssai } from "./essai";
 import { hashPassword } from "./password";
 import type { AgencyBrandingRecord } from "./branding";
 import { pgRepo } from "./pgRepo";
@@ -80,6 +79,32 @@ export interface PointSerie {
   revenuCentimes: number;
 }
 
+/**
+ * Une entreprise, telle que la console d'administration a le droit de la
+ * montrer.
+ *
+ * CE QUI N'EST PAS DANS CETTE FORME, ET POURQUOI
+ *
+ * Ni adresse e-mail, ni téléphone, ni nom de personne. La console dit QUI est
+ * client — pas comment le joindre. Une page web qui liste les coordonnées de
+ * tous les clients devient, le jour d'une intrusion, la fuite elle-même ; le
+ * nom d'entreprise, lui, est déjà public sur Google Maps.
+ *
+ * Pour joindre quelqu'un, `db/lister-essais.sh` donne les adresses depuis le
+ * serveur, à qui a déjà l'accès SSH.
+ */
+export interface LigneEntreprise {
+  entreprise: string;
+  /** Palier souscrit, `null` tant qu'aucun n'a été choisi. */
+  palier: string | null;
+  /**
+   * Jours avant la fin de l'essai. Négatif si l'essai est déjà passé, `null`
+   * hors essai — un compte dont la fiche n'est pas rattachée n'en consomme
+   * aucun.
+   */
+  joursRestants: number | null;
+}
+
 export interface StatistiquesAdmin {
   // --- Abonnements. Ce sont les chiffres qu'on regarde le matin.
   /** Comptes qui PAIENT : `active` ou `past_due`. */
@@ -115,6 +140,23 @@ export interface StatistiquesAdmin {
   facturesEmises: number;
   /** Montant facturé depuis toujours, en centimes. */
   montantFactureCentimes: number;
+
+  // --- QUI, et non plus seulement COMBIEN.
+  //
+  // Les compteurs ci-dessus disent « 3 essais en cours » et s'arrêtent là.
+  // Savoir lesquels est ce qui permet d'agir avant l'échéance.
+  /** Comptes qui paient : `active` ou `past_due`. */
+  abonnes: LigneEntreprise[];
+  /** Essais non échus, le plus proche de l'échéance en premier. */
+  essais: LigneEntreprise[];
+  /**
+   * Inscrits dont la fiche Google n'est pas rattachée.
+   *
+   * L'essai démarre au rattachement, pas à l'inscription : ces comptes n'ont
+   * pas de `trialEndsAt` et seraient invisibles partout sans cette liste — ni
+   * dans les essais, ni dans les abonnés.
+   */
+  attenteFiche: LigneEntreprise[];
 }
 
 export interface PostRecord {
@@ -892,13 +934,13 @@ export const memoryRepo: Repo = {
       // Un compte neuf naît en essai, au tarif du palier d'entrée. Le webhook
       // Stripe le fera passer en `active` au premier paiement encaissé.
       planAmount: 49,
-      // L'essai démarre à la création : c'est ce que le site promet depuis
-      // l'origine, et ce que rien n'implémentait.
       subscriptionStatus: "trialing",
       paymentFailedAt: null,
       gracePeriodEndsAt: null,
       canceledAt: null,
-      trialEndsAt: finEssai(),
+      // NULL : l'essai démarre au rattachement de la fiche, pas ici. Voir
+      // pgRepo.createCompany — le double doit refuser ce que la base refuse.
+      trialEndsAt: null,
       trialStartedAt: null,
     };
     companies.set(c.id, c);
@@ -1157,10 +1199,37 @@ export const memoryRepo: Repo = {
         };
       });
 
+    // Mêmes règles que dans pgRepo : le double doit refuser ce que la vraie
+    // base refuserait, sinon un test passe ici et échoue en production.
+    const avecFiche = new Set([...profiles.values()].map((p) => p.companyId));
+    const enLigne = (c: (typeof listeEntreprises)[number]) => ({
+      entreprise: c.companyName,
+      palier: c.planId,
+      joursRestants:
+        c.trialEndsAt === null
+          ? null
+          : Math.ceil((c.trialEndsAt.getTime() - maintenant) / 86_400_000),
+    });
+
     return {
       comptes: users.size,
       entreprises: companies.size,
       fiches: profiles.size,
+      abonnes: actifs.map(enLigne),
+      essais: enEssai
+        .filter((c) => c.trialEndsAt !== null)
+        .sort((a, b) => a.trialEndsAt!.getTime() - b.trialEndsAt!.getTime())
+        .map(enLigne),
+      attenteFiche: listeEntreprises
+        .filter(
+          (c) =>
+            !avecFiche.has(c.id) &&
+            c.trialEndsAt === null &&
+            c.subscriptionStatus !== "active" &&
+            c.subscriptionStatus !== "past_due" &&
+            c.subscriptionStatus !== "canceled",
+        )
+        .map(enLigne),
       abonnesActifs: actifs.length,
       essaisEnCours: enEssai.length,
       essaisExpires: expires.length,

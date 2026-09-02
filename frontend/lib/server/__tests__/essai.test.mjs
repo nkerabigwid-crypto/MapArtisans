@@ -128,20 +128,46 @@ describe("Accès", () => {
     assert.equal(v.motif, "jamais-active");
   });
 
-  test("un `trialing` SANS date de fin ne donne pas un accès illimité", () => {
-    // Le piège : un statut posé à la main sans date ouvrirait le produit pour
-    // toujours. On refuse plutôt que de faire confiance au statut seul.
+  test("un `trialing` SANS date de fin ne fait JAMAIS travailler le produit", () => {
+    /*
+     * Le piège reste le même : un statut posé à la main sans date ouvrirait le
+     * produit pour toujours. Ce qu'on refuse, c'est la DÉPENSE — génération IA,
+     * SMS, relevé de position — et non l'entrée.
+     *
+     * La nuance vient de la migration 026 : sans date de fin, l'essai n'a pas
+     * encore démarré, et c'est l'état normal de tout inscrit dont la fiche
+     * Google n'est pas rattachée. Lui refuser l'entrée lui afficherait « votre
+     * essai est terminé » le jour de son inscription.
+     */
     const v = accesAutorise(
       { subscriptionStatus: "trialing", trialEndsAt: null, gracePeriodEndsAt: null },
       T0,
     );
-    assert.equal(v.ok, false);
+    assert.equal(v.travailler, false, "rien ne doit être dépensé pour ce compte");
+    assert.equal(v.ok, true, "il doit pouvoir entrer pour rattacher sa fiche");
+    assert.equal(v.motif, "essai-pas-demarre");
+    assert.equal(v.joursRestants, null, "aucun jour ne doit être décompté");
+  });
+
+  test("`travailler` est toujours faux quand l'accès est fermé", () => {
+    // Invariant : on ne peut pas dépenser pour un compte qui ne peut pas
+    // entrer. Sans ce test, un ajout futur pourrait les désaccorder.
+    const etats = [
+      { subscriptionStatus: "incomplete", trialEndsAt: null, gracePeriodEndsAt: null },
+      { subscriptionStatus: "canceled", trialEndsAt: null, gracePeriodEndsAt: null },
+      { subscriptionStatus: "trialing", trialEndsAt: new Date(T0.getTime() - 1), gracePeriodEndsAt: null },
+    ];
+    for (const e of etats) {
+      const v = accesAutorise(e, T0);
+      assert.equal(v.ok, false, e.subscriptionStatus);
+      assert.equal(v.travailler, false, e.subscriptionStatus);
+    }
   });
 });
 
 describe("Messages", () => {
   test("chaque motif a un message qui dit quoi faire", () => {
-    for (const motif of ["essai-termine", "resilie", "jamais-active"]) {
+    for (const motif of ["essai-termine", "resilie", "jamais-active", "essai-pas-demarre"]) {
       const m = messageBlocage(motif);
       assert.ok(m.length > 20, `message trop court pour ${motif}`);
     }

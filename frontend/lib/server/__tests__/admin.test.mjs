@@ -89,6 +89,79 @@ describe("Statistiques", () => {
   });
 });
 
+describe("Listes nominatives", () => {
+  /*
+   * La console nomme les ENTREPRISES — savoir qui est en essai, et pas
+   * seulement combien, est ce qui permet d'agir avant l'échéance. Elle ne doit
+   * jamais nommer les PERSONNES ni donner de quoi les joindre.
+   */
+  test("une entreprise porte son nom, jamais de coordonnée", async () => {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("artisan@exemple.test", "mot-de-passe-long-12");
+    await repo.createCompany({
+      userId: u.id,
+      companyName: "Toiture du Rhone",
+      tradeType: "couvreur",
+      country: "CH",
+      phoneNumber: "+41780000000",
+    });
+
+    const s = await repo.statistiquesAdmin();
+    const listes = [...s.abonnes, ...s.essais, ...s.attenteFiche];
+    const nom = listes.find((l) => l.entreprise === "Toiture du Rhone");
+    assert.ok(nom, "l'entreprise doit apparaître quelque part");
+
+    // La forme elle-même interdit la fuite : trois champs, pas un de plus.
+    assert.deepEqual(Object.keys(nom).sort(), ["entreprise", "joursRestants", "palier"]);
+    const brut = JSON.stringify(listes);
+    assert.ok(!brut.includes("artisan@exemple.test"), "aucune adresse e-mail");
+    assert.ok(!brut.includes("41780000000"), "aucun numéro de téléphone");
+  });
+
+  test("sans fiche rattachée, l'essai n'est pas démarré", async () => {
+    /*
+     * Ces comptes n'ont pas de trialEndsAt : ils seraient invisibles partout —
+     * ni dans les essais, ni dans les abonnés — sans la liste d'attente. C'est
+     * exactement la situation d'un inscrit pendant que Google valide notre
+     * accès à son API.
+     */
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("attente@exemple.test", "mot-de-passe-long-12");
+    await repo.createCompany({
+      userId: u.id,
+      companyName: "Sans Fiche SA",
+      tradeType: "plombier",
+      country: "CH",
+      phoneNumber: "+41780000001",
+    });
+
+    const s = await repo.statistiquesAdmin();
+    const attente = s.attenteFiche.find((l) => l.entreprise === "Sans Fiche SA");
+    assert.ok(attente, "un compte sans fiche doit figurer dans la liste d'attente");
+    assert.equal(attente.joursRestants, null, "aucun jour ne doit être consommé");
+    assert.ok(
+      !s.essais.some((l) => l.entreprise === "Sans Fiche SA"),
+      "il ne doit PAS compter comme un essai en cours",
+    );
+  });
+
+  test("les essais sortent triés par échéance croissante", async () => {
+    // Celui qui expire en premier est celui qu'il faut appeler en premier :
+    // un tri arbitraire ferait manquer l'échéance la plus proche.
+    const s = await repoMod.getRepo().statistiquesAdmin();
+    const jours = s.essais.map((l) => l.joursRestants);
+    assert.deepEqual(jours, [...jours].sort((a, b) => a - b));
+  });
+
+  test("le nombre d'essais listés correspond au compteur", async () => {
+    // Un écart entre « Essais en cours : 3 » et une liste de deux lignes
+    // ferait douter de toute la page.
+    const s = await repoMod.getRepo().statistiquesAdmin();
+    assert.equal(s.essais.length, s.essaisEnCours);
+    assert.equal(s.abonnes.length, s.abonnesActifs);
+  });
+});
+
 describe("Rôle", () => {
   test("un compte naît SANS privilège", async () => {
     // Le rôle admin ne s'obtient que depuis le serveur, jamais à l'inscription.

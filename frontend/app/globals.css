@@ -2058,6 +2058,33 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Une echeance proche : un avertissement, pas un echec — d'ou --status-warn,
+   qui a deja sa variante sombre. La couleur seule ne suffirait pas, un
+   daltonien la manquerait : le texte « dernier jour » porte la meme
+   information. */
+.admin-urgent {
+  font-weight: 650;
+  color: var(--status-warn);
+}
+
+/* Combien de lignes suivent, avant de les lire. */
+.admin-compte {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-vide {
+  margin: 0;
+  padding: 0.55rem 0;
+  font-size: var(--t-sm);
+  color: var(--ink-faint);
 }
 
 /* --- Agenda ---------------------------------------------------------------

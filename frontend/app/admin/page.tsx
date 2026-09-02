@@ -4,6 +4,7 @@ import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
 import GraphiqueAdmin from "@/components/GraphiqueAdmin";
 import { PLANS } from "@/lib/data";
+import type { LigneEntreprise } from "@/lib/server/repo";
 
 /**
  * Console d'administration — lecture seule.
@@ -13,8 +14,19 @@ import { PLANS } from "@/lib/data";
  * Adminer, phpMyAdmin ou pgAdmin exposés sur un domaine public sont l'une des
  * voies d'intrusion les plus courantes des petits SaaS : une seule faille dans
  * l'outil, et c'est la base entière — donc les données personnelles des
- * artisans et de LEURS clients. Cette page ne peut rien écrire, rien exporter,
- * et ne montre que des agrégats.
+ * artisans et de LEURS clients. Cette page ne peut rien écrire et rien
+ * exporter.
+ *
+ * CE QU'ELLE NOMME, ET CE QU'ELLE TAIT
+ *
+ * Elle nomme les entreprises — savoir QUI est en essai, et pas seulement
+ * combien, est ce qui permet d'agir avant l'échéance. Elle ne montre aucune
+ * coordonnée : ni e-mail, ni téléphone, ni nom de personne. Le nom d'une
+ * entreprise est déjà public sur Google Maps ; l'adresse du client, elle, ne
+ * doit pas transiter par une page web.
+ *
+ * Pour joindre quelqu'un, `db/lister-essais.sh` donne les adresses depuis le
+ * serveur, à qui a déjà l'accès SSH.
  *
  * POURQUOI 404 ET NON 403
  *
@@ -33,6 +45,42 @@ export const metadata = {
   // Cette page ne doit jamais apparaître dans un moteur de recherche.
   robots: { index: false, follow: false },
 };
+
+/**
+ * Une liste d'entreprises.
+ *
+ * Le cas vide n'est pas escamoté : une section absente se confond avec une
+ * panne, alors qu'un « aucun » explicite est une information juste.
+ */
+function listeEntreprises(
+  titre: string,
+  lignes: LigneEntreprise[],
+  vide: string,
+  droite: (l: LigneEntreprise) => { texte: string; urgent?: boolean },
+) {
+  return (
+    <section className="admin-bloc">
+      <h2 className="admin-section">
+        {titre} {lignes.length > 0 && <span className="admin-compte">{lignes.length}</span>}
+      </h2>
+      {lignes.length === 0 ? (
+        <p className="admin-vide">{vide}</p>
+      ) : (
+        lignes.map((l) => {
+          const d = droite(l);
+          return (
+            <div className="admin-ligne" key={l.entreprise + d.texte}>
+              <span className="admin-label">{l.entreprise}</span>
+              <span className={d.urgent ? "admin-valeur admin-urgent" : "admin-valeur"}>
+                {d.texte}
+              </span>
+            </div>
+          );
+        })
+      )}
+    </section>
+  );
+}
 
 function ligne(label: string, valeur: string | number) {
   return (
@@ -89,6 +137,39 @@ export default async function Page() {
           <span className="kpi-label">Taux de conversion</span>
         </div>
       </section>
+
+      {/* QUI, avant les courbes. Les graphiques racontent une tendance ;
+          ces trois listes disent qui appeler cette semaine. */}
+      {listeEntreprises(
+        "Abonnés payants",
+        s.abonnes,
+        "Aucun abonnement payant pour l'instant.",
+        (l) => ({ texte: l.palier ? nomPalier(l.palier) : "—" }),
+      )}
+
+      {listeEntreprises(
+        "Essais en cours",
+        s.essais,
+        "Aucun essai en cours.",
+        (l) => ({
+          texte:
+            l.joursRestants === null
+              ? "—"
+              : l.joursRestants <= 1
+                ? "dernier jour"
+                : `${l.joursRestants} jours`,
+          // Deux jours, c'est le délai pour décrocher son téléphone : le SMS de
+          // rappel part la veille, et après il est trop tard pour parler.
+          urgent: l.joursRestants !== null && l.joursRestants <= 2,
+        }),
+      )}
+
+      {listeEntreprises(
+        "En attente de fiche Google",
+        s.attenteFiche,
+        "Aucun compte en attente.",
+        () => ({ texte: "essai non démarré" }),
+      )}
 
       <GraphiqueAdmin titre="Inscriptions — 30 jours" points={s.parJour} mesure="inscriptions" />
       <GraphiqueAdmin titre="Revenus — 12 mois" points={s.parMois} mesure="revenu" />

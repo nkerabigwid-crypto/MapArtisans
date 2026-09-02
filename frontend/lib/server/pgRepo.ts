@@ -20,7 +20,6 @@ import type {
 } from "./repo";
 import { normalizeEmail } from "./repo";
 import { genererWidgetKey } from "./assistant/access";
-import { finEssai } from "./essai";
 
 /**
  * Dépôt PostgreSQL — l'implémentation de production.
@@ -234,16 +233,25 @@ export const pgRepo: Repo = {
     // un pays hors liste ou une devise autre que CHF fait échouer l'insertion
     // plutôt que d'enregistrer une facturation impossible.
     const r = await q(
-      // L'essai démarre à la création, sans carte bancaire : c'est la promesse
-      // affichée sur le site depuis l'origine, et que rien n'implémentait.
-      // `plan_amount` porte le tarif du palier d'entrée, celui qui s'appliquera
-      // à la conversion.
+      /*
+       * `trial_ends_at` reste NULL — migration 026.
+       *
+       * L'essai ne démarre PAS à l'inscription mais au rattachement de la
+       * fiche Google. Tant qu'elle n'est pas branchée, le produit ne fait rien
+       * pour l'artisan : ni avis, ni position, ni rapport. Lui décompter ses
+       * quatorze jours pendant qu'il attend l'accès à l'API Google reviendrait
+       * à lui vendre l'attente.
+       *
+       * `demarrerEssaiSiPremiereFiche` posera les deux dates d'un coup.
+       * `plan_amount` porte le tarif du palier d'entrée, celui qui
+       * s'appliquera à la conversion.
+       */
       `INSERT INTO companies
          (user_id, company_name, trade_type, country, currency, plan_id,
-          plan_amount, subscription_status, trial_ends_at)
-       VALUES ($1, $2, $3, $4, 'CHF', 'basique', 49, 'trialing', $5)
+          plan_amount, subscription_status)
+       VALUES ($1, $2, $3, $4, 'CHF', 'basique', 49, 'trialing')
        RETURNING *`,
-      [input.userId, input.companyName, input.tradeType, input.country, finEssai()],
+      [input.userId, input.companyName, input.tradeType, input.country],
     );
     return versEntreprise(r[0]);
   },
@@ -660,6 +668,65 @@ export const pgRepo: Repo = {
       "SELECT plan_id, count(*)::text AS n FROM companies GROUP BY 1",
     );
 
+    /*
+     * QUI, et non plus seulement COMBIEN.
+     *
+     * Une seule requête pour les trois listes, découpée ensuite : trois
+     * requêtes finiraient par diverger le jour où l'une des définitions bouge
+     * (« en essai » et « en attente de fiche » se distinguent d'un seul champ).
+     *
+     * Aucune donnée de contact n'est sélectionnée — ni e-mail, ni téléphone,
+     * ni nom de personne. Le nom d'entreprise est déjà public sur Google Maps ;
+     * l'adresse du client, elle, ne doit pas transiter par une page web.
+     *
+     * `LIMIT` : la console tient sur un écran. Passé ce seuil, la question
+     * n'est plus « qui » mais « combien », et les compteurs y répondent.
+     */
+    const lignes = await q<{
+      company_name: string;
+      plan_id: string | null;
+      jours: number | null;
+      statut: string;
+      a_fiche: boolean;
+    }>(
+      `SELECT c.company_name,
+              c.plan_id,
+              CASE WHEN c.trial_ends_at IS NULL THEN NULL
+                   ELSE ceil(extract(epoch FROM c.trial_ends_at - now()) / 86400)::int
+              END AS jours,
+              c.subscription_status AS statut,
+              EXISTS (SELECT 1 FROM google_profiles g WHERE g.company_id = c.id) AS a_fiche
+         FROM companies c
+        ORDER BY c.trial_ends_at NULLS LAST, c.created_at
+        LIMIT 200`,
+    );
+
+    const enLigne = (x: (typeof lignes)[number]) => ({
+      entreprise: x.company_name,
+      palier: x.plan_id,
+      joursRestants: x.jours,
+    });
+
+    const abonnes = lignes
+      .filter((x) => x.statut === "active" || x.statut === "past_due")
+      .map(enLigne);
+    // Déjà trié par échéance croissante : celui qui expire en premier est
+    // celui qu'il faut appeler en premier.
+    const essais = lignes
+      .filter((x) => x.statut === "trialing" && x.jours !== null && x.jours > 0)
+      .map(enLigne);
+    // Ni payant, ni en essai démarré : la fiche n'est pas branchée.
+    const attenteFiche = lignes
+      .filter(
+        (x) =>
+          !x.a_fiche &&
+          x.jours === null &&
+          x.statut !== "active" &&
+          x.statut !== "past_due" &&
+          x.statut !== "canceled",
+      )
+      .map(enLigne);
+
     const abonnements: Record<string, number> = {};
     for (const x of parStatut) abonnements[x.subscription_status] = Number(x.n);
     const paliers: Record<string, number> = {};
@@ -678,6 +745,10 @@ export const pgRepo: Repo = {
       smsCeMois: Number(l.sms_mois),
       facturesEmises: Number(l.factures),
       montantFactureCentimes: Number(l.montant),
+
+      abonnes,
+      essais,
+      attenteFiche,
 
       abonnesActifs: Number(abo[0].actifs),
       essaisEnCours: Number(abo[0].essais),

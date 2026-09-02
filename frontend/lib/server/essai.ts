@@ -38,11 +38,31 @@ export interface EtatAbonnement {
   gracePeriodEndsAt: Date | null;
 }
 
-export type MotifBlocage = "essai-termine" | "resilie" | "jamais-active";
+export type MotifBlocage =
+  | "essai-termine"
+  | "resilie"
+  | "jamais-active"
+  /** Inscrit, fiche pas encore rattachée : l'essai n'a pas commencé à courir. */
+  | "essai-pas-demarre";
 
 export interface VerdictAcces {
-  /** Le produit doit-il travailler pour ce compte ? */
+  /**
+   * L'artisan peut-il ENTRER dans le produit ?
+   *
+   * Distinct de `travailler`, et la nuance compte : un inscrit dont la fiche
+   * n'est pas rattachée doit pouvoir entrer — c'est précisément là qu'il la
+   * branche — alors que rien ne doit encore être dépensé pour lui.
+   */
   ok: boolean;
+  /**
+   * Le produit doit-il DÉPENSER pour ce compte ? Génération IA, envoi de SMS,
+   * relevé de position.
+   *
+   * Toujours `false` quand `ok` est faux. Faux aussi avant le démarrage de
+   * l'essai : sans cette séparation, un statut `trialing` posé à la main sans
+   * date de fin ouvrirait le produit pour toujours.
+   */
+  travailler: boolean;
   motif?: MotifBlocage;
   /** Jours entiers restants d'essai. `null` hors essai. */
   joursRestants: number | null;
@@ -83,7 +103,7 @@ export function accesAutorise(
 
   switch (etat.subscriptionStatus) {
     case "active":
-      return { ok: true, joursRestants: null, bientotFini: false };
+      return { ok: true, travailler: true, joursRestants: null, bientotFini: false };
 
     case "past_due": {
       /*
@@ -93,25 +113,74 @@ export function accesAutorise(
        */
       const grace = etat.gracePeriodEndsAt;
       if (!grace || grace.getTime() > maintenant.getTime()) {
-        return { ok: true, joursRestants: null, bientotFini: false };
+        return { ok: true, travailler: true, joursRestants: null, bientotFini: false };
       }
-      return { ok: false, motif: "resilie", joursRestants: null, bientotFini: false };
+      return {
+        ok: false,
+        travailler: false,
+        motif: "resilie",
+        joursRestants: null,
+        bientotFini: false,
+      };
     }
 
     case "trialing":
       if (restants !== null && restants > 0) {
-        return { ok: true, joursRestants: restants, bientotFini };
+        return { ok: true, travailler: true, joursRestants: restants, bientotFini };
       }
-      return { ok: false, motif: "essai-termine", joursRestants: 0, bientotFini: false };
+      /*
+       * PAS DE DATE DE FIN : l'essai n'a pas encore commencé à courir.
+       *
+       * C'est l'état normal d'un inscrit dont la fiche Google n'est pas
+       * rattachée — migration 026. Il doit pouvoir entrer et brancher sa
+       * fiche ; le refuser afficherait « votre essai est terminé » à
+       * quelqu'un qui vient de s'inscrire.
+       *
+       * Cet accès ne coûte rien : sans fiche, les files n'ont rien à traiter.
+       * Et le jour où la fiche se branche, `demarrerEssaiSiPremiereFiche` pose
+       * les deux dates dans la même instruction — il n'existe donc pas d'état
+       * durable « fiche rattachée, essai sans échéance ».
+       */
+      if (etat.trialEndsAt === null) {
+        return {
+          ok: true,
+          // Entrer, oui. Dépenser, non : rien n'est encore dû à ce compte, et
+          // c'est ce refus qui empêche un `trialing` sans date d'ouvrir le
+          // produit indéfiniment.
+          travailler: false,
+          motif: "essai-pas-demarre",
+          joursRestants: null,
+          bientotFini: false,
+        };
+      }
+      return {
+        ok: false,
+        travailler: false,
+        motif: "essai-termine",
+        joursRestants: 0,
+        bientotFini: false,
+      };
 
     case "canceled":
-      return { ok: false, motif: "resilie", joursRestants: null, bientotFini: false };
+      return {
+        ok: false,
+        travailler: false,
+        motif: "resilie",
+        joursRestants: null,
+        bientotFini: false,
+      };
 
     case "incomplete":
     default:
       // Compte créé, essai jamais démarré et aucun paiement. Se produit pour
       // les comptes antérieurs à cette migration.
-      return { ok: false, motif: "jamais-active", joursRestants: null, bientotFini: false };
+      return {
+        ok: false,
+        travailler: false,
+        motif: "jamais-active",
+        joursRestants: null,
+        bientotFini: false,
+      };
   }
 }
 
@@ -124,5 +193,9 @@ export function messageBlocage(motif: MotifBlocage): string {
       return "Votre abonnement est arrêté. Réactivez-le pour retrouver votre fiche et son historique.";
     case "jamais-active":
       return "Activez votre essai gratuit de quatorze jours pour commencer, sans carte bancaire.";
+    case "essai-pas-demarre":
+      // Ce texte ne s'affiche pas comme un blocage : l'accès est ouvert. Il
+      // existe pour que le motif soit lisible dans les journaux et les tests.
+      return "Vos quatorze jours d'essai démarreront au rattachement de votre fiche Google.";
   }
 }

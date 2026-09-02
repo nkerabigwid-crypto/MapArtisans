@@ -78,7 +78,7 @@ describe("Chargement", () => {
     assert.notEqual(d.company.company_name, "Dupont Plomberie");
   });
 
-  test("un compte neuf démarre l'essai de quatorze jours", async () => {
+  test("un compte neuf n'a PAS encore démarré son essai", async () => {
     const repo = repoMod.getRepo();
     const u = await repo.createUser("essai@exemple.test", "mot-de-passe-long-12");
     await repo.createCompany({
@@ -90,10 +90,44 @@ describe("Chargement", () => {
 
     const d = await tdb.chargerTableauDeBord(u.id);
     assert.equal(d.company.subscription_status, "trialing");
-    // L'accès est ouvert, et il reste quatorze jours.
+    /*
+     * Migration 026 : les quatorze jours ne courent qu'à partir du
+     * rattachement de la fiche Google. Tant qu'elle n'est pas branchée, le
+     * produit ne fait rien pour l'artisan — ni avis, ni position, ni rapport —
+     * et lui décompter ses jours reviendrait à lui vendre l'attente.
+     *
+     * Constaté sur un client réel inscrit le 1er septembre 2026, pendant que
+     * Google validait notre accès à son API.
+     */
+    assert.equal(d.joursEssai, null, "aucun jour ne doit être décompté");
+    // L'accès reste ouvert : c'est dans le produit qu'il rattache sa fiche.
     assert.equal(d.accesOuvert, true);
-    assert.equal(d.joursEssai, 14);
+    assert.equal(d.sansFiche, true);
+    // Et surtout : aucun message de blocage. « Votre essai est terminé » le
+    // jour de l'inscription ferait fuir l'artisan.
+    assert.equal(d.messageAcces, null);
     assert.equal(d.company.plan_id, "basique");
+  });
+
+  test("le rattachement de la fiche démarre les quatorze jours", async () => {
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("depart@exemple.test", "mot-de-passe-long-12");
+    const c = await repo.createCompany({
+      userId: u.id,
+      companyName: "Exemple",
+      tradeType: "plombier",
+      country: "CH",
+    });
+
+    const fin = new Date(Date.now() + 14 * 24 * 3600 * 1000);
+    const pose = await repo.demarrerEssaiSiPremiereFiche(c.id, fin);
+    assert.ok(pose, "l'essai doit démarrer au premier rattachement");
+
+    // Et une seconde fois : débrancher puis rebrancher sa fiche ne doit pas
+    // offrir quatorze jours de plus.
+    const plusTard = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+    const rejoue = await repo.demarrerEssaiSiPremiereFiche(c.id, plusTard);
+    assert.equal(rejoue, null, "l'essai ne se relance pas");
   });
 
   test("le montant vient de la colonne, pas du catalogue", async () => {

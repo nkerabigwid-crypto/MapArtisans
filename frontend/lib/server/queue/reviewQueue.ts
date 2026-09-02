@@ -70,7 +70,10 @@ export async function enqueuePendingReviews(repo: Repo): Promise<number> {
         trialEndsAt: entreprise.trialEndsAt,
         gracePeriodEndsAt: entreprise.gracePeriodEndsAt,
       });
-      if (!verdict.ok) continue;
+      // `travailler` et non `ok` : un inscrit peut entrer dans le produit
+      // avant d'avoir rattache sa fiche, sans que rien ne soit depense pour
+      // lui. Voir essai.ts — les deux notions sont distinctes.
+      if (!verdict.travailler) continue;
     }
 
     const pending = await repo.listPendingReviews(profile.id);
