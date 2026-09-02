@@ -1195,10 +1195,19 @@ export const memoryRepo: Repo = {
       (c) => c.subscriptionStatus === "active" || c.subscriptionStatus === "past_due",
     );
     const maintenant = Date.now();
+    /*
+     * `trialEndsAt` NON NUL est exigé.
+     *
+     * Depuis la migration 026, NULL ne veut plus dire « essai sans échéance »
+     * mais « essai PAS ENCORE DÉMARRÉ » — la fiche Google n'est pas rattachée.
+     * Les compter ici affichait « 3 essais en cours » au-dessus d'une liste
+     * disant « aucun essai en cours ». Ces comptes sont dans `attenteFiche`.
+     */
     const enEssai = listeEntreprises.filter(
       (c) =>
         c.subscriptionStatus === "trialing" &&
-        (!c.trialEndsAt || c.trialEndsAt.getTime() > maintenant),
+        c.trialEndsAt !== null &&
+        c.trialEndsAt.getTime() > maintenant,
     );
     const expires = listeEntreprises.filter(
       (c) =>
@@ -1243,8 +1252,7 @@ export const memoryRepo: Repo = {
       entreprises: companies.size,
       fiches: profiles.size,
       abonnes: actifs.map(enLigne),
-      essais: enEssai
-        .filter((c) => c.trialEndsAt !== null)
+      essais: [...enEssai]
         .sort((a, b) => a.trialEndsAt!.getTime() - b.trialEndsAt!.getTime())
         .map(enLigne),
       attenteFiche: listeEntreprises

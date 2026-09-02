@@ -154,11 +154,26 @@ describe("Listes nominatives", () => {
   });
 
   test("le nombre d'essais listés correspond au compteur", async () => {
-    // Un écart entre « Essais en cours : 3 » et une liste de deux lignes
-    // ferait douter de toute la page.
-    const s = await repoMod.getRepo().statistiquesAdmin();
-    assert.equal(s.essais.length, s.essaisEnCours);
-    assert.equal(s.abonnes.length, s.abonnesActifs);
+    /*
+     * Un écart entre « Essais en cours : 3 » et une liste vide fait douter de
+     * toute la page. C'est arrivé : le compteur SQL acceptait
+     * `trial_ends_at IS NULL`, qui depuis la migration 026 ne veut plus dire
+     * « essai sans échéance » mais « essai pas encore démarré ».
+     *
+     * Le test précédent ne l'attrapait pas : il tournait sur un jeu de données
+     * où aucune entreprise n'était dans cet état. On en crée donc une.
+     */
+    const repo = repoMod.getRepo();
+    const u = await repo.createUser("compteur@exemple.test", "mot-de-passe-long-12");
+    await repo.createCompany({
+      userId: u.id, companyName: "Sans Echeance", tradeType: "plombier", country: "CH",
+    });
+
+    const s = await repo.statistiquesAdmin();
+    assert.equal(s.essais.length, s.essaisEnCours, "compteur et liste d'essais");
+    assert.equal(s.abonnes.length, s.abonnesActifs, "compteur et liste d'abonnés");
+    // Et il doit bien être quelque part, pas nulle part.
+    assert.ok(s.attenteFiche.some((l) => l.entreprise === "Sans Echeance"));
   });
 });
 

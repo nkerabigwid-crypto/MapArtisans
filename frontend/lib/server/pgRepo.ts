@@ -621,7 +621,8 @@ export const pgRepo: Repo = {
       `SELECT
          count(*) FILTER (WHERE subscription_status IN ('active','past_due'))::text AS actifs,
          count(*) FILTER (WHERE subscription_status = 'trialing'
-                            AND (trial_ends_at IS NULL OR trial_ends_at > now()))::text AS essais,
+                            AND trial_ends_at IS NOT NULL
+                            AND trial_ends_at > now())::text AS essais,
          count(*) FILTER (WHERE subscription_status = 'trialing'
                             AND trial_ends_at IS NOT NULL AND trial_ends_at <= now())::text AS expires,
          COALESCE(sum(plan_amount) FILTER (
