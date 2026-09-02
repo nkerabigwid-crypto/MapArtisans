@@ -242,6 +242,15 @@ export default function TableauDeBord({ donnees }: { donnees: DonneesTableauDeBo
         <BandeauGoogle />
       </Suspense>
 
+      {/* Accès à la console d'administration.
+          Elle répond 404 à qui n'est pas administrateur : sans ce lien, même
+          l'exploitant devait retaper l'adresse de mémoire. */}
+      {donnees.estAdmin && (
+        <a className="admin-acces" href="/admin">
+          Console d&apos;administration
+        </a>
+      )}
+
       {/* Avertissement de plafond SMS.
           Discret et non bloquant : il informe et propose, il n'interrompt
           rien. L'artisan reste libre de ne rien faire — mais il ne découvre

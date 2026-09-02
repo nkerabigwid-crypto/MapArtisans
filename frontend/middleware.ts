@@ -21,7 +21,19 @@ import { verifySession, sessionCookie } from "@/lib/server/session";
  * dans lib/server/session.ts plutôt que de node:crypto.
  */
 
-const PROTECTED = ["/tableau-de-bord"];
+/**
+ * Écrans qui exigent une session.
+ *
+ * `/admin` et `/abonnement` avaient leur propre contrôle dans la page mais
+ * n'étaient pas listés ici : la redirection perdait alors la destination, et
+ * l'artisan connecté atterrissait sur le tableau de bord en devant retaper
+ * l'adresse. Constaté sur `/admin`.
+ *
+ * Le middleware ne dit RIEN du rôle : `/admin` vérifie lui-même qu'il s'agit
+ * d'un administrateur, au plus près de la donnée. Un contrôle qui ne vit que
+ * dans le middleware saute dès qu'une route est appelée autrement.
+ */
+const PROTECTED = ["/tableau-de-bord", "/admin", "/abonnement"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

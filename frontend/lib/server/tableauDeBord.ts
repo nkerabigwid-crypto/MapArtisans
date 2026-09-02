@@ -87,6 +87,8 @@ export interface DonneesTableauDeBord {
    * page cligne, et il conclut que le produit est cassé.
    */
   googleDisponible: boolean;
+  /** `true` pour un administrateur : affiche l'accès à la console. */
+  estAdmin: boolean;
 }
 
 function versDateIso(d: Date | null): string | null {
@@ -97,6 +99,9 @@ export async function chargerTableauDeBord(
   userId: string,
 ): Promise<DonneesTableauDeBord | null> {
   const repo = getRepo();
+
+  const utilisateur = await repo.findUserById(userId);
+  const estAdmin = utilisateur?.role === "admin";
 
   const entreprise = await repo.findCompanyForUser(userId);
   // Un utilisateur sans entreprise ne devrait pas exister : l'inscription crée
@@ -164,6 +169,7 @@ export async function chargerTableauDeBord(
       messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
       googleDisponible: googleConfigure(),
       messageQuotaSms,
+      estAdmin,
     };
   }
 
@@ -243,5 +249,6 @@ export async function chargerTableauDeBord(
     messageAcces: verdict.motif ? messageBlocage(verdict.motif) : null,
     googleDisponible: googleConfigure(),
     messageQuotaSms,
+    estAdmin,
   };
 }

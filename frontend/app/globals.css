@@ -2638,3 +2638,19 @@ a.btn { text-decoration: none; }
   font-size: 0.62rem;
   color: var(--ink-faint);
 }
+
+/* Accès à la console d'administration, depuis le tableau de bord.
+   Discret par nature : un seul compte le voit, et il n'a rien à faire dans le
+   parcours quotidien d'un artisan. */
+.admin-acces {
+  display: block;
+  padding: 0.5rem 1.1rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: var(--t-xs);
+  text-align: center;
+  text-decoration: none;
+}
+
+.admin-acces:hover { background: var(--accent); }
