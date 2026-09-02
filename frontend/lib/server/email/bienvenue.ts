@@ -26,6 +26,8 @@ export async function envoyerBienvenue(
     brandName?: string | null;
     /** Facture PDF, si elle a été produite. */
     facture?: { nom: string; contenu: Buffer } | null;
+    /** Renseigné quand ce message suit un paiement, pour le confirmer. */
+    abonnement?: { palier: string; montantCentimes: number } | null;
   },
   deps: { repo: Repo; sender?: EmailSender } = { repo: undefined as never },
 ): Promise<{ envoye: boolean; raison?: string }> {
@@ -38,6 +40,7 @@ export async function envoyerBienvenue(
     const message = composeWelcomeEmail({
       magicLink: magicLinkUrl(SITE_URL, token),
       brandName: options.brandName ?? null,
+      abonnement: options.abonnement ?? null,
     });
 
     await sender.send({

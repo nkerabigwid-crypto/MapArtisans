@@ -4,7 +4,7 @@ import { getRepo } from "@/lib/server/repo";
 import { verifierSignature } from "@/lib/server/paiement/stripe";
 import { envoyerBienvenue } from "@/lib/server/email/bienvenue";
 import { emettreFacture } from "@/lib/server/billing/emission";
-import { type PlanId } from "@/lib/data";
+import { PLANS, type PlanId } from "@/lib/data";
 
 export const runtime = "nodejs";
 // Jamais mise en cache : chaque événement est unique et doit atteindre le code.
@@ -95,7 +95,26 @@ async function traiter(evenement: Stripe.Event, repo: ReturnType<typeof getRepo>
         // L'échec d'envoi ne relève pas : le paiement est encaissé et
         // l'abonnement actif. Faire échouer le webhook ferait rejouer le
         // paiement par Stripe pour un e-mail non parti.
-        await envoyerBienvenue({ userId, email: utilisateur.email }, { repo });
+        /*
+         * Le palier et son prix accompagnent le message : c'est ce qui
+         * distingue un accusé d'abonnement d'un simple « votre compte est
+         * actif ». Un client qui ne retrouve nulle part la trace de ce qu'il
+         * vient de payer écrit au support — ou demande une opposition.
+         *
+         * Le tarif vient du catalogue et non de Stripe : les deux doivent
+         * s'accorder, et un écart doit se voir ici plutôt que sur la facture.
+         */
+        const palier = PLANS.find((p) => p.id === session.metadata?.planId);
+        await envoyerBienvenue(
+          {
+            userId,
+            email: utilisateur.email,
+            abonnement: palier
+              ? { palier: palier.name, montantCentimes: palier.amount * 100 }
+              : null,
+          },
+          { repo },
+        );
 
         /*
          * La facture suit le même principe : `emettreFacture` ne lève jamais.

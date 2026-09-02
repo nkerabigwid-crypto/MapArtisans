@@ -29,6 +29,16 @@ export interface WelcomeEmailData {
   brandName?: string | null;
   /** Durée de validité en minutes, pour rester cohérent avec magicLink.ts. */
   validiteMinutes?: number;
+  /**
+   * Abonnement souscrit, quand ce message suit un PAIEMENT et non une simple
+   * inscription.
+   *
+   * Sans lui, le client qui vient de payer recevait « votre compte est actif »
+   * — vrai, mais muet sur ce qu'il a acheté et à quel prix. Un client qui ne
+   * retrouve nulle part la trace de ce qu'il vient de payer écrit au support,
+   * ou demande une opposition à sa banque.
+   */
+  abonnement?: { palier: string; montantCentimes: number } | null;
 }
 
 export interface WelcomeEmail {
@@ -51,11 +61,28 @@ export function composeWelcomeEmail(data: WelcomeEmailData): WelcomeEmail {
   const minutes = data.validiteMinutes ?? 15;
   const lien = data.magicLink;
 
-  const subject = `${marque} — votre accès est prêt`;
+  const abo = data.abonnement ?? null;
+  /*
+   * Le montant s'ecrit « 49.00 CHF / mois » et non « 4900 ».
+   * `toFixed(2)` plutot qu'un formateur de locale : le rendu doit etre
+   * identique quel que soit le fuseau du serveur qui envoie le message.
+   */
+  const prix = abo ? `${(abo.montantCentimes / 100).toFixed(2)} CHF / mois` : null;
+
+  const subject = abo
+    ? `${marque} — votre abonnement ${abo.palier} est actif`
+    : `${marque} — votre accès est prêt`;
 
   const text = [
     `Bienvenue sur ${marque}.`,
     "",
+    ...(abo
+      ? [
+          `Votre abonnement ${abo.palier} est actif — ${prix}.`,
+          "Votre facture vous parvient dans un message séparé.",
+          "",
+        ]
+      : []),
     "Votre compte est actif. Cliquez sur ce lien pour vous connecter,",
     "sans mot de passe à retenir :",
     "",
@@ -78,6 +105,12 @@ export function composeWelcomeEmail(data: WelcomeEmailData): WelcomeEmail {
   const html = [
     '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#1a1d1a;max-width:520px">',
     `<p>Bienvenue sur <strong>${esc(marque)}</strong>.</p>`,
+    ...(abo
+      ? [
+          `<p>Votre abonnement <strong>${esc(abo.palier)}</strong> est actif — ${esc(prix!)}.<br>`,
+          `<span style="font-size:13px;color:#6a6f69">Votre facture vous parvient dans un message séparé.</span></p>`,
+        ]
+      : []),
     "<p>Votre compte est actif. Cliquez pour vous connecter, sans mot de passe à retenir :</p>",
     `<p><a href="${esc(lien)}" style="display:inline-block;background:#123f6d;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir mon tableau de bord</a></p>`,
     // Le lien en clair, pour le cas où la réécriture d'un client mail d'entreprise
