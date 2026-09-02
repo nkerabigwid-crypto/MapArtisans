@@ -71,7 +71,35 @@ export interface RendezVousRecord {
   status: "confirmed" | "honored" | "canceled";
 }
 
+/** Un point de série temporelle : un jour ou un mois, et sa valeur. */
+export interface PointSerie {
+  /** `2026-09-02` pour un jour, `2026-09` pour un mois. */
+  cle: string;
+  inscriptions: number;
+  /** Revenu facturé, en centimes. */
+  revenuCentimes: number;
+}
+
 export interface StatistiquesAdmin {
+  // --- Abonnements. Ce sont les chiffres qu'on regarde le matin.
+  /** Comptes qui PAIENT : `active` ou `past_due`. */
+  abonnesActifs: number;
+  essaisEnCours: number;
+  essaisExpires: number;
+  /**
+   * Revenu mensuel récurrent, en centimes.
+   *
+   * Somme des tarifs des abonnements actifs — la seule mesure qui dise ce que
+   * vaut le mois prochain. Le cumul des factures, lui, raconte le passé.
+   */
+  mrrCentimes: number;
+  /** Abonnés actifs ÷ comptes créés. Zéro tant que personne n'a payé. */
+  tauxConversionPourMille: number;
+
+  // --- Séries, pour voir le mouvement plutôt qu'une photo.
+  parJour: PointSerie[];
+  parMois: PointSerie[];
+
   comptes: number;
   entreprises: number;
   fiches: number;
@@ -1093,10 +1121,54 @@ export const memoryRepo: Repo = {
     }
     let montant = 0;
     for (const f of factures.values()) montant += f.montantCentimes;
+    const listeEntreprises = [...companies.values()];
+    const actifs = listeEntreprises.filter(
+      (c) => c.subscriptionStatus === "active" || c.subscriptionStatus === "past_due",
+    );
+    const maintenant = Date.now();
+    const enEssai = listeEntreprises.filter(
+      (c) =>
+        c.subscriptionStatus === "trialing" &&
+        (!c.trialEndsAt || c.trialEndsAt.getTime() > maintenant),
+    );
+    const expires = listeEntreprises.filter(
+      (c) =>
+        c.subscriptionStatus === "trialing" &&
+        c.trialEndsAt !== null &&
+        c.trialEndsAt.getTime() <= maintenant,
+    );
+
+    /*
+     * Séries vides mais BIEN FORMÉES : trente jours et douze mois, à zéro.
+     *
+     * Renvoyer une liste vide ferait afficher un graphique sans axe, qu'on
+     * confondrait avec une panne. Un graphique plat dit « rien ne s'est encore
+     * passé », ce qui est l'information juste.
+     */
+    const serie = (n: number, pas: "jour" | "mois"): PointSerie[] =>
+      Array.from({ length: n }, (_, i) => {
+        const d = new Date();
+        if (pas === "jour") d.setDate(d.getDate() - (n - 1 - i));
+        else d.setMonth(d.getMonth() - (n - 1 - i));
+        return {
+          cle: d.toISOString().slice(0, pas === "jour" ? 10 : 7),
+          inscriptions: 0,
+          revenuCentimes: 0,
+        };
+      });
+
     return {
       comptes: users.size,
       entreprises: companies.size,
       fiches: profiles.size,
+      abonnesActifs: actifs.length,
+      essaisEnCours: enEssai.length,
+      essaisExpires: expires.length,
+      mrrCentimes: actifs.reduce((n, c) => n + c.planAmount * 100, 0),
+      tauxConversionPourMille:
+        users.size > 0 ? Math.round((actifs.length / users.size) * 1000) : 0,
+      parJour: serie(30, "jour"),
+      parMois: serie(12, "mois"),
       abonnements,
       paliers,
       avis: reviews.size,

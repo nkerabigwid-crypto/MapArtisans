@@ -600,6 +600,59 @@ export const pgRepo: Repo = {
     );
     const l = r[0];
 
+    /*
+     * Abonnements et MRR.
+     *
+     * `plan_amount` porte le tarif AUQUEL LE CLIENT A SOUSCRIT, pas celui du
+     * catalogue : une hausse de prix ne doit pas gonfler rétroactivement le
+     * revenu récurrent des clients déjà engagés.
+     */
+    const abo = await q<{
+      actifs: string; essais: string; expires: string; mrr: string;
+    }>(
+      `SELECT
+         count(*) FILTER (WHERE subscription_status IN ('active','past_due'))::text AS actifs,
+         count(*) FILTER (WHERE subscription_status = 'trialing'
+                            AND (trial_ends_at IS NULL OR trial_ends_at > now()))::text AS essais,
+         count(*) FILTER (WHERE subscription_status = 'trialing'
+                            AND trial_ends_at IS NOT NULL AND trial_ends_at <= now())::text AS expires,
+         COALESCE(sum(plan_amount) FILTER (
+           WHERE subscription_status IN ('active','past_due')), 0)::text AS mrr
+       FROM companies`,
+    );
+
+    /*
+     * Séries temporelles.
+     *
+     * Inscriptions et revenus sont réunis par clé de date plutôt que renvoyés
+     * séparément : deux listes à recoller côté écran finiraient par diverger
+     * dès qu'un jour existe dans l'une et pas dans l'autre.
+     *
+     * `generate_series` produit les jours SANS activité : sans lui, un graphique
+     * sauterait du 3 au 9 septembre et laisserait croire à une semaine dense.
+     */
+    const serie = async (pas: "day" | "month", depuis: string) =>
+      q<{ cle: string; inscriptions: string; revenu: string }>(
+        `WITH bornes AS (
+           SELECT generate_series(
+             date_trunc($1, now() - $2::interval),
+             date_trunc($1, now()),
+             ('1 ' || $1)::interval
+           ) AS d
+         )
+         SELECT
+           to_char(b.d, CASE WHEN $1 = 'day' THEN 'YYYY-MM-DD' ELSE 'YYYY-MM' END) AS cle,
+           (SELECT count(*) FROM users u
+             WHERE date_trunc($1, u.created_at) = b.d)::text AS inscriptions,
+           (SELECT COALESCE(sum(i.montant_centimes), 0) FROM invoices i
+             WHERE date_trunc($1, i.emise_le) = b.d)::text AS revenu
+         FROM bornes b
+         ORDER BY b.d`,
+        [pas, depuis],
+      );
+
+    const [pj, pm] = await Promise.all([serie("day", "29 days"), serie("month", "11 months")]);
+
     const parStatut = await q<{ subscription_status: string; n: string }>(
       "SELECT subscription_status, count(*)::text AS n FROM companies GROUP BY 1",
     );
@@ -625,6 +678,30 @@ export const pgRepo: Repo = {
       smsCeMois: Number(l.sms_mois),
       facturesEmises: Number(l.factures),
       montantFactureCentimes: Number(l.montant),
+
+      abonnesActifs: Number(abo[0].actifs),
+      essaisEnCours: Number(abo[0].essais),
+      essaisExpires: Number(abo[0].expires),
+      // `plan_amount` est en francs entiers en base ; le MRR s'exprime en
+      // centimes comme tous les montants du produit.
+      mrrCentimes: Number(abo[0].mrr) * 100,
+      // Pour mille et non pourcentage : avec trois comptes, un pourcentage
+      // entier afficherait 33 % ou 0 %, jamais rien entre les deux.
+      tauxConversionPourMille:
+        Number(l.comptes) > 0
+          ? Math.round((Number(abo[0].actifs) / Number(l.comptes)) * 1000)
+          : 0,
+
+      parJour: pj.map((x) => ({
+        cle: x.cle,
+        inscriptions: Number(x.inscriptions),
+        revenuCentimes: Number(x.revenu),
+      })),
+      parMois: pm.map((x) => ({
+        cle: x.cle,
+        inscriptions: Number(x.inscriptions),
+        revenuCentimes: Number(x.revenu),
+      })),
     } satisfies StatistiquesAdmin;
   },
 

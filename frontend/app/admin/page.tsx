@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
+import GraphiqueAdmin from "@/components/GraphiqueAdmin";
+import { PLANS } from "@/lib/data";
 
 /**
  * Console d'administration — lecture seule.
@@ -53,6 +55,7 @@ export default async function Page() {
   const s = await repo.statistiquesAdmin();
   const francs = (centimes: number) =>
     `${(centimes / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF`;
+  const nomPalier = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id;
 
   return (
     <main className="admin">
@@ -60,6 +63,36 @@ export default async function Page() {
       <p className="admin-sous-titre">
         Lecture seule. Aucune donnée personnelle n&apos;est affichée ici.
       </p>
+
+      {/* LES QUATRE CHIFFRES DU MATIN.
+          En tête et en grand, parce que ce sont ceux qu'on vient chercher.
+          Le reste du tableau sert à comprendre pourquoi ils bougent. */}
+      <section className="admin-kpis">
+        <div className="kpi">
+          <span className="kpi-valeur">{s.abonnesActifs}</span>
+          <span className="kpi-label">Abonnés payants</span>
+        </div>
+        <div className="kpi">
+          {/* Le MRR dit ce que vaut le mois PROCHAIN. Le cumul des factures,
+              lui, ne raconte que le passé. */}
+          <span className="kpi-valeur">{francs(s.mrrCentimes)}</span>
+          <span className="kpi-label">Revenu mensuel récurrent</span>
+        </div>
+        <div className="kpi">
+          <span className="kpi-valeur">{s.essaisEnCours}</span>
+          <span className="kpi-label">Essais en cours</span>
+        </div>
+        <div className="kpi">
+          <span className="kpi-valeur">
+            {(s.tauxConversionPourMille / 10).toFixed(1)} %
+          </span>
+          <span className="kpi-label">Taux de conversion</span>
+        </div>
+      </section>
+
+      <GraphiqueAdmin titre="Inscriptions — 30 jours" points={s.parJour} mesure="inscriptions" />
+      <GraphiqueAdmin titre="Revenus — 12 mois" points={s.parMois} mesure="revenu" />
+      <GraphiqueAdmin titre="Inscriptions — 12 mois" points={s.parMois} mesure="inscriptions" />
 
       <section className="admin-bloc">
         <h2 className="admin-section">Comptes</h2>
@@ -69,17 +102,20 @@ export default async function Page() {
       </section>
 
       <section className="admin-bloc">
-        <h2 className="admin-section">Abonnements</h2>
-        {Object.entries(s.abonnements).length === 0
-          ? ligne("Aucun", "—")
-          : Object.entries(s.abonnements).map(([k, v]) => ligne(k, v))}
+        <h2 className="admin-section">Cycle de vie des abonnements</h2>
+        {ligne("Abonnés payants", s.abonnesActifs)}
+        {ligne("Essais en cours", s.essaisEnCours)}
+        {/* Compté à part : un essai expiré non converti est un client perdu,
+            et c'est le chiffre qui doit inquiéter quand il monte. */}
+        {ligne("Essais expirés, non convertis", s.essaisExpires)}
+        {Object.entries(s.abonnements).map(([k, v]) => ligne(`— dont « ${k} »`, v))}
       </section>
 
       <section className="admin-bloc">
-        <h2 className="admin-section">Paliers</h2>
+        <h2 className="admin-section">Répartition par palier</h2>
         {Object.entries(s.paliers).length === 0
           ? ligne("Aucun", "—")
-          : Object.entries(s.paliers).map(([k, v]) => ligne(k, v))}
+          : Object.entries(s.paliers).map(([k, v]) => ligne(nomPalier(k), v))}
       </section>
 
       <section className="admin-bloc">

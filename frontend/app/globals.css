@@ -2546,3 +2546,95 @@ a.btn { text-decoration: none; }
   margin-left: auto;
   margin-right: auto;
 }
+
+/* --- Indicateurs d'administration -----------------------------------------
+   Quatre chiffres en tête, en grand : ce sont ceux qu'on vient chercher le
+   matin. Le tableau détaillé, en dessous, sert à comprendre pourquoi ils
+   bougent. */
+.admin-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-6);
+}
+
+.kpi {
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+
+.kpi-valeur {
+  display: block;
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: var(--t-xs);
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+/* --- Graphiques ---------------------------------------------------------- */
+.graph {
+  margin-bottom: var(--s-6);
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card);
+}
+
+.graph-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.graph-titre {
+  margin: 0;
+  font-size: var(--t-xs);
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.graph-total {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-sm);
+  color: var(--ink);
+}
+
+/* `preserveAspectRatio: none` étire le tracé : la hauteur est donc fixée ici,
+   et les barres gardent leurs proportions relatives, seules utiles. */
+.graph-svg { display: block; width: 100%; height: 90px; }
+
+.graph-barre { fill: var(--accent); }
+
+.graph-vide {
+  margin: 0;
+  padding: var(--s-4) 0;
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.graph-pied {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+}
