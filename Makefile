@@ -5,7 +5,7 @@
 # hook .githooks/pre-push, qui s'execute tout seul avant chaque envoi. Une
 # commande qu'il faut penser a taper ne protege que les jours ou on y pense.
 
-.PHONY: aide install dev test verifier build deployer migrer schema sauvegarde logs etat comptes admin retirer-admin
+.PHONY: aide install dev test verifier build deployer migrer schema sauvegarde logs etat comptes essais admin retirer-admin
 
 SERVEUR := mapartisans-vps
 DISTANT := /opt/mapartisans
@@ -29,6 +29,7 @@ aide:
 	@echo
 	@echo "  Acces administrateur"
 	@echo "    make comptes                  liste les comptes et leur role"
+	@echo "    make essais                   qui est en essai, et combien de jours restent"
 	@echo "    make admin EMAIL=vous@ex.ch   donne le role admin a un compte existant"
 	@echo "    make retirer-admin EMAIL=...  le retire"
 
@@ -81,6 +82,11 @@ sauvegarde:
 # entre pas. Ces trois cibles sont la seule facon de le voir.
 comptes:
 	@ssh $(SERVEUR) '$(DISTANT)/db/lister-comptes.sh'
+
+# La console /admin dit COMBIEN d'essais sont en cours, jamais QUI : elle ne
+# montre que des agregats. Cette cible repond au « qui ».
+essais:
+	@ssh $(SERVEUR) '$(DISTANT)/db/lister-essais.sh'
 
 # Le compte doit deja exister : on s'inscrit sur le site, puis on promeut.
 admin:
