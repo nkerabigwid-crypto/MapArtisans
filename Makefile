@@ -5,7 +5,7 @@
 # hook .githooks/pre-push, qui s'execute tout seul avant chaque envoi. Une
 # commande qu'il faut penser a taper ne protege que les jours ou on y pense.
 
-.PHONY: aide install dev test verifier build deployer migrer schema sauvegarde logs etat
+.PHONY: aide install dev test verifier build deployer migrer schema sauvegarde logs etat comptes admin retirer-admin
 
 SERVEUR := mapartisans-vps
 DISTANT := /opt/mapartisans
@@ -26,6 +26,11 @@ aide:
 	@echo "    make migrer       applique les migrations SQL"
 	@echo "    make schema       compare schema.prisma a la vraie base"
 	@echo "    make sauvegarde   sauvegarde immediate de la base"
+	@echo
+	@echo "  Acces administrateur"
+	@echo "    make comptes                  liste les comptes et leur role"
+	@echo "    make admin EMAIL=vous@ex.ch   donne le role admin a un compte existant"
+	@echo "    make retirer-admin EMAIL=...  le retire"
 
 install:
 	cd frontend && npm install
@@ -70,3 +75,18 @@ schema:
 
 sauvegarde:
 	ssh $(SERVEUR) '$(DISTANT)/deploy/sauvegarde.sh'
+
+# Repondre au 404 de /admin. La console renvoie un 404 a qui n'est pas
+# administrateur : elle ne peut donc pas servir a comprendre pourquoi on n'y
+# entre pas. Ces trois cibles sont la seule facon de le voir.
+comptes:
+	@ssh $(SERVEUR) '$(DISTANT)/db/lister-comptes.sh'
+
+# Le compte doit deja exister : on s'inscrit sur le site, puis on promeut.
+admin:
+	@test -n "$(EMAIL)" || { echo "Usage : make admin EMAIL=vous@exemple.ch" >&2; exit 1; }
+	@ssh $(SERVEUR) '$(DISTANT)/db/promouvoir-admin.sh $(EMAIL)'
+
+retirer-admin:
+	@test -n "$(EMAIL)" || { echo "Usage : make retirer-admin EMAIL=vous@exemple.ch" >&2; exit 1; }
+	@ssh $(SERVEUR) '$(DISTANT)/db/retirer-admin.sh $(EMAIL)'
