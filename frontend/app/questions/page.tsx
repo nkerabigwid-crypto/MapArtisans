@@ -55,7 +55,7 @@ export default function QuestionsPage() {
 
       <EntetePublic />
 
-      <section className="lp-section faq-tete">
+      <section className="lp-section qa-tete">
         <h1 className="lp-h2">Vos questions sur Google Maps</h1>
         <p className="lp-lede">
           Ce que les artisans nous demandent le plus souvent. Les réponses sont vérifiables —
@@ -64,17 +64,21 @@ export default function QuestionsPage() {
       </section>
 
       {FAQ_PUBLIQUE.map((section) => (
-        <section key={section.titre} className="lp-section faq-bloc">
-          <h2 className="faq-section-titre">{section.titre}</h2>
-          <div className="faq-liste">
+        <section key={section.titre} className="lp-section qa-bloc">
+          <h2 className="qa-section-titre">{section.titre}</h2>
+          <div className="qa-liste">
             {section.questions.map((q) => (
+              // `qa-` et non `faq-` : ces derniers appartiennent a l'accordeon
+              // en JavaScript du tableau de bord. La page portait leurs noms sans
+              // que la feuille de style ne les reconnaisse, et s'affichait donc
+              // avec les triangles bruts du navigateur.
               // <details> plutôt qu'un accordéon en JavaScript : le contenu est
               // dans le HTML dès le premier octet, donc lisible par un robot et
               // par quelqu'un dont le réseau a lâché en cours de chargement.
-              <details key={q.question} className="faq-item">
-                <summary className="faq-q">{q.question}</summary>
+              <details key={q.question} className="qa-item">
+                <summary className="qa-q">{q.question}</summary>
                 <div
-                  className="faq-r"
+                  className="qa-r"
                   dangerouslySetInnerHTML={{ __html: q.reponse }}
                 />
               </details>

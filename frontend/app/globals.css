@@ -1346,6 +1346,65 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .lp-faq-a { font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 
+/* --- Page « Questions » -------------------------------------------------
+   Elle emploie des <details> natifs : le contenu est dans le HTML des le
+   premier octet, donc lisible par un robot et par quelqu'un dont le reseau a
+   lache en cours de chargement. Un accordeon en JavaScript perdrait les deux.
+
+   Le prefixe est `qa-` et non `faq-` : ces derniers appartiennent a
+   l'accordeon du tableau de bord. La page portait leurs noms sans qu'aucune
+   regle ne les reconnaisse — elle s'affichait donc avec les triangles bruts
+   du navigateur, sur une page publique et indexee. */
+.qa-tete { padding-bottom: 0; }
+.qa-bloc { padding-top: var(--s-6); }
+
+.qa-section-titre {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700; font-size: var(--t-lg);
+  color: var(--ink); margin: 0 0 var(--s-4);
+}
+
+.qa-liste { display: flex; flex-direction: column; gap: var(--s-3); }
+
+.qa-item {
+  background: var(--paper-raised); border: 1px solid var(--line);
+  border-radius: 13px; padding: var(--s-4) var(--s-5);
+}
+/* La question reste lisible fermee comme ouverte : c'est elle qu'on parcourt
+   pour trouver la sienne. */
+.qa-q {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700; font-size: 1.08rem; line-height: 1.35;
+  color: var(--ink); cursor: pointer;
+  /* Le marqueur par defaut est un triangle noir colle au texte. On le remplace
+     par un chevron qui pivote, aligne et espace. */
+  list-style: none;
+  display: flex; align-items: baseline; gap: var(--s-3);
+  /* 44 px de cible tactile : ce sont des doigts, souvent gantes. */
+  min-height: 44px;
+}
+.qa-q::-webkit-details-marker { display: none; }
+.qa-q::before {
+  content: "";
+  flex: none;
+  width: 0.5rem; height: 0.5rem;
+  margin-top: 0.35rem;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.qa-item[open] .qa-q::before { transform: rotate(45deg); }
+.qa-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.qa-r {
+  font-size: var(--t-sm); line-height: 1.6; color: var(--ink-soft);
+  /* Aligne sous la question, pas sous le chevron. */
+  padding: var(--s-2) 0 0 calc(0.5rem + var(--s-3));
+}
+.qa-r p { margin: 0 0 var(--s-3); }
+.qa-r p:last-child { margin-bottom: 0; }
+
 /* CTA final */
 .lp-final {
   border-top: 1px solid var(--line);
