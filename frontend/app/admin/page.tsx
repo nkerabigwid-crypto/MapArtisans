@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
 import GraphiqueAdmin from "@/components/GraphiqueAdmin";
-import { PLANS } from "@/lib/data";
+import { PLANS, libelleStatutAbonnement } from "@/lib/data";
 import { plafondPour, SEUIL_ALERTE } from "@/lib/server/sms/quota";
 
 /**
@@ -104,21 +104,9 @@ export default async function Page() {
   const francs = (centimes: number) =>
     `${(centimes / 100).toLocaleString("fr-CH", { minimumFractionDigits: 2 })} CHF`;
   const nomPalier = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id;
-  /*
-   * Les statuts viennent de Stripe et sont en anglais. Les afficher bruts
-   * donnait « — dont « trialing » » : lisible pour qui a écrit le code, opaque
-   * pour qui lit la page. Le défaut n'est pas cosmétique — un tableau de bord
-   * qu'on doit traduire mentalement est un tableau de bord qu'on cesse de
-   * lire.
-   */
-  const nomStatut = (id: string) =>
-    ({
-      trialing: "en essai",
-      active: "abonnement actif",
-      past_due: "paiement en échec",
-      canceled: "résilié",
-      incomplete: "inscription non terminée",
-    })[id] ?? id;
+  // Meme table que l'ecran de reglages de l'artisan : deux definitions
+  // finiraient par diverger, et c'est le meme statut qu'on nomme.
+  const nomStatut = (id: string) => libelleStatutAbonnement(id).toLowerCase();
 
   return (
     <main className="admin">

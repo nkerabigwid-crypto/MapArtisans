@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Company, GoogleProfile, CompetitorFlag } from "@/lib/data";
-import { REASON_LABEL, formatPlanLabel } from "@/lib/data";
+import { REASON_LABEL, formatPlanLabel, libelleStatutAbonnement } from "@/lib/data";
 
 interface SettingsViewProps {
   company: Company;
@@ -37,7 +37,13 @@ export default function SettingsView({
         <div className="settings-row">
           <div>
             <div className="row-title">Réponse auto IA</div>
-            <div className="row-sub">ai_auto_reply</div>
+            {/* Le nom de la colonne en base s'affichait ici. L'artisan n'a
+                que faire de « ai_auto_reply » : il veut savoir ce que le
+                bouton declenche, et si quelque chose partira sans lui. */}
+            <div className="row-sub">
+              Nous rédigeons la réponse aux avis. Un avis mitigé vous est soumis avant
+              publication.
+            </div>
           </div>
           <label className="toggle">
             <input
@@ -56,7 +62,7 @@ export default function SettingsView({
           <div>
             <div className="row-title">{formatPlanLabel(company)}</div>
             <div className="row-sub">
-              {company.subscription_status === "active" ? "Actif" : company.subscription_status}
+              {libelleStatutAbonnement(company.subscription_status)}
             </div>
           </div>
           <Link href="/abonnement" className="btn secondary">

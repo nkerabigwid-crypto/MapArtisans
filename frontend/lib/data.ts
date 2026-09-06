@@ -44,6 +44,29 @@ export interface Company {
  * Facturation en francs suisses pour tous les marchés francophones.
  * L'éditeur étant suisse, la devise ne dépend pas du pays du client.
  */
+/**
+ * Statut d'abonnement, en francais.
+ *
+ * Les valeurs viennent de Stripe et sont en anglais. Affichees brutes, elles
+ * donnaient « TRIALING » sous le prix, dans l'ecran de reglages de l'artisan.
+ * Le code qui les produit n'est pas celui qui les lit : ici, c'est un client
+ * qui paie, pas un developpeur.
+ *
+ * Le repli renvoie la valeur telle quelle plutot qu'un texte vague : un statut
+ * inconnu doit se voir pour etre corrige, pas se fondre dans « en cours ».
+ */
+export function libelleStatutAbonnement(statut: string): string {
+  return (
+    {
+      trialing: "Période d'essai",
+      active: "Actif",
+      past_due: "Paiement en échec",
+      canceled: "Résilié",
+      incomplete: "Inscription non terminée",
+    }[statut] ?? statut
+  );
+}
+
 export function formatPlanLabel(company: Pick<Company, "plan_amount">) {
   return `${company.plan_amount} CHF / mois`;
 }
