@@ -1342,6 +1342,46 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .lp-plan-cta { width: 100%; }
 
+/* --- Boutons d'appel en mode sombre -------------------------------------
+   MESURE, plutot qu'impression.
+
+   Bleu clair, tel qu'il etait : texte a 8,85 de contraste, et le bouton lui
+   meme a 8,75 de la page. Conforme, mais c'est une tache lumineuse sur un
+   ecran noir — signale a l'usage.
+
+   La correction evidente aurait ete de reprendre le bleu nuit du mode clair,
+   #123f6d. Elle est fausse : ce bleu ne se detache de la page que de 1,73.
+   Le bouton principal du site deviendrait presque invisible la nuit.
+
+   #2a6ba8 tient les deux bouts : texte blanc a 5,57 — au dessus du seuil AA
+   de 4,5 — et 3,32 de detachement, au dessus du seuil de 3 exige pour un
+   element d'interface. Moins eblouissant, toujours trouvable.
+
+   Cible : les deux boutons d'appel, pas les jetons. `--accent` sert aussi de
+   couleur de TEXTE aux liens, ou 8,75 est exactement ce qu'il faut ; et la
+   bande « agence » inverse ces memes couleurs. Les deplacer casserait les
+   deux. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lp-nav-cta,
+  :root:not([data-theme="light"]) .lp-btn {
+    background: #2a6ba8;
+    color: #ffffff;
+  }
+  :root:not([data-theme="light"]) .lp-btn:hover,
+  :root:not([data-theme="light"]) .lp-nav-cta:hover {
+    background: #357cbd;
+  }
+}
+:root[data-theme="dark"] .lp-nav-cta,
+:root[data-theme="dark"] .lp-btn {
+  background: #2a6ba8;
+  color: #ffffff;
+}
+:root[data-theme="dark"] .lp-btn:hover,
+:root[data-theme="dark"] .lp-nav-cta:hover {
+  background: #357cbd;
+}
+
 /* FAQ */
 .lp-faq { display: flex; flex-direction: column; gap: 0.9rem; }
 .lp-faq-item {
