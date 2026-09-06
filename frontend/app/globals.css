@@ -87,7 +87,14 @@
      deux courbes se croisent ici. */
   --bouton: #4a86c4;
   --bouton-ink: #0b1220;
-  --bouton-hover: #6b9fd4;
+  /* Le survol assombrit ET fait passer le texte au blanc. Les deux vont
+     ensemble : garder l'encre noire sur un fond assombri donnait du fonce sur
+     du fonce, et le libelle disparaissait sous le pointeur — constate sur
+     « Connecter ma fiche ».
+     #356ea6 : blanc a 5,34, detache de la page claire a 4,81 et de la sombre
+     a 3,47. Les trois seuils tenus a la fois. */
+  --bouton-hover: #356ea6;
+  --bouton-hover-ink: #ffffff;
 
   --t-2xs: 0.75rem;
   --t-xs: 0.8rem;
@@ -487,7 +494,6 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   color: var(--bouton-ink);
   cursor: pointer;
 }
-.btn:hover:not(:disabled) { background: var(--bouton-hover); }
 .btn.secondary { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1079,7 +1085,6 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   border-radius: 8px; background: var(--bouton); color: var(--bouton-ink);
   text-decoration: none;
 }
-.lp-nav-cta:hover { background: var(--bouton-hover); }
 
 /* Hero */
 .lp-hero {
@@ -1502,7 +1507,8 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .btn:hover:not(:disabled),
 .lp-btn:hover, .lp-nav-cta:hover {
-  background: var(--accent-hover);
+  background: var(--bouton-hover);
+  color: var(--bouton-hover-ink);
   box-shadow: var(--e-2);
 }
 .btn:active:not(:disabled), .lp-btn:active { transform: translateY(1px); box-shadow: var(--e-1); }
