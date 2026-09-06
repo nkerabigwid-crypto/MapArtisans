@@ -12,6 +12,8 @@ import { composeRappelEssai, rappelFitsOneSegment } from "@/lib/server/sms/finEs
 import { resolveSmsSender } from "@/lib/server/sms/twilio";
 import { enqueuePendingReviews } from "@/lib/server/queue/reviewQueue";
 import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
+import { releverGrille } from "@/lib/server/tracking/releve";
+import { summarizeScan, classifyScan } from "@/lib/server/tracking/geoGrid";
 import {
   INTERVALLE_TICK_MS,
   fenetreRapportHebdo,
@@ -55,6 +57,61 @@ async function envoyerRappelsEssai(repo: Repo) {
   }
 }
 
+/**
+ * Relevés de position dus.
+ *
+ * POURQUOI UNE POIGNÉE PAR PASSAGE
+ *
+ * Un relevé, c'est neuf interrogations de l'API Places espacées de 250 ms, soit
+ * une dizaine de secondes. Traiter toute la file d'un coup ferait un tick de
+ * plusieurs minutes qui bloquerait les avis et les rappels d'essai derrière
+ * lui. Trois par passage, toutes les cinq minutes, suffisent largement : un
+ * relevé hebdomadaire par mot-clé laisse 2016 créneaux pour 
+ * autant de mots-clés à suivre.
+ *
+ * POURQUOI L'ÉCHEC NE REMONTE PAS
+ *
+ * Places peut refuser — quota, panne, clé révoquée. Un relevé manqué se
+ * rattrape au passage suivant puisque `last_scanned_at` n'a pas bougé. Faire
+ * échouer le tick entier priverait en revanche les avis et les rappels d'essai
+ * de leur traitement, pour un incident qui ne les concerne pas.
+ */
+const RELEVES_PAR_PASSAGE = 3;
+const SEMAINE_MS = 7 * 24 * 3600 * 1000;
+
+async function releverPositions(repo: Repo): Promise<void> {
+  const echus = await repo.listerMotsClesARelever(
+    new Date(Date.now() - SEMAINE_MS),
+    RELEVES_PAR_PASSAGE,
+  );
+  if (echus.length === 0) return;
+
+  for (const k of echus) {
+    try {
+      const { points, echecs } = await releverGrille(
+        { placeId: k.placeId, latitude: k.latitude, longitude: k.longitude, pays: k.pays },
+        k.motCle,
+      );
+      await repo.enregistrerReleve({
+        googleProfileId: k.googleProfileId,
+        motCle: k.motCle,
+        points,
+      });
+      const resume = summarizeScan(classifyScan(points));
+      console.log(
+        `[planificateur] relevé « ${k.motCle} » : ` +
+          `meilleure position ${resume.bestPosition ?? "aucune"}, ` +
+          `${resume.green} vert / ${resume.amber} ambre / ${resume.red} rouge` +
+          (echecs > 0 ? ` — ${echecs} point(s) non servi(s) par Google` : ""),
+      );
+    } catch (erreur) {
+      // `last_scanned_at` reste inchangé : ce mot-clé repassera en tête au
+      // prochain tour, sans intervention.
+      console.error(`[planificateur] relevé « ${k.motCle} » en échec :`, erreur);
+    }
+  }
+}
+
 let enCours = false;
 let arret = false;
 
@@ -76,6 +133,10 @@ async function tick() {
     if (avis > 0) console.log(`[planificateur] ${avis} avis mis en file`);
 
     await envoyerRappelsEssai(repo);
+
+    // Après les avis et les rappels : ceux-ci sont rapides et attendus, le
+    // relevé est long et personne ne l'attend devant un écran.
+    await releverPositions(repo);
 
     if (fenetreRapportHebdo(new Date())) {
       const rapports = await enqueueWeeklyReports(repo);

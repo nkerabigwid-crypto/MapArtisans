@@ -3,6 +3,7 @@ import { verifySession, sessionCookie } from "@/lib/server/session";
 import { getRepo } from "@/lib/server/repo";
 import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
 import { encryptToken } from "@/lib/server/crypto";
+import { motCleParDefaut } from "@/lib/server/tracking/releve";
 import { finEssai } from "@/lib/server/essai";
 import { echangerCode, lireConfig } from "@/lib/server/google/oauth";
 import { COOKIE_ETAT, verifierEtat } from "@/lib/server/google/etat";
@@ -114,6 +115,22 @@ export async function GET(request: NextRequest) {
        * dans le HTML du site de l'artisan.
        */
       await repo.creerReglagesAssistant(fiche.id);
+
+      /*
+       * PREMIER MOT-CLÉ SUIVI, POSÉ AUTOMATIQUEMENT.
+       *
+       * Le suivi de position est vendu dans les trois formules. Attendre que
+       * l'artisan en choisisse un, c'est le laisser sans relevé — et rien,
+       * aujourd'hui, ne le lui demande.
+       *
+       * « plombier sion » est ce que tape son client, pas ce qu'il écrirait
+       * lui-même. Idempotent : une reconnexion n'ajoute pas de doublon.
+       */
+      const motCle = motCleParDefaut(entreprise.tradeType ?? "", fiche.city);
+      if (motCle) {
+        await repo.creerMotCleSuivi(fiche.id, motCle);
+        console.log(`[google] suivi de position amorcé sur « ${motCle} »`);
+      }
     }
 
     /*

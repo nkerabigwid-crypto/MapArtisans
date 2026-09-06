@@ -124,6 +124,18 @@ export interface LigneSms {
   envoyes: number;
 }
 
+/** Ce qu'il faut pour lancer un relevé : la fiche, et le mot-clé à interroger. */
+export interface MotCleARelever {
+  id: string;
+  googleProfileId: string;
+  motCle: string;
+  placeId: string;
+  latitude: number;
+  longitude: number;
+  /** Oriente les résultats Google. `CH` pour la Suisse. */
+  pays: string;
+}
+
 export interface StatistiquesAdmin {
   // --- Abonnements. Ce sont les chiffres qu'on regarde le matin.
   /** Comptes qui PAIENT : `active` ou `past_due`. */
@@ -283,6 +295,15 @@ export interface GoogleProfileRecord {
    * n'est jamais en clair.
    */
   googleAccessTokenEnc: string | null;
+  /**
+   * Centre de la Geo-Grid. `null` tant que Google ne les a pas fournies — la
+   * migration 019 les a rendues optionnelles pour cette raison.
+   *
+   * Sans elles, la grille n'a pas de centre et le suivi de position ne peut
+   * pas démarrer : `listerMotsClesARelever` écarte donc ces fiches.
+   */
+  latitude: number | null;
+  longitude: number | null;
 
   // --- Champs DÉRIVÉS, pas des colonnes de google_profiles.
   // Ils résument le dernier relevé et proviennent de `rank_trackings`. La
@@ -565,6 +586,36 @@ export interface Repo {
   /** Horodate l'envoi du rappel. Sert de verrou et de trace. */
   marquerRappelEssai(companyId: string): Promise<void>;
 
+  // --- Suivi de position (Geo-Grid) -----------------------------------------
+  /**
+   * Mots-clés dont le relevé est dû, les plus anciens d'abord.
+   *
+   * Ne renvoie que les fiches exploitables : sans `place_id`, impossible de
+   * reconnaître l'artisan dans les résultats ; sans coordonnées, impossible de
+   * construire la grille. Une fiche incomplète serait scannée pour rien, à
+   * chaque passage, indéfiniment.
+   */
+  listerMotsClesARelever(avant: Date, limite?: number): Promise<MotCleARelever[]>;
+
+  /** Ajoute un mot-clé au suivi. Sans effet s'il y figure déjà. */
+  creerMotCleSuivi(googleProfileId: string, motCle: string): Promise<void>;
+
+  /** Combien de mots-clés cette fiche suit déjà — pour le plafond du palier. */
+  compterMotsClesSuivis(googleProfileId: string): Promise<number>;
+
+  /**
+   * Enregistre un relevé et horodate le mot-clé, dans la même opération.
+   *
+   * Les deux ensemble ou aucun : un relevé écrit sans horodatage serait
+   * refait au passage suivant, et un horodatage sans relevé ferait croire à un
+   * suivi qui n'a rien produit.
+   */
+  enregistrerReleve(input: {
+    googleProfileId: string;
+    motCle: string;
+    points: unknown;
+  }): Promise<void>;
+
   // --- Plafond mensuel de SMS.
   /** SMS déjà envoyés ce mois-ci par cette entreprise, tous types confondus. */
   compterSmsDuMois(companyId: string): Promise<number>;
@@ -701,6 +752,9 @@ const usageAssistant = new Map<string, number>();
 const rendezVous = new Map<string, RendezVousRecord>();
 const posts = new Map<string, PostRecord>();
 const usageSms = new Map<string, number>();
+/** Mots-cles suivis, cle = `${profileId}:${motCle}`. */
+const motsClesSuivis = new Map<string, { profileId: string; motCle: string; dernierReleve: Date | null }>();
+const releves: { profileId: string; motCle: string; points: unknown; le: Date }[] = [];
 const rappelsEssai = new Set<string>();
 const agencies = new Map<string, AgencyBrandingRecord & { userId: string }>();
 let seeded = false;
@@ -766,6 +820,8 @@ async function seed() {
     city: "Lyon",
     aiAutoReply: true,
     googleAccessTokenEnc: null,
+    latitude: 46.2312,
+    longitude: 7.3589,
     bestPosition: 2,
     previousPosition: 4,
     callsGenerated: 14,
@@ -806,6 +862,8 @@ async function seed() {
     city: "Genève",
     aiAutoReply: false,
     googleAccessTokenEnc: null,
+    latitude: 46.2044,
+    longitude: 6.1432,
     bestPosition: 7,
     previousPosition: null,
     callsGenerated: 3,
@@ -854,6 +912,8 @@ async function seed() {
     city: "Lausanne",
     aiAutoReply: true,
     googleAccessTokenEnc: null,
+    latitude: 46.5197,
+    longitude: 6.6323,
     bestPosition: 5,
     previousPosition: 9,
     callsGenerated: 6,
@@ -992,6 +1052,8 @@ export const memoryRepo: Repo = {
       city: input.city ?? "",
       aiAutoReply: existante?.aiAutoReply ?? true,
       googleAccessTokenEnc: input.accessTokenEnc,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       // Chiffres dérivés : ils viennent des relevés, pas de la connexion.
       bestPosition: existante?.bestPosition ?? null,
       previousPosition: existante?.previousPosition ?? null,
@@ -1351,6 +1413,61 @@ export const memoryRepo: Repo = {
     return fin;
   },
 
+  // --- Suivi de position (Geo-Grid) -----------------------------------------
+
+  async listerMotsClesARelever(avant, limite = 20) {
+    await seed();
+    // Memes exigences que la vraie base : sans place_id ni coordonnees, la
+    // fiche n'est pas relevable. Le double doit refuser ce qu'elle refuse.
+    const exploitables = new Set(
+      [...profiles.values()]
+        .filter((p) => p.placeId && p.latitude != null && p.longitude != null)
+        .map((p) => p.id),
+    );
+    return [...motsClesSuivis.values()]
+      .filter((k) => exploitables.has(k.profileId))
+      .filter((k) => k.dernierReleve === null || k.dernierReleve < avant)
+      .sort((a, b) => (a.dernierReleve?.getTime() ?? 0) - (b.dernierReleve?.getTime() ?? 0))
+      .slice(0, limite)
+      .map((k) => {
+        const p = profiles.get(k.profileId)!;
+        const c = companies.get(p.companyId);
+        return {
+          id: `${k.profileId}:${k.motCle}`,
+          googleProfileId: k.profileId,
+          motCle: k.motCle,
+          placeId: p.placeId as string,
+          latitude: p.latitude as number,
+          longitude: p.longitude as number,
+          pays: c?.country ?? "CH",
+        };
+      });
+  },
+
+  async creerMotCleSuivi(googleProfileId, motCle) {
+    await seed();
+    const cle = `${googleProfileId}:${motCle}`;
+    if (motsClesSuivis.has(cle)) return;
+    motsClesSuivis.set(cle, { profileId: googleProfileId, motCle, dernierReleve: null });
+  },
+
+  async compterMotsClesSuivis(googleProfileId) {
+    await seed();
+    return [...motsClesSuivis.values()].filter((k) => k.profileId === googleProfileId).length;
+  },
+
+  async enregistrerReleve(input) {
+    await seed();
+    releves.push({
+      profileId: input.googleProfileId,
+      motCle: input.motCle,
+      points: input.points,
+      le: new Date(),
+    });
+    const k = motsClesSuivis.get(`${input.googleProfileId}:${input.motCle}`);
+    if (k) k.dernierReleve = new Date();
+  },
+
   async listerEssaisARappeler(maintenant = new Date()) {
     await seed();
     const limite = maintenant.getTime() + 24 * 3600 * 1000;
@@ -1625,6 +1742,8 @@ export function __resetRepo() {
   rendezVous.clear();
   posts.clear();
   usageSms.clear();
+  motsClesSuivis.clear();
+  releves.length = 0;
   rappelsEssai.clear();
   seeded = false;
 }

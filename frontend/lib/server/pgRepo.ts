@@ -80,6 +80,34 @@ async function q<T = Record<string, unknown>>(
   return r.rows as T[];
 }
 
+/**
+ * Exécute plusieurs écritures en tout-ou-rien.
+ *
+ * `q` acceptait déjà un client depuis l'origine, mais rien ne s'en servait :
+ * aucune opération n'écrivait dans deux tables à la fois. Le relevé de position
+ * est la première — la ligne d'historique et l'horodatage du mot-clé doivent
+ * tomber ensemble, sinon le planificateur rejoue ou saute.
+ *
+ * Le client est TOUJOURS rendu au pool, y compris après une erreur : une
+ * connexion perdue à chaque échec épuiserait les dix disponibles.
+ */
+async function enTransaction<T>(
+  travail: (executer: (sql: string, params?: unknown[]) => Promise<unknown[]>) => Promise<T>,
+): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const resultat = await travail((sql, params) => q(sql, params, client));
+    await client.query("COMMIT");
+    return resultat;
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 // --- Conversions ligne → enregistrement -------------------------------------
 // Les colonnes sont en snake_case, les enregistrements en camelCase. La
 // conversion est explicite plutôt qu'automatique : une correspondance devinée
@@ -163,6 +191,10 @@ function versFiche(r: any): GoogleProfileRecord {
     city: r.city ?? "",
     aiAutoReply: r.ai_auto_reply,
     googleAccessTokenEnc: r.google_access_token ?? null,
+    // NUMERIC revient en chaine depuis pg : sans Number(), la grille se
+    // construirait sur des concatenations au lieu d'additions.
+    latitude: r.latitude == null ? null : Number(r.latitude),
+    longitude: r.longitude == null ? null : Number(r.longitude),
   } as GoogleProfileRecord;
 }
 
@@ -879,6 +911,86 @@ export const pgRepo: Repo = {
       [companyId, fin],
     );
     return r[0]?.trial_ends_at ?? null;
+  },
+
+  // --- Suivi de position (Geo-Grid) -----------------------------------------
+
+  async listerMotsClesARelever(avant: Date, limite = 20) {
+    /*
+     * Les jointures ne sont pas des filtres de confort : sans `place_id`, on ne
+     * saurait pas reconnaitre l'artisan parmi les resultats de Google ; sans
+     * coordonnees, la grille n'a pas de centre. Une fiche incomplete serait
+     * relevee pour rien a chaque passage.
+     *
+     * `country` vient de l'entreprise et non de la fiche : c'est lui qui oriente
+     * les resultats Google, et il est toujours renseigne.
+     */
+    const r = await q<{
+      id: string; google_profile_id: string; keyword: string;
+      place_id: string; latitude: string; longitude: string; country: string;
+    }>(
+      `SELECT k.id, k.google_profile_id, k.keyword,
+              g.place_id, g.latitude, g.longitude, c.country
+         FROM tracked_keywords k
+         JOIN google_profiles g ON g.id = k.google_profile_id
+         JOIN companies c       ON c.id = g.company_id
+        WHERE g.place_id IS NOT NULL
+          AND g.latitude IS NOT NULL
+          AND g.longitude IS NOT NULL
+          AND (k.last_scanned_at IS NULL OR k.last_scanned_at < $1)
+        ORDER BY k.last_scanned_at NULLS FIRST
+        LIMIT $2`,
+      [avant, limite],
+    );
+    return r.map((x) => ({
+      id: x.id,
+      googleProfileId: x.google_profile_id,
+      motCle: x.keyword,
+      placeId: x.place_id,
+      latitude: Number(x.latitude),
+      longitude: Number(x.longitude),
+      pays: x.country,
+    }));
+  },
+
+  async creerMotCleSuivi(googleProfileId: string, motCle: string) {
+    // ON CONFLICT et non un SELECT prealable : deux rattachements simultanes
+    // de la meme fiche passeraient tous deux le test d'existence.
+    await q(
+      `INSERT INTO tracked_keywords (google_profile_id, keyword)
+       VALUES ($1, $2)
+       ON CONFLICT (google_profile_id, keyword) DO NOTHING`,
+      [googleProfileId, motCle],
+    );
+  },
+
+  async compterMotsClesSuivis(googleProfileId: string) {
+    const r = await q<{ n: string }>(
+      "SELECT count(*)::text AS n FROM tracked_keywords WHERE google_profile_id = $1",
+      [googleProfileId],
+    );
+    return Number(r[0].n);
+  },
+
+  async enregistrerReleve(input) {
+    /*
+     * UNE transaction pour les deux ecritures. Un releve enregistre sans
+     * horodatage serait refait au passage suivant — le meme cout, la meme
+     * ligne, indefiniment. Un horodatage sans releve ferait croire a un suivi
+     * qui n'a rien produit.
+     */
+    await enTransaction(async (executer) => {
+      await executer(
+        `INSERT INTO rank_trackings (google_profile_id, keyword, grid_points)
+         VALUES ($1, $2, $3)`,
+        [input.googleProfileId, input.motCle, JSON.stringify(input.points)],
+      );
+      await executer(
+        `UPDATE tracked_keywords SET last_scanned_at = now()
+          WHERE google_profile_id = $1 AND keyword = $2`,
+        [input.googleProfileId, input.motCle],
+      );
+    });
   },
 
   async listerEssaisARappeler(maintenant = new Date()) {
