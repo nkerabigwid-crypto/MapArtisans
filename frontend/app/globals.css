@@ -61,6 +61,17 @@
      l'echelle (1,25) est conserve au-dessus de --t-base ; seuls les deux
      derniers crans, ceux qui portent les etiquettes et les mentions, sont
      remontes. */
+  /* PLANCHER ABSOLU — 12 px.
+     Reserve aux micro-etiquettes en capitales espacees : les capitales et
+     l'interlettrage les font lire plus grandes que leur taille nominale.
+     Aucune prose ne descend ici ; pour elle, le plancher est --t-xs.
+
+     Trente-quatre declarations en dur descendaient sous ce seuil, jusqu'a
+     8 px pour les noms de quartier de la Geo-Grid. Chacune etait defendable
+     seule ; ensemble elles faisaient une application qu'on lit a bout de
+     bras. Le jeton existe pour qu'on ne puisse plus descendre sans le
+     decider explicitement. */
+  --t-2xs: 0.75rem;
   --t-xs: 0.8rem;
   --t-sm: 0.9rem;
   --t-base: 1rem;
@@ -175,7 +186,7 @@ body {
 }
 .topbar .sub-badge {
   font-family: var(--font-mono), monospace;
-  font-size: 0.65rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   width: fit-content;
@@ -208,7 +219,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .section-label {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600;
-  font-size: 0.72rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -225,7 +236,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 /* geo-grid */
 .grid-keyword {
   font-family: var(--font-mono), monospace;
-  font-size: 0.78rem;
+  font-size: var(--t-xs);
   color: var(--ink-soft);
   margin-bottom: 0.6rem;
 }
@@ -288,25 +299,25 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .geo-pop-rank.warn { color: var(--status-warn); }
 .geo-pop-rank.bad  { color: var(--status-bad); }
 .geo-pop-status {
-  font-family: var(--font-mono), monospace; font-size: 0.62rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint);
   margin: 0;
 }
 .geo-pop-rival {
-  font-size: 0.82rem; color: var(--ink); line-height: 1.4;
+  font-size: var(--t-xs); color: var(--ink); line-height: 1.4;
   padding-top: 0.45rem; margin-top: 0.15rem; border-top: 1px solid var(--line);
 }
 .geo-pop-attrib {
-  font-family: var(--font-mono), monospace; font-size: 0.58rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.04em; color: var(--ink-faint);
 }
 .geo-pop-action {
-  font-size: 0.78rem; color: var(--ink-soft); line-height: 1.4;
+  font-size: var(--t-xs); color: var(--ink-soft); line-height: 1.4;
   background: var(--card); border-radius: 6px; padding: 0.45rem 0.55rem;
   margin-top: 0.15rem;
 }
 .geo-hint {
-  font-family: var(--font-mono), monospace; font-size: 0.62rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); margin: 0.55rem 0 0;
 }
 .geo-legend {
@@ -314,7 +325,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   gap: 1rem;
   margin-top: 0.8rem;
   font-family: var(--font-mono), monospace;
-  font-size: 0.65rem;
+  font-size: var(--t-2xs);
   color: var(--ink-faint);
 }
 .geo-legend span { display: flex; align-items: center; gap: 0.3rem; }
@@ -330,7 +341,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .rank-hero .label {
   font-family: var(--font-mono), monospace;
-  font-size: 0.72rem;
+  font-size: var(--t-2xs);
   color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -347,7 +358,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .stat-tile .lbl {
   font-family: var(--font-mono), monospace;
-  font-size: 0.65rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -366,7 +377,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .pill {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--t-sm);
   padding: 0.4rem 0.9rem;
   min-height: 44px;
   border-radius: 999px;
@@ -396,11 +407,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .review-item:last-child { border-bottom: none; }
 .review-item .stars { font-size: 0.95rem; letter-spacing: 0.05em; color: var(--accent); }
 .review-item .meta { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
-.review-item .excerpt { font-size: 0.85rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-item .excerpt { font-size: var(--t-sm); color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .badge {
   font-family: var(--font-mono), monospace;
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 0.2rem 0.55rem;
@@ -416,10 +427,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .post-item:last-child { border-bottom: none; }
 .post-item .content { font-size: 0.92rem; line-height: 1.4; margin-bottom: 0.4rem; }
 .post-item .post-meta { display: flex; justify-content: space-between; align-items: center; }
-.post-item .date { font-family: var(--font-mono), monospace; font-size: 0.65rem; color: var(--ink-faint); text-transform: uppercase; }
+.post-item .date { font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint); text-transform: uppercase; }
 .link-btn {
   background: none; border: none; padding: 0; font: inherit;
-  color: var(--accent); font-weight: 600; cursor: pointer; font-size: 0.82rem;
+  color: var(--accent); font-weight: 600; cursor: pointer; font-size: var(--t-xs);
 }
 
 /* Étend la zone de contact à 44px sans changer la taille visuelle ni la mise
@@ -442,7 +453,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .qr-card { text-align: center; }
 .qr-card .qr-label { font-family: var(--font-barlow-condensed), sans-serif; font-weight: 600; font-size: 1.05rem; }
-.qr-card .qr-scans { font-family: var(--font-mono), monospace; font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; margin-top: 0.2rem; }
+.qr-card .qr-scans { font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint); text-transform: uppercase; margin-top: 0.2rem; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -468,7 +479,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .settings-row { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; padding: 0.7rem 0; }
 .settings-row + .settings-row { border-top: 1px solid var(--line); }
 .settings-row .row-title { font-family: var(--font-barlow-condensed), sans-serif; font-weight: 600; font-size: 0.98rem; }
-.settings-row .row-sub { font-family: var(--font-mono), monospace; font-size: 0.66rem; color: var(--ink-faint); text-transform: uppercase; margin-top: 0.15rem; }
+.settings-row .row-sub { font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint); text-transform: uppercase; margin-top: 0.15rem; }
 
 .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
 /* Le rail reste à 24px de haut ; seule la zone de contact monte à 44px. */
@@ -501,12 +512,12 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .advanced-body { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.6rem; }
 .flag-item { border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem 0.75rem; }
-.flag-item .flag-name { font-size: 0.84rem; }
-.flag-item .flag-reason { font-family: var(--font-mono), monospace; font-size: 0.62rem; color: var(--ink-faint); text-transform: uppercase; margin-top: 0.25rem; }
+.flag-item .flag-name { font-size: var(--t-sm); }
+.flag-item .flag-reason { font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint); text-transform: uppercase; margin-top: 0.25rem; }
 
 .empty-state {
   text-align: center; padding: 2rem 1rem; color: var(--ink-faint);
-  font-family: var(--font-mono), monospace; font-size: 0.78rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-xs);
 }
 
 /* ---------- Chargement ---------- */
@@ -541,7 +552,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   margin-bottom: 0.4rem;
 }
 .error-state .err-body {
-  font-size: 0.88rem; color: var(--ink-soft); margin: 0; line-height: 1.45;
+  font-size: var(--t-sm); color: var(--ink-soft); margin: 0; line-height: 1.45;
 }
 
 /* ---------- Abonnement : bandeau past_due ---------- */
@@ -559,7 +570,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-weight: 700; font-size: 1rem; color: var(--status-warn);
 }
 .sub-banner-body {
-  margin: 0.15rem 0 0; font-size: 0.86rem; line-height: 1.45; color: var(--ink);
+  margin: 0.15rem 0 0; font-size: var(--t-sm); line-height: 1.45; color: var(--ink);
 }
 .sub-banner-btn { margin-top: 0; align-self: flex-start; }
 
@@ -567,7 +578,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .blocked { padding-top: 0.5rem; }
 .blocked-card { display: flex; flex-direction: column; }
 .blocked-eyebrow {
-  font-family: var(--font-mono), monospace; font-size: 0.65rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--status-bad);
 }
 .blocked-title {
@@ -576,14 +587,14 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   margin: 0.4rem 0 1.1rem; text-wrap: balance;
 }
 .blocked-lede {
-  margin: 0 0 0.4rem; font-size: 0.86rem; color: var(--ink-soft);
+  margin: 0 0 0.4rem; font-size: var(--t-sm); color: var(--ink-soft);
 }
 .blocked-list {
   margin: 0 0 1.1rem; padding-left: 1.1rem;
   font-size: 0.9rem; color: var(--ink); line-height: 1.7;
 }
 .blocked-reassure {
-  margin: 0; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.45;
+  margin: 0; font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45;
   padding: 0.75rem 0.85rem; background: var(--card); border-radius: 8px;
 }
 .blocked-cta { align-self: stretch; margin-top: 1.1rem; }
@@ -611,7 +622,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-weight: 700; font-size: 1.2rem; margin: 0;
 }
 .confirm-body {
-  margin: 0; font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45;
+  margin: 0; font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45;
 }
 .confirm-actions { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
 .confirm-actions .btn { flex: 1; margin-top: 0; }
@@ -637,7 +648,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600;
   /* Le libellé suit l'icône : 0.68rem se lisait mal sous une icône agrandie. */
-  font-size: 0.74rem;
+  font-size: var(--t-2xs);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -709,7 +720,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .modal-title { font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700; font-size: 1.15rem; }
 .modal-stars { color: var(--accent); }
 .modal-comment { font-size: 0.9rem; color: var(--ink-soft); background: var(--card); border-radius: 8px; padding: 0.7rem 0.85rem; }
-.modal-draft-label { display: block; font-family: var(--font-mono), monospace; font-size: 0.65rem; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.35rem; }
+.modal-draft-label { display: block; font-family: var(--font-mono), monospace; font-size: var(--t-2xs); text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.35rem; }
 /* font-size: 16px minimum — en dessous, Safari iOS zoome sur le champ au focus
    et l'utilisateur se retrouve avec une mise en page décalée. Ne pas réduire. */
 .sheet-content textarea {
@@ -746,7 +757,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .stepper-dot {
   width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono), monospace; font-size: 0.7rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   border: 1px solid var(--line-strong); color: var(--ink-faint);
   background: var(--paper-raised);
 }
@@ -754,7 +765,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .stepper-item.done .stepper-dot { background: var(--status-good); border-color: var(--status-good); color: var(--paper-raised); }
 .stepper-label {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 600; font-size: 0.72rem; letter-spacing: 0.05em;
+  font-weight: 600; font-size: var(--t-2xs); letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--ink-faint);
 }
 .stepper-item.current .stepper-label { color: var(--ink); }
@@ -775,11 +786,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .field-control:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .field-control[data-invalid] { border-color: var(--status-bad); }
 .field-desc {
-  font-family: var(--font-mono), monospace; font-size: 0.66rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); margin-top: 0.35rem; line-height: 1.4;
 }
 .field-error {
-  font-size: 0.8rem; color: var(--status-bad); margin-top: 0.35rem;
+  font-size: var(--t-xs); color: var(--status-bad); margin-top: 0.35rem;
 }
 
 /* Select */
@@ -787,7 +798,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
   cursor: pointer; text-align: left;
 }
-.select-icon { color: var(--ink-faint); font-size: 0.8rem; }
+.select-icon { color: var(--ink-faint); font-size: var(--t-xs); }
 .select-positioner { z-index: 30; }
 .select-popup {
   min-width: var(--anchor-width);
@@ -802,22 +813,22 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   border-radius: 7px; cursor: pointer; font-size: 0.92rem;
 }
 .select-item[data-highlighted] { background: var(--card); }
-.select-indicator { width: 1rem; color: var(--accent); font-size: 0.8rem; }
+.select-indicator { width: 1rem; color: var(--accent); font-size: var(--t-xs); }
 
 /* Étape Google — permissions */
 .grants { display: flex; flex-direction: column; gap: 0.5rem; }
 .grants-title {
-  font-family: var(--font-mono), monospace; font-size: 0.65rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
   margin-top: 0.4rem;
 }
 .grants-title:first-child { margin-top: 0; }
-.grants-list { margin: 0; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.6; }
+.grants-list { margin: 0; padding-left: 1.2rem; font-size: var(--t-sm); line-height: 1.6; }
 .grants-list.yes { color: var(--ink); }
 .grants-list.no { color: var(--ink-soft); }
 .grants-list.no li::marker { color: var(--status-bad); }
 .grants-note {
-  font-size: 0.8rem; color: var(--ink-faint); line-height: 1.45; margin: 0.9rem 0 0;
+  font-size: var(--t-xs); color: var(--ink-faint); line-height: 1.45; margin: 0.9rem 0 0;
 }
 
 /* ---------- Abonnement ---------- */
@@ -828,7 +839,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .plan-card.featured { border-color: var(--accent); border-width: 2px; }
 .plan-flag, .plan-current {
   position: absolute; top: -0.6rem; left: 1.1rem;
-  font-family: var(--font-mono), monospace; font-size: 0.6rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.06em; text-transform: uppercase;
   padding: 0.2rem 0.55rem; border-radius: 999px;
 }
@@ -848,28 +859,28 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .plan-cur { font-size: 1.1rem; }
 .plan-per {
-  font-family: var(--font-mono), monospace; font-size: 0.7rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em;
 }
 .plan-audience {
-  font-size: 0.86rem; color: var(--ink-soft); line-height: 1.45; margin: 0.6rem 0 0;
+  font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45; margin: 0.6rem 0 0;
 }
 .plan-highlight {
-  font-size: 0.84rem; color: var(--ink); line-height: 1.45;
+  font-size: var(--t-sm); color: var(--ink); line-height: 1.45;
   background: var(--card); border-radius: 7px; padding: 0.55rem 0.7rem;
   margin-top: 0.8rem;
 }
 .plan-list {
   margin: 1rem 0 0; padding-left: 1.2rem;
-  font-size: 0.88rem; line-height: 1.65; color: var(--ink);
+  font-size: var(--t-sm); line-height: 1.65; color: var(--ink);
 }
 .plan-cta { align-self: stretch; margin-top: 1.2rem; }
 .plan-secure {
-  font-size: 0.78rem; color: var(--ink-faint); line-height: 1.45;
+  font-size: var(--t-xs); color: var(--ink-faint); line-height: 1.45;
   margin: 0.8rem 0 0; text-align: center;
 }
 .plan-mock {
-  margin-top: 1rem; font-size: 0.82rem; color: var(--ink-soft);
+  margin-top: 1rem; font-size: var(--t-xs); color: var(--ink-soft);
   background: var(--status-warn-bg); border-color: var(--status-warn);
   line-height: 1.5;
 }
@@ -943,7 +954,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .faq-panel[data-starting-style],
 .faq-panel[data-ending-style] { height: 0; }
 .faq-body {
-  padding: 0 1rem 0.95rem; font-size: 0.86rem; line-height: 1.55; color: var(--ink-soft);
+  padding: 0 1rem 0.95rem; font-size: var(--t-sm); line-height: 1.55; color: var(--ink-soft);
 }
 
 /* Écran final */
@@ -1130,7 +1141,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-label {
   display: inline-block;
   font-family: var(--font-mono), monospace;
-  font-size: 0.75rem;
+  font-size: var(--t-xs);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1163,7 +1174,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   border-radius: 16px; padding: 1.6rem; margin-bottom: 1.6rem;
 }
 .lp-grid-kw {
-  font-family: var(--font-mono), monospace; font-size: 0.82rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-xs);
   color: var(--ink-soft); margin-bottom: 1rem;
 }
 /* Grille bornée et centrée. Sans plafond, chaque case s'étirait à la largeur
@@ -1181,7 +1192,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
    à ressortir sur une couleur pleine, donc il retrouve une couleur de texte
    normale et un contraste franc. */
 .lp-dot-area {
-  font-family: var(--font-mono), monospace; font-size: 0.56rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--ink-faint); line-height: 1.2;
 }
@@ -1203,11 +1214,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .geo-pin.bad  { color: var(--status-bad); }
 .lp-grid-legend {
   display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 1.1rem;
-  font-family: var(--font-mono), monospace; font-size: 0.64rem; color: var(--ink-faint);
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint);
 }
 .lp-grid-legend span { display: flex; align-items: center; gap: 0.4rem; }
 .lp-grid-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.lp-grid-note { font-size: 0.85rem; color: var(--ink-soft); margin: 1rem 0 0; }
+.lp-grid-note { font-size: var(--t-sm); color: var(--ink-soft); margin: 1rem 0 0; }
 
 /* Bandeau d'appel à l'action intercalé */
 .lp-inline-cta {
@@ -1220,7 +1231,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.15rem;
 }
-.lp-inline-d { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.15rem; }
+.lp-inline-d { font-size: var(--t-sm); color: var(--ink-soft); margin-top: 0.15rem; }
 .lp-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 48px; padding: 0 1.4rem;
@@ -1244,9 +1255,9 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-variant-numeric: tabular-nums;
 }
 .lp-ticker { font: inherit; color: inherit; }
-.lp-stat-l { font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft); margin-top: 0.6rem; }
+.lp-stat-l { font-size: var(--t-sm); line-height: 1.45; color: var(--ink-soft); margin-top: 0.6rem; }
 .lp-stats-src {
-  font-family: var(--font-mono), monospace; font-size: 0.62rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); margin: 1rem 0 0;
 }
 
@@ -1261,7 +1272,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   padding: 0 1.6rem; white-space: nowrap;
 }
 .lp-marquee-note {
-  text-align: center; font-size: 0.85rem; color: var(--ink-soft);
+  text-align: center; font-size: var(--t-sm); color: var(--ink-soft);
   margin: 1.4rem auto 0; padding: 0 1.5rem;
 }
 
@@ -1276,7 +1287,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   flex-shrink: 0; width: 2.1rem; height: 2.1rem; border-radius: 50%;
   background: var(--accent); color: var(--accent-ink);
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono), monospace; font-size: 0.85rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-sm);
 }
 .lp-step-t {
   font-family: var(--font-barlow-condensed), sans-serif;
@@ -1296,7 +1307,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-plan.featured { border-color: var(--accent); border-width: 2px; }
 .lp-plan-flag {
   position: absolute; top: -0.65rem; left: 1.4rem;
-  font-family: var(--font-mono), monospace; font-size: 0.6rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.06em; text-transform: uppercase;
   background: var(--accent); color: var(--accent-ink);
   padding: 0.2rem 0.6rem; border-radius: 999px;
@@ -1311,13 +1322,13 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   margin: 0.3rem 0 0; font-variant-numeric: tabular-nums;
 }
 .lp-plan-price span {
-  font-family: var(--font-mono), monospace; font-size: 0.68rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em;
 }
-.lp-plan-aud { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; margin: 0.7rem 0 0; }
+.lp-plan-aud { font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45; margin: 0.7rem 0 0; }
 .lp-plan-list {
   margin: 1rem 0 1.4rem; padding-left: 1.2rem;
-  font-size: 0.88rem; line-height: 1.7; flex: 1;
+  font-size: var(--t-sm); line-height: 1.7; flex: 1;
 }
 .lp-plan-cta { width: 100%; }
 
@@ -1359,7 +1370,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 1rem;
   max-width: 1040px; margin: 0 auto; padding: 2rem 1.5rem 3rem;
-  font-family: var(--font-mono), monospace; font-size: 0.7rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em;
 }
 .lp-footer nav { display: flex; gap: 0.4rem 1.4rem; flex-wrap: wrap; }
@@ -1386,7 +1397,6 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
      occupait toute la largeur de sa colonne et où le nom devait tenir DANS
      une pastille colorée. Il est désormais sous le repère, sur le fond de la
      page, dans une grille bornée à 340 px : la place existe. */
-  .lp-dot-area { font-size: 0.5rem; }
 }
 
 /* =========================================================================
@@ -1488,7 +1498,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .lp-feature-n {
   flex-shrink: 0;
-  font-family: var(--font-mono), monospace; font-size: 0.75rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-xs);
   color: var(--accent); letter-spacing: 0.06em; padding-top: 0.25rem;
 }
 .lp-feature-t {
@@ -1526,7 +1536,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .sim-input-wrap .field-control { padding-right: 3.4rem; }
 .sim-unit {
   position: absolute; right: 0.9rem;
-  font-family: var(--font-mono), monospace; font-size: 0.72rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); pointer-events: none;
 }
 .sim-result {
@@ -1541,7 +1551,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .sim-result-d { font-size: 0.95rem; line-height: 1.5; margin: 0.6rem 0 0; }
 .sim-note {
-  font-size: 0.8rem; line-height: 1.45; color: var(--ink-soft);
+  font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft);
   margin: 0.8rem 0 0; padding-top: 0.7rem;
   border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
 }
@@ -1572,7 +1582,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 10px; padding: 0.8rem 1rem; margin-bottom: 1.5rem;
 }
-.audit-actions p { margin: 0; font-size: 0.86rem; }
+.audit-actions p { margin: 0; font-size: var(--t-sm); }
 
 .audit-head {
   display: flex; justify-content: space-between; align-items: flex-start;
@@ -1580,14 +1590,14 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   margin-bottom: 1.6rem;
 }
 .audit-eyebrow {
-  font-family: var(--font-mono), monospace; font-size: 0.62rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent);
 }
 .audit-title {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 2rem; line-height: 1.05; margin: 0.3rem 0 0.25rem;
 }
-.audit-sub { font-size: 0.86rem; color: var(--ink-soft); }
+.audit-sub { font-size: var(--t-sm); color: var(--ink-soft); }
 /* capitalize sur la ligne entiere produisait « Releve Du 28 Aout » : la
    regle ne doit viser que le metier, stocke en minuscules en base. */
 .audit-trade { text-transform: capitalize; }
@@ -1617,17 +1627,17 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.35rem; margin: 0 0 0.5rem;
 }
-.audit-lede { font-size: 0.88rem; color: var(--ink-soft); margin: 0 0 0.9rem; }
+.audit-lede { font-size: var(--t-sm); color: var(--ink-soft); margin: 0 0 0.9rem; }
 
-.audit-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.audit-table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .audit-table th {
   text-align: left; padding: 0.5rem 0.6rem;
-  font-family: var(--font-mono), monospace; font-size: 0.62rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);
   border-bottom: 1px solid var(--line-strong);
 }
 .audit-table td { padding: 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-.audit-ref { color: var(--ink-faint); font-size: 0.78rem; }
+.audit-ref { color: var(--ink-faint); font-size: var(--t-xs); }
 .audit-pos {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1rem; white-space: nowrap;
@@ -1637,7 +1647,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .audit-pos.warn { color: var(--status-warn); }
 .audit-pos.bad { color: var(--status-bad); }
 .audit-attrib {
-  font-family: var(--font-mono), monospace; font-size: 0.58rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); margin: 0.5rem 0 0;
 }
 
@@ -1655,25 +1665,25 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .audit-card.bad .audit-card-n { color: var(--status-bad); }
 .audit-card-t {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 600; font-size: 0.88rem; margin: 0.25rem 0 0.4rem;
+  font-weight: 600; font-size: var(--t-sm); margin: 0.25rem 0 0.4rem;
 }
-.audit-card p { font-size: 0.78rem; line-height: 1.45; color: var(--ink-soft); margin: 0; }
+.audit-card p { font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft); margin: 0; }
 .audit-note {
-  font-size: 0.88rem; line-height: 1.5; color: var(--ink-soft);
+  font-size: var(--t-sm); line-height: 1.5; color: var(--ink-soft);
   margin: 1rem 0 0; padding-top: 0.8rem; border-top: 1px solid var(--line);
 }
 
 .audit-steps { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; line-height: 1.65; }
 .audit-steps li { margin-bottom: 0.5rem; }
 .audit-legal {
-  font-size: 0.78rem; line-height: 1.45; color: var(--ink-soft);
+  font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft);
   background: var(--card); border-radius: 8px; padding: 0.7rem 0.9rem; margin: 1rem 0 0;
 }
 
 .audit-foot {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   border-top: 1px solid var(--line); padding-top: 0.9rem; margin-top: 2rem;
-  font-family: var(--font-mono), monospace; font-size: 0.62rem; color: var(--ink-faint);
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint);
 }
 
 @media (max-width: 700px) {
@@ -1714,7 +1724,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   border: 1px solid var(--status-bad);
   border-radius: 8px;
   padding: 0.7rem 0.9rem;
-  font-size: 0.88rem;
+  font-size: var(--t-sm);
   margin: 0 0 0.8rem;
 }
 
@@ -1752,7 +1762,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .auth-tete a { text-decoration: none; }
 .auth-lien {
-  font-size: 0.85rem; color: var(--ink-soft); text-decoration: none;
+  font-size: var(--t-sm); color: var(--ink-soft); text-decoration: none;
   border-bottom: 1px solid var(--line); padding-bottom: 1px;
 }
 .auth-lien:hover { color: var(--accent); border-color: var(--accent); }
@@ -1761,7 +1771,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    pour qui s'est trompe de porte. */
 .auth-bascule {
   margin: 1.1rem 0 0; text-align: center;
-  font-size: 0.88rem; color: var(--ink-soft);
+  font-size: var(--t-sm); color: var(--ink-soft);
 }
 .auth-bascule a { color: var(--accent); font-weight: 600; }
 
@@ -1805,19 +1815,19 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 
 .legal-table-wrap { overflow-x: auto; margin: 0 0 1.2rem; }
-.legal-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.legal-table { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
 .legal-table th, .legal-table td {
   text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 .legal-table th {
-  font-family: var(--font-mono), monospace; font-size: 0.66rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);
 }
 .legal-table td { color: var(--ink-soft); }
 .legal-revision {
   margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line);
-  font-size: 0.8rem; color: var(--ink-faint);
+  font-size: var(--t-xs); color: var(--ink-faint);
 }
 
 /* --- Pied de page ------------------------------------------------------ */
@@ -1839,12 +1849,12 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 /* 46ch au lieu de 34 : la phrase tient sur deux lignes au lieu de trois, et
    c'est elle qui fixait la hauteur de toute la colonne de marque. */
 .pdp-baseline {
-  font-size: 0.8rem; color: var(--pdp-texte-doux); line-height: 1.4; margin: 0; max-width: 46ch;
+  font-size: var(--t-xs); color: var(--pdp-texte-doux); line-height: 1.4; margin: 0; max-width: 46ch;
 }
 .pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
 .pdp-col { display: flex; flex-direction: column; gap: 0.25rem; }
 .pdp-titre {
-  font-family: var(--font-mono), monospace; font-size: 0.64rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   text-transform: uppercase; letter-spacing: 0.08em;
   /* CES TITRES NE SONT PAS DES LIENS, ET DOIVENT LE MONTRER.
      Ils avaient la même couleur et la même graisse que les liens en dessous :
@@ -1858,7 +1868,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   border-bottom: 1px solid var(--pdp-ligne);
 }
 .pdp-col a {
-  font-size: 0.85rem; color: var(--pdp-texte-doux); text-decoration: none;
+  font-size: var(--t-sm); color: var(--pdp-texte-doux); text-decoration: none;
   /* 0.3rem de hauteur en plus par lien : resserrer davantage ferait se
      toucher les cibles tactiles sur téléphone, et ces liens mènent aux pages
      légales — celles qu'on cherche justement avec précision. */
@@ -1870,7 +1880,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   max-width: 1040px; margin: 0 auto; padding: 0.7rem 1.5rem 1rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
-  font-family: var(--font-mono), monospace; font-size: 0.66rem;
+  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--pdp-texte-doux); letter-spacing: 0.04em;
 }
 /* Une seule ligne : c'est une mention, pas un paragraphe. Le `max-width: 44ch`
@@ -1904,19 +1914,19 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.15rem; margin-bottom: 0.3rem;
 }
-.da-lede { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
+.da-lede { font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
 .da-form { display: flex; flex-direction: column; gap: 0.5rem; }
 .da-form .btn { margin-top: 0.3rem; }
 .da-succes {
   background: var(--status-good-bg); color: var(--status-good);
   border: 1px solid var(--status-good); border-radius: 8px;
-  padding: 0.7rem 0.9rem; font-size: 0.88rem; margin: 0.3rem 0 0;
+  padding: 0.7rem 0.9rem; font-size: var(--t-sm); margin: 0.3rem 0 0;
 }
 /* Rappel de la regle, au moment exact ou l'artisan pourrait etre tente d'y
    deroger. Discret mais lisible : une mention grisee ne serait pas lue. */
 .da-regle {
   margin: 1rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--line);
-  font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5;
+  font-size: var(--t-xs); color: var(--ink-soft); line-height: 1.5;
 }
 .da-regle strong { color: var(--ink); }
 
@@ -2684,7 +2694,7 @@ a.btn { text-decoration: none; }
   justify-content: space-between;
   margin-top: 0.4rem;
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 0.62rem;
+  font-size: var(--t-2xs);
   color: var(--ink-faint);
 }
 
