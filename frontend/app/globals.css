@@ -71,6 +71,24 @@
      seule ; ensemble elles faisaient une application qu'on lit a bout de
      bras. Le jeton existe pour qu'on ne puisse plus descendre sans le
      decider explicitement. */
+  /* --- Boutons ---------------------------------------------------------
+     UNE seule teinte, UNE seule encre, dans les deux themes.
+
+     Le bouton etait bleu nuit et le texte blanc en mode clair, bleu clair et
+     texte fonce en mode sombre. Deux traitements opposes pour le meme role.
+
+     #4a86c4 est la seule teinte qui tienne les trois contraintes a la fois :
+       texte noir sur le bouton      4,90   (seuil AA texte : 4,5)
+       detache de la page claire     3,44   (seuil element d'interface : 3)
+       detache de la page sombre     4,85
+
+     Un bleu plus clair porte mieux le noir mais disparait sur la page claire ;
+     un bleu plus fonce se detache mieux mais ne supporte plus le noir. Les
+     deux courbes se croisent ici. */
+  --bouton: #4a86c4;
+  --bouton-ink: #0b1220;
+  --bouton-hover: #6b9fd4;
+
   --t-2xs: 0.75rem;
   --t-xs: 0.8rem;
   --t-sm: 0.9rem;
@@ -465,10 +483,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   min-height: 44px;
   border-radius: 8px;
   border: none;
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bouton);
+  color: var(--bouton-ink);
   cursor: pointer;
 }
+.btn:hover:not(:disabled) { background: var(--bouton-hover); }
 .btn.secondary { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1057,9 +1076,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-weight: 600; font-size: 0.9rem;
   padding: 0.55rem 1.1rem; min-height: 44px;
   display: inline-flex; align-items: center;
-  border-radius: 8px; background: var(--accent); color: var(--accent-ink);
+  border-radius: 8px; background: var(--bouton); color: var(--bouton-ink);
   text-decoration: none;
 }
+.lp-nav-cta:hover { background: var(--bouton-hover); }
 
 /* Hero */
 .lp-hero {
@@ -1247,7 +1267,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   min-height: 48px; padding: 0 1.4rem;
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: 0.95rem;
-  background: var(--accent); color: var(--accent-ink);
+  background: var(--bouton); color: var(--bouton-ink);
   border-radius: 9px; text-decoration: none; white-space: nowrap;
 }
 .lp-btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
@@ -1341,46 +1361,6 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-size: var(--t-sm); line-height: 1.7; flex: 1;
 }
 .lp-plan-cta { width: 100%; }
-
-/* --- Boutons d'appel en mode sombre -------------------------------------
-   MESURE, plutot qu'impression.
-
-   Bleu clair, tel qu'il etait : texte a 8,85 de contraste, et le bouton lui
-   meme a 8,75 de la page. Conforme, mais c'est une tache lumineuse sur un
-   ecran noir — signale a l'usage.
-
-   La correction evidente aurait ete de reprendre le bleu nuit du mode clair,
-   #123f6d. Elle est fausse : ce bleu ne se detache de la page que de 1,73.
-   Le bouton principal du site deviendrait presque invisible la nuit.
-
-   #2a6ba8 tient les deux bouts : texte blanc a 5,57 — au dessus du seuil AA
-   de 4,5 — et 3,32 de detachement, au dessus du seuil de 3 exige pour un
-   element d'interface. Moins eblouissant, toujours trouvable.
-
-   Cible : les deux boutons d'appel, pas les jetons. `--accent` sert aussi de
-   couleur de TEXTE aux liens, ou 8,75 est exactement ce qu'il faut ; et la
-   bande « agence » inverse ces memes couleurs. Les deplacer casserait les
-   deux. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lp-nav-cta,
-  :root:not([data-theme="light"]) .lp-btn {
-    background: #2a6ba8;
-    color: #ffffff;
-  }
-  :root:not([data-theme="light"]) .lp-btn:hover,
-  :root:not([data-theme="light"]) .lp-nav-cta:hover {
-    background: #357cbd;
-  }
-}
-:root[data-theme="dark"] .lp-nav-cta,
-:root[data-theme="dark"] .lp-btn {
-  background: #2a6ba8;
-  color: #ffffff;
-}
-:root[data-theme="dark"] .lp-btn:hover,
-:root[data-theme="dark"] .lp-nav-cta:hover {
-  background: #357cbd;
-}
 
 /* FAQ */
 .lp-faq { display: flex; flex-direction: column; gap: 0.9rem; }
@@ -2490,10 +2470,10 @@ a:has(button) { color: inherit; text-decoration: none; }
   width: 100%;
   min-height: 44px;
   margin-top: var(--s-3);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--bouton);
   border-radius: var(--r-sm);
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--bouton);
+  color: var(--bouton-ink);
   font-size: var(--t-xs);
   font-weight: 650;
   cursor: pointer;
