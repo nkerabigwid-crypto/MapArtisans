@@ -317,14 +317,13 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   margin-top: 0.15rem;
 }
 .geo-hint {
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
+  font-size: var(--t-2xs);
   color: var(--ink-faint); margin: 0.55rem 0 0;
 }
 .geo-legend {
   display: flex;
   gap: 1rem;
   margin-top: 0.8rem;
-  font-family: var(--font-mono), monospace;
   font-size: var(--t-2xs);
   color: var(--ink-faint);
 }
@@ -517,7 +516,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 
 .empty-state {
   text-align: center; padding: 2rem 1rem; color: var(--ink-faint);
-  font-family: var(--font-mono), monospace; font-size: var(--t-xs);
+  font-size: var(--t-xs);
 }
 
 /* ---------- Chargement ---------- */
@@ -786,8 +785,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .field-control:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .field-control[data-invalid] { border-color: var(--status-bad); }
 .field-desc {
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
-  color: var(--ink-faint); margin-top: 0.35rem; line-height: 1.4;
+  /* --t-xs et non le plancher : ce n'est pas une etiquette en capitales mais
+     une phrase, et elle se lit AVANT de remplir le champ. --ink-soft plutot
+     que --ink-faint pour la meme raison. */
+  font-size: var(--t-xs);
+  color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.45;
 }
 .field-error {
   font-size: var(--t-xs); color: var(--status-bad); margin-top: 0.35rem;
@@ -1214,7 +1216,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .geo-pin.bad  { color: var(--status-bad); }
 .lp-grid-legend {
   display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 1.1rem;
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint);
+  font-size: var(--t-2xs); color: var(--ink-faint);
 }
 .lp-grid-legend span { display: flex; align-items: center; gap: 0.4rem; }
 .lp-grid-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
@@ -1683,7 +1685,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .audit-foot {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   border-top: 1px solid var(--line); padding-top: 0.9rem; margin-top: 2rem;
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs); color: var(--ink-faint);
+  font-size: var(--t-2xs); color: var(--ink-faint);
 }
 
 @media (max-width: 700px) {
@@ -1785,6 +1787,18 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .topbar-accueil:hover { opacity: 0.75; }
 
+/* Valeur par defaut des liens.
+   La page des mentions legales n'avait aucune regle pour ses liens : ils
+   heritaient du bleu par defaut du navigateur, #0000EE, qui donne 1,97 de
+   contraste sur le fond sombre — pour un seuil AA de 4,5. L'adresse a
+   laquelle on doit pouvoir joindre l'editeur etait donc invisible la nuit.
+
+   Cette regle est volontairement la moins specifique du fichier : toutes les
+   barres de navigation ont deja la leur et ne sont pas touchees. Elle n'existe
+   que pour qu'aucun lien futur ne puisse retomber sur le defaut du
+   navigateur. */
+a { color: var(--accent); }
+
 /* --- Pages legales ----------------------------------------------------- */
 .legal { max-width: 720px; margin: 0 auto; padding: 3rem 1.4rem 4rem; }
 .legal-h1 {
@@ -1880,7 +1894,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   max-width: 1040px; margin: 0 auto; padding: 0.7rem 1.5rem 1rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
+  font-size: var(--t-2xs);
   color: var(--pdp-texte-doux); letter-spacing: 0.04em;
 }
 /* Une seule ligne : c'est une mention, pas un paragraphe. Le `max-width: 44ch`
