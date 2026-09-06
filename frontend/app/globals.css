@@ -56,8 +56,13 @@
   --rank-top1: #1f4d38;
 
   /* ---- Échelle typographique (rapport 1,25) --------------------------- */
-  --t-xs: 0.694rem;
-  --t-sm: 0.833rem;
+  /* 0,694 rem faisait 11 px : trop petit pour un artisan qui consulte son
+     tableau de bord sur un telephone, parfois a bout de bras. Le rapport de
+     l'echelle (1,25) est conserve au-dessus de --t-base ; seuls les deux
+     derniers crans, ceux qui portent les etiquettes et les mentions, sont
+     remontes. */
+  --t-xs: 0.8rem;
+  --t-sm: 0.9rem;
   --t-base: 1rem;
   --t-md: 1.2rem;
   --t-lg: 1.44rem;
@@ -1092,10 +1097,17 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 /* Cette ligne lève la dernière hésitation avant le clic : « est-ce qu'on va me
    demander ma carte ? ». En 0.68rem et en gris pâle, elle se devinait plutôt
    qu'elle ne se lisait. Agrandie, assombrie, et les deux promesses en gras. */
+/* Cette ligne etait en monospace, a 0.78rem.
+   Son contraste etait pourtant bon (8,8) : ce qui la rendait penible n'etait
+   pas la couleur mais la fonte. Une chasse fixe a 12,5 px donne des lettres
+   etroites, d'epaisseur uniforme, sans les differences de largeur qui aident
+   a reconnaitre un mot d'un coup d'oeil. C'etait le seul monospace de la page,
+   sur la seule phrase qui doit rassurer avant de cliquer. */
 .lp-reassure {
   position: relative;
-  font-family: var(--font-mono), monospace; font-size: 0.78rem;
-  color: var(--ink-soft); margin: var(--espace-cta) 0 0; letter-spacing: 0.01em;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-soft); margin: var(--espace-cta) 0 0;
 }
 /* Plus de mise en valeur partielle sur cette ligne.
    « Aucune carte bancaire » était en gras souligné, « requise » ne l'était
@@ -1686,7 +1698,6 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    l'alignement de la ligne de base et ferait « sauter » la fin du mot. À 65 %,
    l'œil lit « MapArtisan » d'un bloc et perçoit le pluriel en second temps —
    ce qui est exactement l'effet recherché. */
-.lp-logo-s, .audit-brand-s { opacity: 0.65; }
 
 /* Message d'echec de creation de compte. Cadre rouge plein plutot que texte
    seul : sur un telephone, une ligne rouge sous un bouton passe inapercue. */
@@ -1719,7 +1730,12 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 /* Le nom reprend la couleur du texte : un bloc entierement bleu se lirait
    comme un lien, et perdrait la lisibilite d'un titre. */
 .logo-nom { color: var(--ink); }
-.logo-s { opacity: 0.65; }
+/* PAS d'opacite sur le « s ».
+   Il etait a 0.65, ce qui le faisait tomber a 6,6 de contraste quand le reste
+   du nom est a 13,9. Pris isolement il passait le seuil AA ; place a cote de
+   ses propres voisines, l'oeil le lisait comme « MapArtisan » suivi d'une
+   lettre delavee — un nom de marque casse en deux, ou un defaut d'affichage.
+   Un contraste conforme dans l'absolu peut rester faux dans son voisinage. */
 
 /* --- En-tetes des pages de compte ------------------------------------- */
 .auth-tete {
@@ -1806,7 +1822,6 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 /* Le logo hérite de `--accent` et `--ink` : sur fond bleu profond, les deux
    disparaîtraient. On les reprend explicitement. */
 .pdp .logo, .pdp .logo-nom { color: var(--pdp-texte); }
-.pdp .logo-s { opacity: 0.55; }
 /* Espacements resserrés : le pied de page faisait 569 px, soit plus d'un
    demi-écran de téléphone pour des liens qu'on consulte rarement. */
 .pdp-haut {
