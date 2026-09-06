@@ -28,6 +28,26 @@ export interface PartieFacture {
   raisonSociale: string;
   adresse: string[];
   email?: string;
+  /**
+   * Nom commercial, quand il differe de la raison sociale.
+   *
+   * POURQUOI LES DEUX FIGURENT
+   *
+   * Le client a souscrit a MapArtisans. Une facture signee du seul
+   * « Valtransfer Nkerabigwi » porte un nom qu'il n'a jamais vu : il la
+   * classe mal, la conteste, ou appelle sa banque.
+   *
+   * L'inverse ne marche pas non plus. Une raison individuelle DOIT etre
+   * identifiee par son nom inscrit au registre du commerce — CO art. 945
+   * impose qu'il contienne le nom de famille du titulaire. Une facture au
+   * seul nom de l'enseigne n'identifie aucune personne responsable.
+   *
+   * D'ou la marque en tete, ou l'oeil la cherche, et la raison sociale
+   * immediatement dessous, ou la loi l'exige.
+   */
+  marque?: string;
+  /** IDE de l'emetteur, imprime meme hors assujettissement a la TVA. */
+  ide?: string;
 }
 
 export interface DonneesFacture {
@@ -76,10 +96,26 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     const droite = doc.page.width - MARGE;
 
     // --- En-tête : émetteur à gauche, numéro et dates à droite.
-    doc.fontSize(18).fillColor("#123f6d").text(donnees.emetteur.raisonSociale, MARGE, MARGE);
+    // La marque en tete quand elle existe ; la raison sociale juste dessous,
+    // en corps de texte mais bien lisible. Voir PartieFacture.marque.
+    doc
+      .fontSize(18)
+      .fillColor("#123f6d")
+      .text(donnees.emetteur.marque ?? donnees.emetteur.raisonSociale, MARGE, MARGE);
     doc.fontSize(9).fillColor("#444444");
+    if (donnees.emetteur.marque) {
+      doc.fontSize(10).fillColor("#111111").text(donnees.emetteur.raisonSociale);
+      doc.fontSize(9).fillColor("#444444");
+    }
     for (const l of donnees.emetteur.adresse) doc.text(l);
-    if (donnees.regime.assujetti) doc.text(`IDE : ${donnees.regime.numeroIde}`);
+    /*
+     * L'IDE identifie l'entreprise au registre ; le numero de TVA atteste d'un
+     * assujettissement. Les deux se ressemblent — CHE-xxx.xxx.xxx — et les
+     * confondre ferait croire a une TVA due que nous ne facturons pas. D'ou
+     * deux libelles distincts, et jamais les deux a la fois.
+     */
+    if (donnees.regime.assujetti) doc.text(`N° TVA : ${donnees.regime.numeroIde}`);
+    else if (donnees.emetteur.ide) doc.text(`IDE : ${donnees.emetteur.ide}`);
 
     doc.fontSize(9).fillColor("#444444");
     doc.text(`Facture ${donnees.numero}`, MARGE, MARGE, { width: largeur, align: "right" });

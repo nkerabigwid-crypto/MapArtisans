@@ -106,14 +106,14 @@ export async function emettreFacture(
       text:
         `Bonjour,\n\n` +
         `Votre facture ${facture.numero} est jointe à ce message.\n\n` +
-        `Merci de votre confiance.\n${emetteur.raisonSociale}\n`,
+        `Merci de votre confiance.\n${emetteur.marque ?? emetteur.raisonSociale}\n`,
       // Volontairement sobre : une facture se lit dans la pièce jointe, pas
       // dans un message mis en page. Un HTML chargé augmente surtout le risque
       // de finir en indésirables, là où ce courrier doit toujours arriver.
       html:
         `<p>Bonjour,</p>` +
         `<p>Votre facture <b>${facture.numero}</b> est jointe à ce message.</p>` +
-        `<p>Merci de votre confiance.<br>${emetteur.raisonSociale}</p>`,
+        `<p>Merci de votre confiance.<br>${emetteur.marque ?? emetteur.raisonSociale}</p>`,
       attachments: [
         {
           filename: `${facture.numero}.pdf`,

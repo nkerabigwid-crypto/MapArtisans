@@ -76,5 +76,9 @@ export function emetteurCourant(): PartieFacture {
       .map((l) => l.trim())
       .filter(Boolean),
     email: process.env.FACTURATION_EMAIL?.trim() || undefined,
+    // Le nom commercial. Absent, la facture ne porte que la raison sociale —
+    // ce qui reste conforme, mais laisse le client devant un nom inconnu.
+    marque: process.env.FACTURATION_MARQUE?.trim() || undefined,
+    ide: process.env.FACTURATION_IDE?.trim() || undefined,
   };
 }

@@ -4,6 +4,7 @@
  */
 import { test, describe, before } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { register } from "node:module";
 import { pathToFileURL } from "node:url";
 
@@ -222,6 +223,52 @@ describe("Configuration de facturation", () => {
     assert.deepEqual(config.emetteurCourant().adresse, ["Rue de Test 1", "1000 Lausanne", "Suisse"]);
     delete process.env.FACTURATION_RAISON_SOCIALE;
     delete process.env.FACTURATION_ADRESSE;
+  });
+});
+
+describe("Identite de l'emetteur sur la facture", () => {
+  /*
+   * Une raison individuelle DOIT etre identifiee par son nom inscrit au
+   * registre — CO art. 945 impose qu'il contienne le nom de famille du
+   * titulaire. Mais le client, lui, a souscrit a une marque. Les deux doivent
+   * figurer, et aucun ne peut chasser l'autre.
+   */
+  test("la marque ne fait pas disparaitre la raison sociale", async () => {
+    const pdf = await inv.genererFacturePdf({
+      numero: "FA-2026-0009",
+      emiseLe: new Date("2026-09-06T10:00:00Z"),
+      payeeLe: new Date("2026-09-06T10:00:00Z"),
+      emetteur: {
+        raisonSociale: "Valtransfer Nkerabigwi",
+        marque: "MapArtisans",
+        adresse: ["Rue du Scex 49B", "1950 Sion", "Suisse"],
+        ide: "CHE-307.804.188",
+      },
+      client: { raisonSociale: "client@exemple.test", adresse: [], email: "client@exemple.test" },
+      designation: "Abonnement Basique — 1 mois",
+      montantCentimes: 4900,
+      regime: { assujetti: false },
+    });
+    const texte = pdf.toString("latin1");
+    assert.ok(texte.length > 800, "le PDF doit avoir ete produit");
+  });
+
+  test("l'IDE n'est jamais presente comme un numero de TVA", () => {
+    /*
+     * Les deux se ressemblent — CHE-xxx.xxx.xxx. Confondre les libelles
+     * ferait croire a une TVA due que nous ne facturons pas, sur un document
+     * que le client remettra a son comptable.
+     */
+    const source = fs.readFileSync(
+      new URL("../invoice.ts", import.meta.url), "utf8",
+    );
+    assert.ok(source.includes('`N° TVA : ${donnees.regime.numeroIde}`'),
+      "le numero de TVA doit etre libelle « N° TVA »");
+    assert.ok(source.includes('`IDE : ${donnees.emetteur.ide}`'),
+      "l'IDE doit etre libelle « IDE »");
+    // Et jamais les deux : l'un exclut l'autre.
+    assert.ok(source.includes("else if (donnees.emetteur.ide)"),
+      "IDE et numero de TVA ne doivent jamais coexister");
   });
 });
 
