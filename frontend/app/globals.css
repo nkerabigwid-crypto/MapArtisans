@@ -1167,7 +1167,15 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.06;
   margin: 0 0 0.9rem; text-wrap: balance;
 }
-.lp-lede { font-size: 1rem; line-height: 1.55; color: var(--ink-soft); max-width: 62ch; margin: 0 0 2rem; }
+/* --ink et non --ink-soft : ce paragraphe est la premiere chose qu'on lit
+   apres le titre, et il porte l'argument. Le gris le faisait passer pour une
+   mention secondaire — 8,8 de contraste contre 15,3, tous deux conformes,
+   mais l'un se lit et l'autre se survole. L'interligne passe a 1,6 : sur
+   telephone, ce paragraphe fait quatre a cinq lignes. */
+.lp-lede {
+  font-size: 1.02rem; line-height: 1.6; color: var(--ink);
+  max-width: 62ch; margin: 0 0 2rem;
+}
 
 /* Grille de démonstration */
 .lp-proof { border-top: 1px solid var(--line); }
@@ -1857,6 +1865,14 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
    que pour qu'aucun lien futur ne puisse retomber sur le defaut du
    navigateur. */
 a { color: var(--accent); }
+/* Un lien qui EST un bouton ne prend ni la couleur ni le soulignement d'un
+   lien : c'est le bouton qui les porte deja.
+
+   Sans cette exception, la regle ci-dessus peignait « Activer mon essai
+   gratuit de 14 jours » en bleu clair SUR un bouton bleu clair — les deux
+   appels a l'action principaux du site, illisibles. Le soulignement partait
+   avec, herite du navigateur et jamais voulu sur un bouton. */
+a:has(button) { color: inherit; text-decoration: none; }
 
 /* --- Pages legales ----------------------------------------------------- */
 .legal { max-width: 720px; margin: 0 auto; padding: 3rem 1.4rem 4rem; }
