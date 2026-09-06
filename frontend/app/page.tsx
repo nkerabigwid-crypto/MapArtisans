@@ -128,13 +128,14 @@ export default function LandingPage() {
               Voir les tarifs
             </Link>
           </div>
-          {/* Chaque moitié insécable, la coupure ne peut donc tomber qu'au
-              point médian. Sans cela, « clic » se retrouvait seul sur une
-              deuxième ligne — un mot orphelin sous la promesse qui décide du
-              clic sur le bouton juste au-dessus. */}
+          {/* Deux clauses insécables, séparées par l'espacement et non par un
+              caractère. « clic » se retrouvait seul sur une deuxième ligne ;
+              un point médian aurait alors ouvert cette ligne, ou pendu au bout
+              de la précédente. L'écart fait le même travail sans jamais se
+              retrouver au mauvais endroit. */}
           <p className="lp-reassure">
-            <span className="lp-reassure-part">Aucune carte bancaire requise</span>{" "}
-            <span className="lp-reassure-part">· Résiliable en un clic</span>
+            <span>Aucune carte bancaire requise</span>
+            <span>Résiliable en un clic</span>
           </p>
         </BlurFade>
       </section>
