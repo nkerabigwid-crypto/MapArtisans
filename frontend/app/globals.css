@@ -85,6 +85,10 @@
      Un bleu plus clair porte mieux le noir mais disparait sur la page claire ;
      un bleu plus fonce se detache mieux mais ne supporte plus le noir. Les
      deux courbes se croisent ici. */
+  /* Hauteur de l'en-tete colle. Mesuree sur la page en ligne : 74 px.
+     Elle sert au decalage des ancres — voir la regle [id] plus bas. */
+  --entete-hauteur: 74px;
+
   --bouton: #4a86c4;
   --bouton-ink: #0b1220;
   /* Le survol assombrit ET fait passer le texte au blanc. Les deux vont
@@ -1879,6 +1883,18 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   margin-right: 0.7rem; flex-shrink: 0;
 }
 .topbar-accueil:hover { opacity: 0.75; }
+
+/* Toute cible d'ancre se pose SOUS l'en-tete colle.
+   Sans ce decalage, suivre « /#fonctionnalites » amenait bien au bon endroit
+   — mesure : cible a 2160, defilement a 2160 — mais le titre de la section se
+   retrouvait a 51 px du haut, donc DERRIERE une barre de 74 px. On voyait du
+   contenu de milieu de section, sans savoir ou l'on etait : l'ancre paraissait
+   ne pas fonctionner alors qu'elle visait juste.
+
+   La regle porte sur [id] et non sur les seules sections connues : une ancre
+   ajoutee demain sera couverte sans qu'on y pense. Elle n'a aucun effet visuel
+   en dehors d'un defilement vers la cible. */
+[id] { scroll-margin-top: calc(var(--entete-hauteur) + var(--s-4)); }
 
 /* Valeur par defaut des liens.
    La page des mentions legales n'avait aucune regle pour ses liens : ils
