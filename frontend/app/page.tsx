@@ -11,6 +11,7 @@ import { PLANS, geoGrid, getGridStatus } from "@/lib/data";
 import { TRADE_LABELS } from "@/lib/trades";
 import GainSimulator from "@/components/marketing/GainSimulator";
 import EntetePublic from "@/components/EntetePublic";
+import { donneesAccueil } from "@/lib/donneesStructurees";
 
 export const metadata: Metadata = {
   title: "MapArtisans — Votre visibilité Google Maps en pilote automatique",
@@ -88,6 +89,15 @@ export default function LandingPage() {
 
   return (
     <div className="lp">
+      {/* Le texte dit à un lecteur ce que fait MapArtisans ; ce balisage le dit
+          à une machine. La page /questions en avait déjà un — c'est lui qui
+          permet à un assistant de citer le produit avec ses sources. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(donneesAccueil()).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* ---------------- 1. En-tête ---------------- */}
       <EntetePublic surAccueil />
 
