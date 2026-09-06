@@ -128,8 +128,13 @@ export default function LandingPage() {
               Voir les tarifs
             </Link>
           </div>
+          {/* Chaque moitié insécable, la coupure ne peut donc tomber qu'au
+              point médian. Sans cela, « clic » se retrouvait seul sur une
+              deuxième ligne — un mot orphelin sous la promesse qui décide du
+              clic sur le bouton juste au-dessus. */}
           <p className="lp-reassure">
-            Aucune carte bancaire requise · Résiliable en un clic
+            <span className="lp-reassure-part">Aucune carte bancaire requise</span>{" "}
+            <span className="lp-reassure-part">· Résiliable en un clic</span>
           </p>
         </BlurFade>
       </section>
