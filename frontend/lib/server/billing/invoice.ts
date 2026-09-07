@@ -27,12 +27,17 @@ import { calculerTotaux, formatCHF, type BaseDePrix, type RegimeTva } from "./va
  */
 
 /**
- * Largeur du logo en points. 150 pt sur une page A4 de 595 pt : assez pour
- * être lu, assez discret pour qu'un document comptable reste un document.
- * La hauteur suit le rapport 1100 × 320 du fichier.
+ * Largeur du logo en points, sur une page A4 de 595 pt.
+ *
+ * Le fichier est RECADRÉ sur son dessin : sa version d'origine portait 244 px
+ * de marge transparente à gauche, qui décalaient le logo vers la droite alors
+ * que l'adresse dessous partait de la marge. Les deux ne s'alignaient pas, et
+ * rien dans le code ne pouvait le montrer.
+ *
+ * La hauteur suit le rapport 770 × 149 du fichier recadré.
  */
-const LARGEUR_LOGO = 150;
-const HAUTEUR_LOGO = Math.round((LARGEUR_LOGO * 320) / 1100);
+const LARGEUR_LOGO = 165;
+const HAUTEUR_LOGO = Math.round((LARGEUR_LOGO * 149) / 770);
 
 export interface PartieFacture {
   raisonSociale: string;
@@ -142,13 +147,19 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
         .text(donnees.emetteur.marque ?? donnees.emetteur.raisonSociale, MARGE, MARGE);
       basLogo = doc.y;
     }
-    doc.fontSize(9).fillColor("#444444");
+    /*
+     * Sous le logo, TOUT en petit.
+     *
+     * La raison sociale n'y est pas pour être lue en premier — le client
+     * reconnaît la marque — mais parce que le CO l'exige sur une pièce
+     * comptable. Elle doit donc être présente et lisible, pas mise en avant.
+     * Au même corps que l'adresse, le bloc devient un pavé d'identification
+     * discret sous un logo qui, lui, se voit.
+     */
+    doc.fontSize(8).fillColor("#666666");
     if (donnees.emetteur.marque) {
-      doc
-        .fontSize(10)
-        .fillColor("#111111")
-        .text(donnees.emetteur.raisonSociale, MARGE, basLogo + 4);
-      doc.fontSize(9).fillColor("#444444");
+      doc.fillColor("#333333").text(donnees.emetteur.raisonSociale, MARGE, basLogo + 8);
+      doc.fillColor("#666666");
     }
     for (const l of donnees.emetteur.adresse) doc.text(l);
     /*
