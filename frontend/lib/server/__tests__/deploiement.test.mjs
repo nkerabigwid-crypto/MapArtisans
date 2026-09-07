@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { dirname, join, normalize } from "node:path";
 
 /**
@@ -155,4 +156,63 @@ test("les pages légales sont rendues à chaque requête, jamais prérendues", (
       `${page} doit être dynamique : prérendue, elle figerait une identité vide.`,
     );
   }
+});
+
+/**
+ * Un lien fabriqué doit avoir une page pour l'accueillir.
+ *
+ * PANNE RÉELLE, constatée sur un vrai courrier de bienvenue.
+ *
+ * `magicLinkUrl()` construisait `/connexion/lien/{jeton}` depuis l'origine, et
+ * l'e-mail portait ce lien. Aucune route ne répondait à cette adresse :
+ * l'artisan tombait sur un 404, sans autre moyen d'entrer que de deviner qu'un
+ * mot de passe existait — alors que le message lui promettait précisément de
+ * ne pas en retenir.
+ *
+ * Le typage ne pouvait rien voir : d'un côté une chaîne, de l'autre une
+ * arborescence de fichiers. Ce test relie les deux.
+ */
+test("le lien de connexion fabriqué mène à une page qui existe", () => {
+  const source = readFileSync(new URL("../magicLink.ts", import.meta.url), "utf8");
+
+  // Le chemin est écrit dans un gabarit : on en extrait la partie fixe.
+  const m = source.match(/new URL\(`([^`]*)`/);
+  assert.ok(m, "magicLinkUrl doit construire son chemin avec un gabarit");
+  const chemin = m[1].replace(/\$\{[^}]*\}/g, "");        // → /connexion/lien/
+  const segments = chemin.split("/").filter(Boolean);      // → [connexion, lien]
+
+  /*
+   * fileURLToPath et non `.pathname` : le dépôt vit sous « Claude code », et
+   * un espace ressort encodé en %20 dans une URL. existsSync cherchait alors
+   * un dossier qui n'existe pas, et le test échouait sur un chemin correct.
+   */
+  const racine = fileURLToPath(new URL("../../../app/", import.meta.url));
+  const dossier = join(racine, ...segments);
+  assert.ok(
+    existsSync(dossier),
+    `magicLinkUrl produit ${chemin}{jeton} mais app/${segments.join("/")} n'existe pas`,
+  );
+
+  const dynamiques = readdirSync(dossier).filter((f) => f.startsWith("[") && f.endsWith("]"));
+  assert.ok(
+    dynamiques.length > 0,
+    `app/${segments.join("/")} doit contenir un segment dynamique [jeton]`,
+  );
+  assert.ok(
+    existsSync(join(dossier, dynamiques[0], "page.tsx")),
+    `app/${segments.join("/")}/${dynamiques[0]} doit contenir une page.tsx`,
+  );
+});
+
+/** La page seule ne suffit pas : il faut la route qui consomme le jeton. */
+test("une route consomme réellement le jeton de connexion", () => {
+  const route = fileURLToPath(new URL("../../../app/api/auth/lien/route.ts", import.meta.url));
+  assert.ok(existsSync(route), "app/api/auth/lien/route.ts doit exister");
+  const source = readFileSync(route, "utf8");
+  assert.match(source, /consumeMagicLink/, "la route doit consommer le jeton");
+  assert.match(source, /createSession/, "la route doit ouvrir une session");
+  // POST et non GET : les filtres anti-hameçonnage ouvrent les liens des
+  // messages avant leur destinataire et brûleraient le jeton à usage unique.
+  assert.match(source, /export async function POST/, "la consommation doit se faire en POST");
+  assert.doesNotMatch(source, /export async function GET/, "un GET brûlerait le jeton");
 });
