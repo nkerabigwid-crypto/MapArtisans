@@ -280,6 +280,40 @@ describe("Identite de l'emetteur sur la facture", () => {
       "le bloc client doit partir du plus bas des deux");
   });
 
+  test("le logo manquant ne fait pas echouer la facture", async () => {
+    /*
+     * Une facture est une piece comptable obligatoire : elle doit sortir meme
+     * sans son logo. Le repli sur le nom compose est le comportement d'avant,
+     * pas une erreur — et il vaut mieux une facture sans image qu'un client
+     * qui a paye sans rien recevoir.
+     */
+    const pdf = await inv.genererFacturePdf({
+      numero: "FA-2026-0099",
+      emiseLe: new Date("2026-09-07T10:00:00Z"),
+      payeeLe: new Date("2026-09-07T10:00:00Z"),
+      emetteur: {
+        raisonSociale: "Valtransfer Nkerabigwi",
+        marque: "MapArtisans",
+        adresse: ["Rue du Scex 49B", "1950 Sion"],
+        ide: "CHE-307.804.188",
+        email: "contact@mapartisans.com",
+      },
+      client: { raisonSociale: "Dupont Plomberie", adresse: [], email: "d@exemple.test" },
+      designation: "Abonnement Basique — 1 mois",
+      montantCentimes: 4900,
+      regime: { assujetti: false },
+    });
+    assert.ok(pdf.length > 800, "le PDF doit sortir quoi qu'il arrive");
+  });
+
+  test("le logo n'est jamais une condition de sortie", () => {
+    // La lecture du fichier est enveloppee : ni un chemin absent, ni une image
+    // illisible ne doivent interrompre l'emission.
+    const source = fs.readFileSync(new URL("../invoice.ts", import.meta.url), "utf8");
+    assert.ok(source.includes("existsSync(chemin)"), "l'existence du fichier est verifiee");
+    assert.ok(/try \{[\s\S]*doc\.image/.test(source), "la pose du logo est enveloppee");
+  });
+
   test("l'IDE n'est jamais presente comme un numero de TVA", () => {
     /*
      * Les deux se ressemblent — CHE-xxx.xxx.xxx. Confondre les libelles

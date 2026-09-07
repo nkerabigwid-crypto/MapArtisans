@@ -1,5 +1,7 @@
 // PAS de `import "server-only"` : même raison que les autres modules de
 // lib/server/ — voir la note détaillée dans ai/openai.ts.
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import PDFDocument from "pdfkit";
 import { calculerTotaux, formatCHF, type BaseDePrix, type RegimeTva } from "./vat";
 
@@ -23,6 +25,14 @@ import { calculerTotaux, formatCHF, type BaseDePrix, type RegimeTva } from "./va
  * d'assujettissement, IDE, adresse légale). Une erreur de notre côté devient
  * une facture non conforme émise sous SON nom.
  */
+
+/**
+ * Largeur du logo en points. 150 pt sur une page A4 de 595 pt : assez pour
+ * être lu, assez discret pour qu'un document comptable reste un document.
+ * La hauteur suit le rapport 1100 × 320 du fichier.
+ */
+const LARGEUR_LOGO = 150;
+const HAUTEUR_LOGO = Math.round((LARGEUR_LOGO * 320) / 1100);
 
 export interface PartieFacture {
   raisonSociale: string;
@@ -95,16 +105,49 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     const largeur = doc.page.width - MARGE * 2;
     const droite = doc.page.width - MARGE;
 
-    // --- En-tête : émetteur à gauche, numéro et dates à droite.
-    // La marque en tete quand elle existe ; la raison sociale juste dessous,
-    // en corps de texte mais bien lisible. Voir PartieFacture.marque.
-    doc
-      .fontSize(18)
-      .fillColor("#123f6d")
-      .text(donnees.emetteur.marque ?? donnees.emetteur.raisonSociale, MARGE, MARGE);
+    /*
+     * --- En-tête : émetteur à gauche, numéro et dates à droite.
+     *
+     * LE LOGO PLUTÔT QUE LE NOM COMPOSÉ.
+     *
+     * PDFKit n'embarque que les fontes de base : « MapArtisans » sortait donc
+     * en Helvetica, une police que le produit n'emploie nulle part ailleurs.
+     * L'image porte la vraie composition — Barlow Condensed et le repère —
+     * celle que le client a vue sur le site et dans ses courriers.
+     *
+     * SI LE FICHIER MANQUE, ON COMPOSE LE NOM.
+     *
+     * Une facture est une pièce comptable obligatoire : elle doit sortir même
+     * sans son logo. Le repli est le comportement d'avant, pas une erreur.
+     */
+    let basLogo = MARGE;
+    let logoPose = false;
+    if (donnees.emetteur.marque) {
+      try {
+        const chemin = join(process.cwd(), "public", "logo-facture.png");
+        if (existsSync(chemin)) {
+          doc.image(chemin, MARGE, MARGE, { width: LARGEUR_LOGO });
+          basLogo = MARGE + HAUTEUR_LOGO;
+          logoPose = true;
+        }
+      } catch {
+        // Fichier illisible ou image invalide : on retombe sur le texte.
+      }
+    }
+
+    if (!logoPose) {
+      doc
+        .fontSize(18)
+        .fillColor("#123f6d")
+        .text(donnees.emetteur.marque ?? donnees.emetteur.raisonSociale, MARGE, MARGE);
+      basLogo = doc.y;
+    }
     doc.fontSize(9).fillColor("#444444");
     if (donnees.emetteur.marque) {
-      doc.fontSize(10).fillColor("#111111").text(donnees.emetteur.raisonSociale);
+      doc
+        .fontSize(10)
+        .fillColor("#111111")
+        .text(donnees.emetteur.raisonSociale, MARGE, basLogo + 4);
       doc.fontSize(9).fillColor("#444444");
     }
     for (const l of donnees.emetteur.adresse) doc.text(l);
