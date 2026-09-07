@@ -21,6 +21,28 @@ export default function PostsView({ posts, onRegenerate }: PostsViewProps) {
   );
   const next = sorted.find((p) => p.status === "scheduled");
 
+  /*
+   * Sans cette sortie, une carte vide s'affichait : un rectangle blanc sous
+   * « Ce mois-ci », sans un mot. L'artisan ne pouvait pas distinguer « rien
+   * n'est encore prévu » de « quelque chose est cassé ».
+   *
+   * Le texte dit ce qui manque ET pourquoi. Tant que la fiche Google n'est
+   * pas rattachée, aucune publication ne peut être proposée : le mentionner
+   * évite d'attendre devant un écran qui ne changera pas.
+   */
+  if (sorted.length === 0) {
+    return (
+      <section className="view" aria-label="Posts">
+        <div className="section-label">Ce mois-ci</div>
+        <p className="vue-vide">
+          Aucune publication pour l&apos;instant. Dès que votre fiche Google sera
+          rattachée, MapArtisans vous en proposera, prêtes à relire avant
+          publication.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="view" aria-label="Posts">
       <div className="section-label">Ce mois-ci</div>

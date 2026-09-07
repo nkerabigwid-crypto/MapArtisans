@@ -2278,6 +2278,18 @@ a:has(button) { color: inherit; text-decoration: none; }
   color: var(--ink-soft);
 }
 
+/* Etat vide d'une vue du tableau de bord.
+   Meme traitement que .agenda-vide, dont elle reprend la mesure : deux ecrans
+   qui disent « il n'y a rien ici » ne doivent pas le dire de deux facons. */
+.vue-vide {
+  margin: 0;
+  padding: 0 var(--s-4);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+
 .agenda-liste {
   list-style: none;
   margin: 0;
