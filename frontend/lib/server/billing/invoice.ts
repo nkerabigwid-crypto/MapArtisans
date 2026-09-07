@@ -116,6 +116,16 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
      */
     if (donnees.regime.assujetti) doc.text(`N° TVA : ${donnees.regime.numeroIde}`);
     else if (donnees.emetteur.ide) doc.text(`IDE : ${donnees.emetteur.ide}`);
+    /*
+     * Bas de la colonne GAUCHE, retenu avant d'écrire la colonne droite.
+     *
+     * `doc.y` suit le dernier texte écrit, quelle que soit la colonne. Après
+     * l'en-tête de droite — trois lignes — il pointait donc plus haut que la
+     * fin du bloc émetteur, et le bloc client venait se superposer à l'IDE.
+     * Le défaut est apparu le jour où la marque et l'IDE ont allongé la
+     * colonne gauche de deux lignes.
+     */
+    const basGauche = doc.y;
 
     doc.fontSize(9).fillColor("#444444");
     doc.text(`Facture ${donnees.numero}`, MARGE, MARGE, { width: largeur, align: "right" });
@@ -125,14 +135,20 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
       { width: largeur, align: "right" },
     );
 
-    // --- Client.
-    doc.moveDown(3);
-    const yClient = doc.y;
+    // --- Client. Il commence sous la PLUS BASSE des deux colonnes.
+    const yClient = Math.max(basGauche, doc.y) + 34;
     doc.fontSize(8).fillColor("#888888").text("FACTURÉ À", MARGE, yClient);
     doc.fontSize(10).fillColor("#111111").text(donnees.client.raisonSociale);
     doc.fontSize(9).fillColor("#444444");
     for (const l of donnees.client.adresse) doc.text(l);
-    if (donnees.client.email) doc.text(donnees.client.email);
+    /*
+     * L'adresse ne se répète pas sous le nom quand les deux sont identiques.
+     * Faute de nom d'entreprise, `raisonSociale` valait l'adresse e-mail, et
+     * la facture l'imprimait deux fois de suite.
+     */
+    if (donnees.client.email && donnees.client.email !== donnees.client.raisonSociale) {
+      doc.text(donnees.client.email);
+    }
 
     // --- Ligne de prestation.
     doc.moveDown(2.5);

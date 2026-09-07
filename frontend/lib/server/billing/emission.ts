@@ -52,6 +52,12 @@ export async function emettreFacture(
     repo: Repo;
     userId: string;
     email: string;
+    /*
+     * Raison sociale du CLIENT. Absente, la facture retombe sur son adresse
+     * e-mail : conforme, mais un document comptable identifie une entreprise,
+     * pas une boîte mail. C'est ce nom que le comptable de l'artisan cherche.
+     */
+    raisonSocialeClient?: string | null;
     planId: PlanId | null;
     stripeSessionId: string | null;
   },
@@ -76,7 +82,7 @@ export async function emettreFacture(
 
     const facture = await input.repo.creerFacture({
       userId: input.userId,
-      clientNom: input.email,
+      clientNom: input.raisonSocialeClient?.trim() || input.email,
       clientEmail: input.email,
       designation: designationPour(input.planId),
       montantCentimes,
@@ -93,7 +99,11 @@ export async function emettreFacture(
       // Le client n'a pas encore d'adresse postale chez nous : l'e-mail
       // l'identifie sans ambiguïté, et une adresse inventée serait pire
       // qu'absente sur une pièce comptable.
-      client: { raisonSociale: input.email, adresse: [], email: input.email },
+      client: {
+        raisonSociale: input.raisonSocialeClient?.trim() || input.email,
+        adresse: [],
+        email: input.email,
+      },
       designation: facture.designation,
       montantCentimes: facture.montantCentimes,
       regime,

@@ -253,6 +253,33 @@ describe("Identite de l'emetteur sur la facture", () => {
     assert.ok(texte.length > 800, "le PDF doit avoir ete produit");
   });
 
+  test("le bloc client ne repete pas la meme ligne deux fois", () => {
+    /*
+     * Constate sur une vraie facture : « nkerabigwid@gmail.com » imprime deux
+     * fois de suite. Faute de nom d'entreprise, `raisonSociale` valait
+     * l'adresse e-mail, et le bloc client imprimait les deux champs.
+     */
+    const source = fs.readFileSync(new URL("../invoice.ts", import.meta.url), "utf8");
+    assert.ok(
+      source.includes("donnees.client.email !== donnees.client.raisonSociale"),
+      "l'e-mail ne doit pas s'imprimer quand il est deja le nom du client",
+    );
+  });
+
+  test("le bloc client commence sous la plus basse des deux colonnes", () => {
+    /*
+     * `doc.y` suit le dernier texte ecrit, quelle que soit la colonne. Apres
+     * l'en-tete de droite il pointait plus haut que la fin du bloc emetteur,
+     * et « FACTURE A » venait se superposer a la ligne IDE. Le defaut est
+     * apparu quand la marque et l'IDE ont allonge la colonne gauche.
+     */
+    const source = fs.readFileSync(new URL("../invoice.ts", import.meta.url), "utf8");
+    assert.ok(source.includes("const basGauche = doc.y"),
+      "le bas de la colonne gauche doit etre retenu");
+    assert.ok(source.includes("Math.max(basGauche, doc.y)"),
+      "le bloc client doit partir du plus bas des deux");
+  });
+
   test("l'IDE n'est jamais presente comme un numero de TVA", () => {
     /*
      * Les deux se ressemblent — CHE-xxx.xxx.xxx. Confondre les libelles

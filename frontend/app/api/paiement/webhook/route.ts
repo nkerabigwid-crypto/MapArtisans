@@ -124,10 +124,17 @@ async function traiter(evenement: Stripe.Event, repo: ReturnType<typeof getRepo>
          * `session.id` sert de clé d'idempotence en base : un webhook rejoué
          * retrouve la facture existante au lieu d'en émettre une seconde.
          */
+        /*
+         * Le nom d'entreprise vient de la base, pas de Stripe : c'est celui que
+         * l'artisan a saisi à l'inscription, et celui qu'il reconnaîtra sur sa
+         * pièce comptable.
+         */
+        const entrepriseClient = await repo.findCompanyForUser(userId);
         await emettreFacture({
           repo,
           userId,
           email: utilisateur.email,
+          raisonSocialeClient: entrepriseClient?.companyName ?? null,
           planId: (session.metadata?.planId as PlanId | undefined) ?? null,
           stripeSessionId: session.id,
         });
