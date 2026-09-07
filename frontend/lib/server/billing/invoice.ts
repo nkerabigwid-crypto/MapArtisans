@@ -117,6 +117,15 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     if (donnees.regime.assujetti) doc.text(`N° TVA : ${donnees.regime.numeroIde}`);
     else if (donnees.emetteur.ide) doc.text(`IDE : ${donnees.emetteur.ide}`);
     /*
+     * L'adresse de contact de l'EMETTEUR. Elle etait configuree depuis
+     * l'origine et n'a jamais ete imprimee : la facture ne disait donc pas ou
+     * ecrire pour la contester, demander un duplicata ou poser une question.
+     *
+     * C'est aussi la seule ligne qui montre au client une adresse au nom du
+     * domaine. Sans elle, le seul e-mail visible etait le sien.
+     */
+    if (donnees.emetteur.email) doc.text(donnees.emetteur.email);
+    /*
      * Bas de la colonne GAUCHE, retenu avant d'écrire la colonne droite.
      *
      * `doc.y` suit le dernier texte écrit, quelle que soit la colonne. Après
