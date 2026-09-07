@@ -95,6 +95,9 @@ services:
       # l'assujettissement, les factures auraient continué d'afficher « non
       # assujetti à la TVA ». Une erreur légale, invisible jusqu'au contrôle.
       FACTURATION_TVA: ${FACTURATION_TVA:-}
+      # Bande de coordonnées en pied de facture : où payer, où appeler.
+      FACTURATION_IBAN: ${FACTURATION_IBAN:-}
+      FACTURATION_TELEPHONE: ${FACTURATION_TELEPHONE:-}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

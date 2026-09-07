@@ -80,5 +80,12 @@ export function emetteurCourant(): PartieFacture {
     // ce qui reste conforme, mais laisse le client devant un nom inconnu.
     marque: process.env.FACTURATION_MARQUE?.trim() || undefined,
     ide: process.env.FACTURATION_IDE?.trim() || undefined,
+    /*
+     * Coordonnées de la bande de pied de page. Optionnelles toutes les deux :
+     * une facture doit sortir même mal configurée — elle est obligatoire, pas
+     * conditionnelle. L'IBAN est stocké groupé par quatre, comme il se lit.
+     */
+    iban: process.env.FACTURATION_IBAN?.trim() || undefined,
+    telephone: process.env.FACTURATION_TELEPHONE?.trim() || undefined,
   };
 }

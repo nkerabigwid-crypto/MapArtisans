@@ -63,6 +63,17 @@ export interface PartieFacture {
   marque?: string;
   /** IDE de l'emetteur, imprime meme hors assujettissement a la TVA. */
   ide?: string;
+  /**
+   * IBAN de l'emetteur, imprime dans la bande de pied de page.
+   *
+   * Il n'est PAS un ordre de paiement : nos factures sortent apres encaissement
+   * par carte. Il repond a la question du comptable — sur quel compte cet
+   * abonnement a-t-il ete regle — et sert le jour ou une facture partirait
+   * avant paiement.
+   */
+  iban?: string;
+  /** Numero de telephone de l'emetteur. */
+  telephone?: string;
 }
 
 export interface DonneesFacture {
@@ -163,23 +174,6 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     }
     for (const l of donnees.emetteur.adresse) doc.text(l);
     /*
-     * L'IDE identifie l'entreprise au registre ; le numero de TVA atteste d'un
-     * assujettissement. Les deux se ressemblent — CHE-xxx.xxx.xxx — et les
-     * confondre ferait croire a une TVA due que nous ne facturons pas. D'ou
-     * deux libelles distincts, et jamais les deux a la fois.
-     */
-    if (donnees.regime.assujetti) doc.text(`N° TVA : ${donnees.regime.numeroIde}`);
-    else if (donnees.emetteur.ide) doc.text(`IDE : ${donnees.emetteur.ide}`);
-    /*
-     * L'adresse de contact de l'EMETTEUR. Elle etait configuree depuis
-     * l'origine et n'a jamais ete imprimee : la facture ne disait donc pas ou
-     * ecrire pour la contester, demander un duplicata ou poser une question.
-     *
-     * C'est aussi la seule ligne qui montre au client une adresse au nom du
-     * domaine. Sans elle, le seul e-mail visible etait le sien.
-     */
-    if (donnees.emetteur.email) doc.text(donnees.emetteur.email);
-    /*
      * Bas de la colonne GAUCHE, retenu avant d'écrire la colonne droite.
      *
      * `doc.y` suit le dernier texte écrit, quelle que soit la colonne. Après
@@ -255,16 +249,69 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
       ligne("Total CHF", formatCHF(totaux.ttcCentimes), true);
     }
 
-    // --- Pied de page.
+    /*
+     * --- Pied de page : la bande de coordonnees.
+     *
+     * POURQUOI L'IDE ET L'E-MAIL NE SONT PLUS EN TETE
+     *
+     * Ils y etaient. Les repeter en bas ferait lire deux fois la meme chose sur
+     * un document d'une seule page. Le partage est donc net : l'en-tete IDENTIFIE
+     * l'emetteur — logo, raison sociale, adresse, ce que le CO exige ; le pied
+     * rassemble ce dont le lecteur SE SERT — ou ecrire, ou appeler, ou payer.
+     *
+     * La bande sort meme incomplete : chaque element est optionnel, et une
+     * facture ne doit jamais dependre d'une coordonnee pour etre emise.
+     */
+    const coordonnees: string[] = [];
+    /*
+     * L'IDE identifie l'entreprise au registre ; le numero de TVA atteste d'un
+     * assujettissement. Les deux se ressemblent — CHE-xxx.xxx.xxx — et les
+     * confondre ferait croire a une TVA due que nous ne facturons pas. D'ou
+     * deux libelles distincts, et jamais les deux a la fois.
+     */
+    if (donnees.regime.assujetti) coordonnees.push(`N° TVA : ${donnees.regime.numeroIde}`);
+    else if (donnees.emetteur.ide) coordonnees.push(`IDE : ${donnees.emetteur.ide}`);
+    /*
+     * L'adresse de contact de l'EMETTEUR : sans elle, la facture ne dit pas ou
+     * ecrire pour la contester, demander un duplicata ou poser une question.
+     * C'est aussi la seule ligne qui montre au client une adresse au nom du
+     * domaine — sinon le seul e-mail visible serait le sien.
+     */
+    if (donnees.emetteur.email) coordonnees.push(donnees.emetteur.email);
+    if (donnees.emetteur.telephone) coordonnees.push(donnees.emetteur.telephone);
+
+    const lignesPied: string[] = [];
+    if (coordonnees.length > 0) lignesPied.push(coordonnees.join("   ·   "));
+    if (donnees.emetteur.iban) lignesPied.push(`IBAN ${donnees.emetteur.iban}`);
+
+    const HAUTEUR_LIGNE_PIED = 11;
+    /*
+     * Ancre au BAS de la page, pas a la suite des totaux : la bande doit tomber
+     * au meme endroit sur toutes les factures, qu'elles portent une ligne de
+     * TVA ou non. On remonte du bord d'autant de lignes qu'on en a a poser, en
+     * gardant 4 pt de garde sous la derniere pour que PDFKit ne juge pas le
+     * texte deborde — il ouvrirait une seconde page vide.
+     */
+    let yPied = doc.page.height - MARGE - 4 - lignesPied.length * HAUTEUR_LIGNE_PIED;
+
     doc.fontSize(8).fillColor("#888888");
     doc.text(
       donnees.payeeLe
         ? "Facture acquittée — merci pour votre confiance."
         : "Merci de régler cette facture à réception.",
       MARGE,
-      doc.page.height - MARGE - 14,
+      yPied - 26,
       { width: largeur, align: "center" },
     );
+
+    if (lignesPied.length > 0) {
+      doc.moveTo(MARGE, yPied - 10).lineTo(droite, yPied - 10).strokeColor("#dddddd").stroke();
+      doc.fontSize(8).fillColor("#888888");
+      for (const l of lignesPied) {
+        doc.text(l, MARGE, yPied, { width: largeur, align: "center" });
+        yPied += HAUTEUR_LIGNE_PIED;
+      }
+    }
 
     doc.end();
   });

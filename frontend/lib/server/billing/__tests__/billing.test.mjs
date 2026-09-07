@@ -333,6 +333,87 @@ describe("Identite de l'emetteur sur la facture", () => {
   });
 });
 
+describe("Bande de coordonnees en pied de facture", () => {
+  const emetteurComplet = {
+    raisonSociale: "Valtransfer Nkerabigwi",
+    marque: "MapArtisans",
+    adresse: ["Rue du Scex 49B", "1950 Sion", "Suisse"],
+    ide: "CHE-307.804.188",
+    email: "contact@mapartisans.com",
+    iban: "CH58 0076 5001 0402 7170 7",
+    telephone: "078 265 93 40",
+  };
+
+  test("aucune coordonnee n'est imprimee deux fois", () => {
+    /*
+     * L'IDE et l'e-mail etaient en tete. Les descendre en pied SANS les
+     * retirer d'en haut les ferait lire deux fois sur un document d'une seule
+     * page — exactement le defaut qu'on venait de corriger sur l'e-mail du
+     * client. Le compte des occurrences est le seul controle qui tienne : une
+     * relecture visuelle ne dirait rien tant que la mise en page reste
+     * plausible.
+     */
+    const source = fs.readFileSync(new URL("../invoice.ts", import.meta.url), "utf8");
+    const fois = (motif) => source.split(motif).length - 1;
+    assert.equal(fois("donnees.emetteur.ide}`"), 1, "l'IDE ne s'imprime qu'a un seul endroit");
+    assert.equal(fois("doc.text(donnees.emetteur.email)"), 0,
+      "l'e-mail de l'emetteur ne doit plus etre ecrit dans l'en-tete");
+    assert.ok(source.includes("coordonnees.push(donnees.emetteur.email)"),
+      "il appartient desormais a la bande de pied de page");
+  });
+
+  test("l'IBAN et le telephone descendent de la configuration jusqu'au PDF", async () => {
+    const config = await import("../config.ts");
+    process.env.FACTURATION_RAISON_SOCIALE = "Emetteur SA";
+    process.env.FACTURATION_ADRESSE = "Rue de Test 1 | 1000 Lausanne";
+    process.env.FACTURATION_IBAN = "CH58 0076 5001 0402 7170 7";
+    process.env.FACTURATION_TELEPHONE = "078 265 93 40";
+    const e = config.emetteurCourant();
+    assert.equal(e.iban, "CH58 0076 5001 0402 7170 7");
+    assert.equal(e.telephone, "078 265 93 40");
+    delete process.env.FACTURATION_IBAN;
+    delete process.env.FACTURATION_TELEPHONE;
+    delete process.env.FACTURATION_RAISON_SOCIALE;
+    delete process.env.FACTURATION_ADRESSE;
+  });
+
+  test("la bande ne pousse pas la facture sur une seconde page", async () => {
+    /*
+     * Le pied est ancre au bas de la page, en coordonnees absolues. Une ligne
+     * de trop, ou une garde insuffisante sous la derniere, et PDFKit juge le
+     * texte deborde : il ouvre une page vide que le client recoit.
+     */
+    const pdf = await inv.genererFacturePdf({
+      numero: "FA-2026-0100",
+      emiseLe: new Date("2026-09-07T10:00:00Z"),
+      payeeLe: new Date("2026-09-07T10:00:00Z"),
+      emetteur: emetteurComplet,
+      client: { raisonSociale: "Dupont Plomberie", adresse: [], email: "d@exemple.test" },
+      designation: "Abonnement Professionnel — 1 mois",
+      montantCentimes: 14900,
+      regime: { assujetti: false },
+    });
+    const pages = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+    assert.equal(pages, 1, `la facture doit tenir sur une page, ${pages} trouvees`);
+  });
+
+  test("une coordonnee absente ne bloque pas l'emission", async () => {
+    // Chaque element de la bande est optionnel : une facture est obligatoire,
+    // pas conditionnelle a la completude de sa configuration.
+    const pdf = await inv.genererFacturePdf({
+      numero: "FA-2026-0101",
+      emiseLe: new Date("2026-09-07T10:00:00Z"),
+      payeeLe: null,
+      emetteur: { raisonSociale: "Emetteur SA", adresse: ["Rue 1", "1000 Ville"] },
+      client: { raisonSociale: "Client SA", adresse: [] },
+      designation: "Abonnement Basique — 1 mois",
+      montantCentimes: 4900,
+      regime: { assujetti: false },
+    });
+    assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
+  });
+});
+
 describe("Émission après paiement", () => {
   /*
    * Le générateur PDF, la numérotation et la configuration de l'émetteur étaient
