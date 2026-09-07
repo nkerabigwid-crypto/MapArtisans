@@ -85,8 +85,16 @@ services:
       FACTURATION_RAISON_SOCIALE: ${FACTURATION_RAISON_SOCIALE}
       FACTURATION_ADRESSE: ${FACTURATION_ADRESSE}
       FACTURATION_EMAIL: ${FACTURATION_EMAIL}
-      # Laissée vide tant que le chiffre d'affaires reste sous 100 000 CHF.
+      # Nom commercial imprimé en tête de facture, au-dessus de la raison
+      # sociale. Absent, la facture ne porte que « Valtransfer Nkerabigwi » —
+      # un nom que le client n'a jamais vu.
+      FACTURATION_MARQUE: ${FACTURATION_MARQUE:-}
       FACTURATION_IDE: ${FACTURATION_IDE:-}
+      # Laissée vide tant que le chiffre d'affaires reste sous 100 000 CHF.
+      # Elle manquait ici alors que le code la lit : le jour de
+      # l'assujettissement, les factures auraient continué d'afficher « non
+      # assujetti à la TVA ». Une erreur légale, invisible jusqu'au contrôle.
+      FACTURATION_TVA: ${FACTURATION_TVA:-}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

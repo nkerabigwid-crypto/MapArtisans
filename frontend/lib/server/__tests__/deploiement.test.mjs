@@ -83,15 +83,54 @@ function variablesDuService(service) {
   return fournies;
 }
 
+/**
+ * Points d'entrée du service `app`.
+ *
+ * ANGLE MORT COMBLÉ.
+ *
+ * Ce fichier ne couvrait que les trois workers. Le service `app` en était
+ * absent — or c'est LUI qui reçoit le webhook Stripe et émet les factures.
+ *
+ * Constaté en production : FACTURATION_MARQUE était dans .env.production mais
+ * pas dans docker-compose.yml. Les factures sont donc parties sans le nom
+ * commercial, sous la seule raison sociale — un nom que le client n'a jamais
+ * vu. FACTURATION_TVA manquait de même : le jour de l'assujettissement, les
+ * factures auraient continué d'annoncer « non assujetti ».
+ *
+ * Next n'a pas de point d'entrée unique : chaque route et chaque page en est
+ * un. On les énumère donc toutes.
+ */
+function entreesDuServiceApp() {
+  const racine = fileURLToPath(new URL("../../../app/", import.meta.url));
+  const entrees = [];
+  const parcourir = (dossier) => {
+    for (const e of readdirSync(dossier, { withFileTypes: true })) {
+      const chemin = join(dossier, e.name);
+      if (e.isDirectory()) parcourir(chemin);
+      else if (/^(route|page|layout)\.tsx?$/.test(e.name)) {
+        entrees.push(chemin.slice(chemin.indexOf("/app/") + 1));
+      }
+    }
+  };
+  parcourir(racine);
+  return entrees;
+}
+
 const SERVICES = [
   { service: "worker-avis", entree: "lib/server/queue/reviewWorker.ts" },
   { service: "worker-rapports", entree: "lib/server/queue/reportWorker.ts" },
   { service: "planificateur", entree: "workers/planificateur.ts" },
+  { service: "app", entrees: entreesDuServiceApp() },
 ];
 
-for (const { service, entree } of SERVICES) {
+for (const { service, entree, entrees } of SERVICES) {
   test(`${service} reçoit toutes les variables que son code lit`, () => {
-    const lues = variablesLues(entree);
+    const lues = entrees
+      ? entrees.reduce((acc, e) => {
+          for (const v of variablesLues(e)) acc.add(v);
+          return acc;
+        }, new Set())
+      : variablesLues(entree);
     assert.ok(lues.size > 0, `aucune variable trouvée depuis ${entree}`);
 
     const fournies = variablesDuService(service);
@@ -102,7 +141,13 @@ for (const { service, entree } of SERVICES) {
         (v) =>
           !fournies.has(v) &&
           !FOURNIES_PAR_LA_PLATEFORME.has(v) &&
-          !VOLONTAIREMENT_ABSENTES.has(v),
+          !VOLONTAIREMENT_ABSENTES.has(v) &&
+          /*
+           * Les NEXT_PUBLIC_ sont figées dans le bundle A LA CONSTRUCTION, pas
+           * lues a l'execution : les passer au conteneur ne changerait rien.
+           * Celle du site a de surcroit une valeur de repli dans lib/site.ts.
+           */
+          !v.startsWith("NEXT_PUBLIC_"),
       )
       .sort();
 

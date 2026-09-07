@@ -14,6 +14,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /*
+   * Demande d'un lien de connexion.
+   *
+   * Volontairement sur la MEME page, sous le bouton, et non derrière un
+   * « mot de passe oublié ? » : l'artisan à qui on a promis de ne rien
+   * retenir ne se pense pas comme quelqu'un qui a oublié.
+   */
+  const [lienEnvoye, setLienEnvoye] = useState<string | null>(null);
+  const [lienEnCours, setLienEnCours] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,6 +93,44 @@ export default function LoginPage() {
           <button type="submit" className="btn ob-next" disabled={pending}>
             {pending ? "Connexion…" : "Se connecter"}
           </button>
+
+          {/* Le lien de connexion, sans mot de passe — ce que la page d'accueil
+              promet. L'adresse déjà saisie est réutilisée : redemander ce
+              qu'on vient de taper est le meilleur moyen de faire abandonner. */}
+          {lienEnvoye ? (
+            <p className="auth-lien-envoye">{lienEnvoye}</p>
+          ) : (
+            <button
+              type="button"
+              className="auth-lien"
+              disabled={lienEnCours || !email}
+              onClick={async () => {
+                setLienEnCours(true);
+                setError(null);
+                try {
+                  const r = await fetch("/api/auth/lien/demander", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email }),
+                  });
+                  const d = (await r.json().catch(() => ({}))) as {
+                    message?: string;
+                    error?: string;
+                  };
+                  if (!r.ok) setError(d.error ?? "Envoi impossible. Réessayez.");
+                  else setLienEnvoye(d.message ?? "Lien envoyé.");
+                } catch {
+                  setError("Envoi impossible. Vérifiez votre réseau.");
+                } finally {
+                  setLienEnCours(false);
+                }
+              }}
+            >
+              {lienEnCours
+                ? "Envoi…"
+                : "Recevoir un lien de connexion, sans mot de passe"}
+            </button>
+          )}
 
           {/* Sans cette ligne, un visiteur sans compte est dans une impasse —
               y compris celui que le middleware vient de rediriger ici. */}

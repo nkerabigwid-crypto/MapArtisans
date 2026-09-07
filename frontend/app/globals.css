@@ -1874,6 +1874,38 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .auth-bascule a { color: var(--accent); font-weight: 600; }
 
+/* Demande d'un lien de connexion.
+   Presente comme une action secondaire, sans fond : le chemin principal reste
+   le mot de passe pour qui l'a sous la main. Mais elle est LISIBLE, pas
+   cachee derriere un « mot de passe oublie ? » en petits caracteres — c'est
+   la promesse de la page d'accueil, pas un rattrapage d'echec. */
+.auth-lien {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--s-3);
+  padding: var(--s-2);
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.auth-lien:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+
+.auth-lien-envoye {
+  margin: var(--s-3) 0 0;
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: var(--status-good-bg);
+  color: var(--status-good);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
 /* Retour a l'accueil depuis le tableau de bord. Le symbole seul, sans le nom :
    la barre porte deja le nom de l'entreprise de l'artisan, et deux noms cote
    a cote prêteraient a confusion — surtout en marque blanche. */
