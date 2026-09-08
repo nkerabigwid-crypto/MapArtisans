@@ -114,9 +114,15 @@
      bien le blanc (7,11) mais tombe a 2,69 sur la page sombre, ou il
      disparaitrait. Le theme sombre survole donc vers le CLAIR (#a78bfa,
      encre #1a1030 a 6,65) — voir les blocs sombres plus bas. */
-  /* Hauteur de l'en-tete colle. Mesuree sur la page en ligne : 74 px.
+  /* Hauteur de l'en-tete colle. La barre est devenue une PILULE flottante :
+     a la hauteur du contenu (60 px) s'ajoutent les deux marges qui la
+     detachent du bord de l'ecran. 88 px, donc, et non plus 74.
      Elle sert au decalage des ancres — voir la regle [id] plus bas. */
-  --entete-hauteur: 74px;
+  --entete-hauteur: 88px;
+  /* L'ecart entre le haut de l'ecran et la pilule. Il est le meme en haut de
+     page et une fois la barre collee : c'est ce qui fait qu'elle flotte au
+     lieu de se coller. */
+  --nav-marge: 14px;
 
   --bouton: #7c3aed;
   --bouton-ink: #ffffff;
@@ -179,9 +185,12 @@
     --cta-sombre-hover: #ffffff;
     --coche: #4ade80;
     --plan-vedette: #241a3d;
-    /* Bleu-gris profond : distinct du fond de page (#121412) sans virer au
-       clair comme le ferait --accent en mode sombre. */
-    --entete-fond: #1b1e1b;
+    /* Un noir VIOLACÉ, accordé à --paper-raised (#191822), et non plus le
+       #1b1e1b verdâtre d'avant. Tant que l'en-tête était une bande pleine
+       largeur bordée d'un filet, sa teinte passait inaperçue ; devenue une
+       pilule flottante avec ses quatre bords visibles sur la page, elle se
+       lisait comme une pièce rapportée d'une autre palette. */
+    --entete-fond: #1c1a26;
     --pdp-fond: #241d3a;
     --pdp-texte: #e8eae5;
     --pdp-texte-doux: rgba(232, 234, 229, 0.68);
@@ -218,6 +227,7 @@
   --cta-sombre-hover: #ffffff;
   --coche: #4ade80;
   --plan-vedette: #241a3d;
+  --entete-fond: #1c1a26;
   --status-good: #7cbf9a;
   --status-good-bg: #17271f;
   --status-warn: #d8b558;
@@ -1294,28 +1304,42 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
    dans une colonne de 460 px : sans cette séparation, l'en-tête héritait de
    cette largeur et son contenu débordait du fond blanc. */
 .lp-nav {
+  /* `top: 0` et non `top: var(--nav-marge)` : la marge est DANS le padding de
+     la barre, pas dans son decalage. Les mettre tous les deux ferait tomber la
+     pilule a 28 px du bord une fois collee, contre 14 px en haut de page — un
+     saut visible au premier coup de molette. */
   position: sticky; top: 0; z-index: 40;
   /* `space-between` seul ne garantit RIEN quand le conteneur est étroit : sur
      les pages d'inscription et de connexion, dont la colonne est bien plus
      resserrée que la page d'accueil, les trois blocs se retrouvaient collés —
      « MapArtisansFonctionnalités TarifsConnexion ». Le gap est un minimum,
      l'espacement réparti vient en plus. */
-  padding: 0.9rem 1.5rem;
-  /* Blanc plutôt que le crème du fond : la barre se détache sans qu'on ait
-     besoin d'une ombre lourde. Le voile translucide reste, pour que le contenu
-     qui défile dessous se devine. */
-  background: color-mix(in srgb, var(--entete-fond) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  /* La barre n'est plus qu'une gouttiere transparente : le padding creuse la
+     marge, et c'est .lp-nav-inner qui porte le fond blanc, le rayon et
+     l'ombre. La bande pleine largeur a disparu avec sa bordure basse — le
+     contenu de la page defile desormais VISIBLEMENT derriere la pilule et
+     au-dessus d'elle, ce qui donne la profondeur qu'une bande opaque
+     supprimait. */
+  padding: var(--nav-marge) 1rem;
+  background: none;
+  border-bottom: none;
+  /* Pas de fond, donc rien a flouter ici : le flou est sur la pilule. */
+  pointer-events: none;
 }
+/* Le conteneur ne capte plus le pointeur (voir ci-dessus), sinon sa gouttiere
+   transparente intercepterait les clics sur le contenu qui passe dessous. La
+   pilule, elle, le reprend. */
+.lp-nav > * { pointer-events: auto; }
 .lp-logo {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.2rem; letter-spacing: -0.01em;
 }
 .lp-nav-cta {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 600; font-size: 0.9rem;
-  padding: 0.55rem 1.1rem; min-height: 44px;
+  /* Plus gras et plus large qu'avant : dans une pilule, l'action est le seul
+     aplat colore et c'est lui qui doit attraper l'oeil, pas le logo. */
+  font-weight: 700; font-size: 0.95rem;
+  padding: 0.6rem 1.35rem; min-height: 44px;
   display: inline-flex; align-items: center;
   border-radius: var(--r-full); background: var(--bouton); color: var(--bouton-ink);
   text-decoration: none;
@@ -1364,9 +1388,15 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   min-height: 52px; padding: 0 1.5rem;
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: 1rem;
-  border: 1px solid var(--line-strong); border-radius: 10px;
+  /* En pilule, comme tous les autres boutons de la page. Un rayon de 10 px a
+     cote d'un bouton entierement rond faisait lire les deux comme deux
+     composants differents, alors qu'ils sont cote a cote et de meme rang. */
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong); border-radius: var(--r-full);
   color: var(--ink); text-decoration: none;
+  box-shadow: var(--e-1);
 }
+.lp-btn-ghost:hover { background: var(--card); border-color: var(--ink-faint); }
 /* Cette ligne lève la dernière hésitation avant le clic : « est-ce qu'on va me
    demander ma carte ? ». En 0.68rem et en gris pâle, elle se devinait plutôt
    qu'elle ne se lisait. Agrandie, assombrie, et les deux promesses en gras. */
@@ -1517,7 +1547,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
 .lp-stat {
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 14px; padding: 1.4rem 1.5rem;
+  border-radius: var(--r-lg); padding: 1.4rem 1.5rem;
 }
 .lp-stat-n {
   font-family: var(--font-barlow-condensed), sans-serif; font-weight: 700;
@@ -1551,7 +1581,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .lp-step {
   display: flex; gap: 1.1rem; align-items: flex-start;
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 14px; padding: 1.3rem 1.5rem;
+  border-radius: var(--r-lg); padding: 1.3rem 1.5rem;
 }
 .lp-step-n {
   flex-shrink: 0; width: 2.1rem; height: 2.1rem; border-radius: 50%;
@@ -1609,9 +1639,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 
 /* FAQ */
 .lp-faq { display: flex; flex-direction: column; gap: 0.9rem; }
+/* Rayon aligné sur les autres cartes de la page. 13 px au milieu de cartes à
+   16 px et de boutons ronds : l'écart ne se nomme pas, il se remarque. */
 .lp-faq-item {
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 13px; padding: 1.2rem 1.4rem;
+  border-radius: var(--r-lg); padding: 1.3rem 1.5rem;
 }
 .lp-faq-q {
   font-family: var(--font-barlow-condensed), sans-serif;
@@ -1678,12 +1710,22 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .qa-r p { margin: 0 0 var(--s-3); }
 .qa-r p:last-child { margin-bottom: 0; }
 
-/* CTA final */
+/* CTA final — un PANNEAU, plus un filet.
+   La section se terminait par un trait horizontal et du texte centré sur le
+   fond de la page : rien ne distinguait la dernière demande de la douzième
+   section. Elle devient une surface à part entière — grand rayon, lavis
+   lavande en diagonale, bordure d'accent — de sorte qu'on la voit arriver en
+   défilant, avant même de l'avoir lue. */
 .lp-final {
-  border-top: 1px solid var(--line);
-  text-align: center; padding: 5rem 1.5rem;
-  max-width: 760px; margin: 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 32px;
+  background: linear-gradient(135deg, var(--accent-wash) 0%, var(--paper-raised) 68%);
+  text-align: center; padding: 4.5rem 2rem;
+  width: calc(100% - 3rem); max-width: 1040px; margin: 1rem auto 4rem;
 }
+/* La colonne de texte reste étroite dans un panneau large : la mesure de
+   lecture ne suit pas la largeur du contenant. */
+.lp-final > * { max-width: 720px; margin: 0 auto; }
 /* `text-align: center` centre le TEXTE, pas les éléments de type bloc : le
    bouton, qui en est un, restait collé à gauche. Une colonne flex centrée
    aligne tout, quel que soit le type d'affichage de chaque enfant.
@@ -1727,6 +1769,14 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   .lp-cta-row > *, .lp-cta-row .lp-shimmer { width: 100%; }
   .lp-inline-cta { flex-direction: column; align-items: stretch; }
   .lp-inline-cta .lp-btn { width: 100%; }
+  /* Le panneau final se resserre : 32 px de rayon sur une carte large de
+     l'ecran font une bulle, et 2 rem de rembourrage lateral coutent un tiers
+     de la largeur de lecture sur un telephone. */
+  .lp-final {
+    width: calc(100% - 2.4rem);
+    padding: 3.2rem 1.4rem;
+    border-radius: 24px;
+  }
   /* Le quartier reste affiché. Il était masqué du temps où chaque case
      occupait toute la largeur de sa colonne et où le nom devait tenir DANS
      une pastille colorée. Il est désormais sous le repère, sur le fond de la
@@ -1798,10 +1848,18 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 
 /* Bandeau d'action de la page publique : le lavis d'accent le détache du
-   fond sans recourir à une couleur sémantique. */
+   fond sans recourir à une couleur sémantique.
+
+   Le lavis est désormais un DÉGRADÉ en diagonale plutôt qu'un aplat. Un aplat
+   lavande sur fond crème se lit comme un encadré d'avertissement ; le même
+   lavis qui s'éteint vers le blanc se lit comme une surface, et c'est ce
+   qu'on veut d'un bloc qui porte un bouton. La bordure monte à 30 % d'accent :
+   sous un dégradé qui pâlit, une bordure à 22 % disparaissait du côté clair. */
 .lp-inline-cta {
-  background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: linear-gradient(135deg, var(--accent-wash) 0%, var(--paper-raised) 72%);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--r-xl);
+  padding: 1.5rem 1.7rem;
 }
 
 /* Chiffres alignés partout où ils se comparent. */
@@ -1840,7 +1898,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 }
 .lp-pain {
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 14px; padding: 1.3rem 1.4rem; height: 100%;
+  border-radius: var(--r-lg); padding: 1.3rem 1.4rem; height: 100%;
   box-shadow: var(--e-1);
 }
 .lp-pain-t {
@@ -1855,7 +1913,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .lp-feature {
   display: flex; gap: 1.2rem; align-items: flex-start;
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 14px; padding: 1.4rem 1.6rem; box-shadow: var(--e-1);
+  border-radius: var(--r-lg); padding: 1.4rem 1.6rem; box-shadow: var(--e-1);
 }
 .lp-feature-n {
   flex-shrink: 0;
@@ -2919,6 +2977,25 @@ a:has(button) { color: inherit; text-decoration: none; }
   /* `space-between` seul ne garantit rien : un `gap` impose un minimum même
      quand la place vient à manquer. */
   gap: 1.5rem;
+
+  /* La pilule elle-meme. Asymetrique a dessein : 1,6 rem a gauche pour que le
+     logo respire, 0,55 rem a droite parce que le bouton d'action porte deja
+     son propre rembourrage — sans cela il paraissait enfonce dans le bord. */
+  padding: 0.55rem 0.55rem 0.55rem 1.6rem;
+  background: color-mix(in srgb, var(--entete-fond) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+  border-radius: var(--r-full);
+  /* Deux crans : la pilule flotte au-dessus du contenu, elle ne s'y pose pas.
+     Un seul cran la laissait plaquee sur le creme. */
+  box-shadow: var(--e-2);
+}
+/* Sous 560 px la pilule perd ses coins pleinement ronds : a cette largeur le
+   rayon de 999 px rogne le logo et le bouton par les extremites. Un rayon fixe
+   et genereux garde le dessin sans manger le contenu. */
+@media (max-width: 560px) {
+  .lp-nav { padding-left: 0.6rem; padding-right: 0.6rem; }
+  .lp-nav-inner { border-radius: 22px; padding-left: 1rem; }
 }
 
 
