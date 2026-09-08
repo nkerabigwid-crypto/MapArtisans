@@ -213,7 +213,7 @@ describe("Marque blanche — resolution et securite", () => {
       "",
     ];
     for (const a of attaques) {
-      assert.equal(branding.validateHexColor(a), "#123f6d", `« ${a} » doit retomber par defaut`);
+      assert.equal(branding.validateHexColor(a), "#7c3aed", `« ${a} » doit retomber par defaut`);
     }
   });
 
@@ -234,7 +234,7 @@ describe("Marque blanche — resolution et securite", () => {
       ...branding.DEFAULT_BRANDING,
       primaryColor: "red; } * { display:none } .x {",
     });
-    assert.equal(css, "--accent: #123f6d;");
+    assert.equal(css, "--accent: #7c3aed;");
     assert.ok(!css.includes("display:none"));
   });
 

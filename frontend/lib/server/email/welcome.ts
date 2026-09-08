@@ -103,28 +103,28 @@ export function composeWelcomeEmail(data: WelcomeEmailData): WelcomeEmail {
   ].join("\n");
 
   const html = [
-    '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#1a1d1a;max-width:520px">',
+    '<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#141821;max-width:520px">',
     `<p>Bienvenue sur <strong>${esc(marque)}</strong>.</p>`,
     ...(abo
       ? [
           `<p>Votre abonnement <strong>${esc(abo.palier)}</strong> est actif — ${esc(prix!)}.<br>`,
-          `<span style="font-size:13px;color:#6a6f69">Votre facture vous parvient dans un message séparé.</span></p>`,
+          `<span style="font-size:13px;color:#4c5160">Votre facture vous parvient dans un message séparé.</span></p>`,
         ]
       : []),
     "<p>Votre compte est actif. Cliquez pour vous connecter, sans mot de passe à retenir :</p>",
-    `<p><a href="${esc(lien)}" style="display:inline-block;background:#123f6d;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir mon tableau de bord</a></p>`,
+    `<p><a href="${esc(lien)}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir mon tableau de bord</a></p>`,
     // Le lien en clair, pour le cas où la réécriture d'un client mail d'entreprise
     // casse le bouton. Voir la règle 3 en tête de fichier.
-    `<p style="font-size:13px;color:#6a6f69">Si le bouton ne fonctionne pas, copiez cette adresse :<br><span style="word-break:break-all">${esc(lien)}</span></p>`,
-    `<p style="font-size:13px;color:#6a6f69">Ce lien est valable ${minutes} minutes et ne fonctionne qu'une seule fois.</p>`,
+    `<p style="font-size:13px;color:#4c5160">Si le bouton ne fonctionne pas, copiez cette adresse :<br><span style="word-break:break-all">${esc(lien)}</span></p>`,
+    `<p style="font-size:13px;color:#4c5160">Ce lien est valable ${minutes} minutes et ne fonctionne qu'une seule fois.</p>`,
     "<p>Une fois connecté, une seule étape reste : autoriser l'accès à votre fiche Google. Comptez une minute.</p>",
     // Repris d'une proposition de l'utilisateur : c'est la ligne qui coûte le
     // moins cher et rassure le plus. Elle suppose que l'adresse d'expédition
     // accepte les réponses — surtout pas un `no-reply@`, qui ferait mentir le
     // message dès le premier client qui essaie.
     "<p>Une question ? Répondez simplement à ce message, une personne vous lira.</p>",
-    "<p style=\"font-size:13px;color:#6a6f69\">Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : sans clic de votre part, rien ne se passe.</p>",
-    `<p style="font-size:13px;color:#6a6f69">— ${esc(marque)}</p>`,
+    "<p style=\"font-size:13px;color:#4c5160\">Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : sans clic de votre part, rien ne se passe.</p>",
+    `<p style="font-size:13px;color:#4c5160">— ${esc(marque)}</p>`,
     "</div>",
   ].join("\n");
 

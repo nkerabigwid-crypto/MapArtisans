@@ -154,7 +154,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     if (!logoPose) {
       doc
         .fontSize(18)
-        .fillColor("#123f6d")
+        .fillColor("#7c3aed")
         .text(donnees.emetteur.marque ?? donnees.emetteur.raisonSociale, MARGE, MARGE);
       basLogo = doc.y;
     }
@@ -194,7 +194,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
 
     // --- Client. Il commence sous la PLUS BASSE des deux colonnes.
     const yClient = Math.max(basGauche, doc.y) + 34;
-    doc.fontSize(8).fillColor("#888888").text("FACTURÉ À", MARGE, yClient);
+    doc.fontSize(8).fillColor("#5d6373").text("FACTURÉ À", MARGE, yClient);
     doc.fontSize(10).fillColor("#111111").text(donnees.client.raisonSociale);
     doc.fontSize(9).fillColor("#444444");
     for (const l of donnees.client.adresse) doc.text(l);
@@ -212,7 +212,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     let y = doc.y;
     doc.moveTo(MARGE, y).lineTo(droite, y).strokeColor("#dddddd").stroke();
     y += 10;
-    doc.fontSize(8).fillColor("#888888").text("DÉSIGNATION", MARGE, y);
+    doc.fontSize(8).fillColor("#5d6373").text("DÉSIGNATION", MARGE, y);
     doc.text("MONTANT CHF", MARGE, y, { width: largeur, align: "right" });
     y += 16;
     doc.fontSize(10).fillColor("#111111").text(donnees.designation, MARGE, y, {
@@ -235,7 +235,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
       ligne("Total CHF", formatCHF(totaux.ttcCentimes), true);
       // Mention explicite : sans elle, un client se demande où est la TVA et
       // son comptable aussi. La dire évite l'appel au support.
-      doc.fontSize(8).fillColor("#888888");
+      doc.fontSize(8).fillColor("#5d6373");
       doc.text(
         "Non assujetti à la TVA (chiffre d'affaires inférieur au seuil légal de 100 000 CHF).",
         MARGE,
@@ -294,7 +294,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
      */
     let yPied = doc.page.height - MARGE - 4 - lignesPied.length * HAUTEUR_LIGNE_PIED;
 
-    doc.fontSize(8).fillColor("#888888");
+    doc.fontSize(8).fillColor("#5d6373");
     doc.text(
       donnees.payeeLe
         ? "Facture acquittée — merci pour votre confiance."
@@ -306,7 +306,7 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
 
     if (lignesPied.length > 0) {
       doc.moveTo(MARGE, yPied - 10).lineTo(droite, yPied - 10).strokeColor("#dddddd").stroke();
-      doc.fontSize(8).fillColor("#888888");
+      doc.fontSize(8).fillColor("#5d6373");
       for (const l of lignesPied) {
         doc.text(l, MARGE, yPied, { width: largeur, align: "center" });
         yPied += HAUTEUR_LIGNE_PIED;

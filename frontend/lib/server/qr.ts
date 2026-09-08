@@ -91,7 +91,12 @@ const HEX = /^#[0-9a-f]{6}$/i;
  * copie qui se désynchronise le jour où l'URL change.
  */
 export async function generateReviewQr(placeId: string, options: QrOptions = {}): Promise<string> {
-  const dark = options.dark ?? "#123f6d";
+  // Violet 900, et non l'accent #7c3aed du site : celui-ci ne fait que 5,70
+  // sur blanc et CONTRASTE_MIN, plus bas, l'aurait refusé — à juste titre. Ce
+  // QR finit sur une carrosserie et sur des factures papier, lu de biais et
+  // sous une lumière quelconque. #4c1d95 rend 10,95, soit la marge qu'avait le
+  // bleu (10,73) : on change de teinte sans rien céder sur la lecture.
+  const dark = options.dark ?? "#4c1d95";
   const light = options.light ?? "#ffffff";
 
   for (const [nom, valeur] of [["dark", dark], ["light", light]] as const) {

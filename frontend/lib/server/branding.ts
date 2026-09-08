@@ -36,7 +36,13 @@ export const DEFAULT_BRANDING: Branding = {
   logoUrl: null,
   // En minuscules, comme toute couleur validée : sans cela, comparer une
   // couleur d'agence à la valeur par défaut échouerait sur la seule casse.
-  primaryColor: "#123f6d",
+  //
+  // Violet, et non plus le bleu de Prusse #123f6d : la feuille de style est
+  // passée au violet, ce jeton non. Il définit la marque MapArtisans pour tout
+  // ce qui se fabrique côté serveur — et brandingCssVars() l'injecte en
+  // `--accent`, ce qui aurait REPEINT la page en bleu le jour où la marque
+  // blanche est branchée.
+  primaryColor: "#7c3aed",
   supportEmail: null,
   isWhiteLabel: false,
 };

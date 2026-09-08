@@ -29,7 +29,7 @@ export default function Image() {
           padding: "0 90px",
           // Mêmes couleurs que le site : l'aperçu et la page doivent se
           // reconnaître l'un l'autre.
-          background: "#f4f3ef",
+          background: "#fdf8f4",
           fontFamily: "sans-serif",
         }}
       >
@@ -37,23 +37,23 @@ export default function Image() {
           <svg width="72" height="72" viewBox="0 0 32 32">
             <path
               d="M16 2.5c-5.1 0-9.2 4.1-9.2 9.2 0 6.9 9.2 17.8 9.2 17.8s9.2-10.9 9.2-17.8c0-5.1-4.1-9.2-9.2-9.2z"
-              fill="#123f6d"
+              fill="#7c3aed"
             />
-            <circle cx="16" cy="11.7" r="3.6" fill="#f4f3ef" />
+            <circle cx="16" cy="11.7" r="3.6" fill="#fdf8f4" />
           </svg>
-          <div style={{ fontSize: 52, fontWeight: 700, color: "#1a1d1a", letterSpacing: -1 }}>
+          <div style={{ fontSize: 52, fontWeight: 700, color: "#141821", letterSpacing: -1 }}>
             MapArtisans
           </div>
         </div>
 
-        <div style={{ fontSize: 62, fontWeight: 700, color: "#1a1d1a", lineHeight: 1.12 }}>
+        <div style={{ fontSize: 62, fontWeight: 700, color: "#141821", lineHeight: 1.12 }}>
           Votre visibilité Google Maps,
         </div>
-        <div style={{ fontSize: 62, fontWeight: 700, color: "#123f6d", lineHeight: 1.12 }}>
+        <div style={{ fontSize: 62, fontWeight: 700, color: "#7c3aed", lineHeight: 1.12 }}>
           en pilote automatique.
         </div>
 
-        <div style={{ fontSize: 30, color: "#6a6f69", marginTop: 38, display: "flex" }}>
+        <div style={{ fontSize: 30, color: "#4c5160", marginTop: 38, display: "flex" }}>
           Artisans et professionnels du transport · Suisse romande
         </div>
       </div>

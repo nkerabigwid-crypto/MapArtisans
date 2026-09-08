@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#123f6d"/>
+  <rect width="64" height="64" rx="12" fill="#7c3aed"/>
   <!-- Repère de carte : la forme que Google Maps a rendue universelle. -->
   <path d="M32 13c-7.2 0-13 5.8-13 13 0 9.8 13 25 13 25s13-15.2 13-25c0-7.2-5.8-13-13-13z" fill="#ffffff"/>
-  <circle cx="32" cy="26" r="5" fill="#123f6d"/>
+  <circle cx="32" cy="26" r="5" fill="#7c3aed"/>
 </svg>

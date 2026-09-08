@@ -39,7 +39,7 @@ const reglages = () => ({
   widgetKey: "wk_test",
   allowedOrigins: ["dupont-plomberie.ch"],
   faqContext: null,
-  widgetColor: "#123f6d",
+  widgetColor: "#7c3aed",
   dailyMessageLimit: 200,
   isActive: true,
 });

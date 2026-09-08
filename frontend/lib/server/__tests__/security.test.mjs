@@ -415,7 +415,7 @@ describe("QR code de collecte d'avis", () => {
     const svg = await qr.generateReviewQr("ChIJN1t_tDeuEmsRUsoyG83frY4");
     assert.match(svg, /^<svg/);
     assert.match(svg, /viewBox/, "vectoriel : il doit s'agrandir sans perte pour l'impression");
-    assert.ok(svg.includes("#123f6d"), "couleur MapArtisans par défaut");
+    assert.ok(svg.includes("#4c1d95"), "violet fonce MapArtisans par defaut");
   });
 
   test("une couleur trop pâle est REFUSÉE : le code serait illisible imprimé", async () => {

@@ -1555,7 +1555,7 @@ export const memoryRepo: Repo = {
       widgetKey: genererWidgetKey(),
       allowedOrigins: [],
       faqContext: null,
-      widgetColor: "#123f6d",
+      widgetColor: "#7c3aed",
       dailyMessageLimit: 200,
       isActive: false,
     };

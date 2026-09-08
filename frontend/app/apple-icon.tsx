@@ -23,7 +23,7 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#123f6d",
+          background: "#7c3aed",
         }}
       >
         <svg width="112" height="112" viewBox="0 0 32 32">
@@ -31,7 +31,7 @@ export default function AppleIcon() {
             d="M16 2.5c-5.1 0-9.2 4.1-9.2 9.2 0 6.9 9.2 17.8 9.2 17.8s9.2-10.9 9.2-17.8c0-5.1-4.1-9.2-9.2-9.2z"
             fill="#ffffff"
           />
-          <circle cx="16" cy="11.7" r="3.6" fill="#123f6d" />
+          <circle cx="16" cy="11.7" r="3.6" fill="#7c3aed" />
         </svg>
       </div>
     ),
