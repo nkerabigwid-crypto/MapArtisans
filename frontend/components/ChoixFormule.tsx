@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Accordion } from "@base-ui/react/accordion";
-import { PLANS, type PlanId } from "@/lib/data";
+import { PLANS, decouperFonctions, type PlanId } from "@/lib/data";
 
 /**
  * Questions posées au moment de payer.
@@ -109,7 +109,7 @@ export default function ChoixFormule({
   }
 
   return (
-    <div className="app ob-app">
+    <div className="app ob-app tarifs-app">
       <main className="ob-main">
         <h1 className="ob-title">Votre abonnement</h1>
         <p className="ob-lede">
@@ -153,6 +153,7 @@ export default function ChoixFormule({
             // « Votre formule » suppose un paiement : pendant l'essai, aucune
             // formule n'est encore la sienne.
             const actuelle = souscrit && plan.id === planActuel;
+            const { titre, restantes } = decouperFonctions(plan.features);
             return (
               <div
                 key={plan.id}
@@ -167,15 +168,19 @@ export default function ChoixFormule({
                 {/* Classes d'origine : `plan-cur` et `plan-per`. Les avoir
                     renommées faisait perdre tout le style — le prix s'affichait
                     « 49CHF/ mois », collé et sans hiérarchie. */}
+                <p className="plan-audience">{plan.audience}</p>
+                {/* Le prix passe SOUS la phrase d'audience, comme dans toute
+                    grille tarifaire lisible : on sait d'abord à qui la
+                    formule s'adresse, on regarde ensuite ce qu'elle coûte. */}
                 <div className="plan-price">
                   {plan.amount} <span className="plan-cur">CHF</span>
-                  <span className="plan-per"> / mois</span>
+                  <span className="plan-per">par mois, sans engagement</span>
                 </div>
-                <p className="plan-audience">{plan.audience}</p>
                 {plan.highlight && <p className="plan-highlight">{plan.highlight}</p>}
 
+                <p className="plan-list-titre">{titre}</p>
                 <ul className="plan-list">
-                  {plan.features.map((item) => (
+                  {restantes.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>

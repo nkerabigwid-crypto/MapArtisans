@@ -7,7 +7,7 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { Marquee } from "@/components/ui/marquee";
-import { PLANS, geoGrid, getGridStatus } from "@/lib/data";
+import { PLANS, decouperFonctions, geoGrid, getGridStatus } from "@/lib/data";
 import { TRADE_LABELS } from "@/lib/trades";
 import GainSimulator from "@/components/marketing/GainSimulator";
 import EntetePublic from "@/components/EntetePublic";
@@ -127,9 +127,13 @@ export default function LandingPage() {
             <Link href="/onboarding">
               <ShimmerButton
                 className="lp-shimmer"
-                background="var(--accent)"
+                /* `--bouton` et non `--accent` : le bouton porte du BLANC, et
+                   en theme sombre `--accent` devient un violet clair sur
+                   lequel le blanc tombe a 2,7 de contraste. `--bouton` est la
+                   seule teinte tenue dans les deux themes (5,70). */
+                background="var(--bouton)"
                 shimmerColor="#ffffff"
-                borderRadius="10px"
+                borderRadius="999px"
               >
                 Activer mon essai gratuit de 14 jours
               </ShimmerButton>
@@ -298,17 +302,23 @@ export default function LandingPage() {
         </BlurFade>
 
         <div className="lp-plans">
-          {PLANS.map((plan, i) => (
+          {PLANS.map((plan, i) => {
+            const { titre, restantes } = decouperFonctions(plan.features);
+            return (
             <BlurFade key={plan.id} delay={0.12 + i * 0.08} inView className="lp-plan-fade">
               <div className={`lp-plan${plan.recommended ? " featured" : ""}`}>
                 {plan.recommended && <div className="lp-plan-flag">Le plus choisi</div>}
                 <div className="lp-plan-name">{plan.name}</div>
-                <div className="lp-plan-price">
-                  {plan.amount} <span>CHF / mois</span>
-                </div>
                 <p className="lp-plan-aud">{plan.audience}</p>
+                {/* Le prix vient APRÈS l'audience, comme sur /abonnement :
+                    on sait d'abord à qui la formule s'adresse. */}
+                <div className="lp-plan-price">
+                  {plan.amount} <span className="plan-cur">CHF</span>
+                  <span className="plan-per">par mois, sans engagement</span>
+                </div>
+                <p className="plan-list-titre">{titre}</p>
                 <ul className="lp-plan-list">
-                  {plan.features.map((f) => (
+                  {restantes.map((f) => (
                     <li key={f}>{f}</li>
                   ))}
                 </ul>
@@ -320,7 +330,8 @@ export default function LandingPage() {
                 </Link>
               </div>
             </BlurFade>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -356,9 +367,9 @@ export default function LandingPage() {
           <Link href="/onboarding">
             <ShimmerButton
               className="lp-shimmer"
-              background="var(--accent)"
+              background="var(--bouton)"
               shimmerColor="#ffffff"
-              borderRadius="10px"
+              borderRadius="999px"
             >
               Activer mon essai gratuit de 14 jours
             </ShimmerButton>

@@ -113,6 +113,37 @@ export interface Plan {
  * l'agence revend le service sous sa marque. D'où la marque blanche et le
  * générateur d'audits, qui n'ont aucun sens pour un artisan seul.
  */
+/**
+ * Le renvoi au palier précédent est un TITRE, pas une fonction.
+ *
+ * « Tout ce que contient Essentiel » figurait dans `features`, avec la même
+ * puce que « Support prioritaire ». Deux natures d'information au même rang :
+ * l'une désigne cinq lignes qu'on ne relit pas, l'autre en désigne une.
+ * Remontée en intertitre, elle devient la clé de lecture de tout ce qui suit.
+ *
+ * La fonction vit ici, et non dans un composant, parce que la page d'accueil
+ * et la page d'abonnement affichent la MÊME grille : deux découpages
+ * divergents feraient douter qu'il s'agisse des mêmes formules.
+ *
+ * La détection est volontairement littérale : si la formulation change
+ * ci-dessous, la ligne redevient une fonction ordinaire et rien ne casse.
+ */
+const RENVOI_PALIER = /^Tout ce que contient (.+)$/;
+
+export function decouperFonctions(features: readonly string[]): {
+  /** Intertitre de la liste — « Tout Basique, plus : » ou le libellé neutre. */
+  titre: string;
+  /** Les fonctions propres au palier, renvoi retiré. */
+  restantes: string[];
+} {
+  const renvoi = features.find((f) => RENVOI_PALIER.test(f));
+  const precedent = renvoi?.match(RENVOI_PALIER)?.[1];
+  return {
+    titre: precedent ? `Tout ${precedent}, plus :` : "Ce qui est inclus",
+    restantes: features.filter((f) => f !== renvoi),
+  };
+}
+
 export const PLANS: Plan[] = [
   {
     id: "basique",

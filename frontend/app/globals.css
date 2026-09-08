@@ -14,34 +14,61 @@
 
 :root {
   /* ---- Fondations ----------------------------------------------------
-     Bleu de Prusse en accent : le terracotta précédent se situait à 18°
-     de l'ambre et 17° du rouge, si bien que la couleur d'action était
-     confondue avec celles d'alerte sur l'écran de la Geo-Grid. Le bleu
-     s'en écarte de 58° et porte le blanc à 10,7 de contraste, contre 4,6.
-     C'est aussi la couleur des plans d'architecte et des tenues de
-     travail — elle appartient au métier. */
-  --paper: #f4f3ef;
+     Violet en accent, sur un fond crème.
+
+     L'accent était un bleu de Prusse, choisi parce qu'il s'écartait de 58°
+     de l'ambre et du rouge des alertes de la Geo-Grid. Le violet conserve
+     cette propriété — et l'améliore : 270° de teinte, soit 90° du rouge et
+     130° de l'ambre. Aucune confusion possible entre « à faire » et
+     « en alerte ».
+
+     Contrastes vérifiés (calculés, pas estimés) :
+       #7c3aed sur le crème #fdf8f4 ........ 5,30  (seuil texte AA : 4,5)
+       blanc sur #7c3aed ................... 5,70
+       #7c3aed sur la page sombre #100f14 .. 3,35  (seuil composant : 3)
+     La MÊME teinte tient donc les deux thèmes, comme le faisait le bleu du
+     bouton : on ne repeint pas l'accent au passage en sombre. */
+  --paper: #fdf8f4;
   --paper-raised: #ffffff;
-  --card: #eae8e2;
-  --ink: #171a18;
-  --ink-soft: #4b504c;
-  /* 4,62 de contraste sur le fond : l'ancien #878c86 tombait a 3,09, sous le
-     seuil AA, alors que ce token porte des mentions que l'on doit pouvoir
-     lire (rassurances sous les boutons, sources, dates). */
-  --ink-faint: #6a6f69;
-  --line: #dddad3;
-  --line-strong: #b4b0a7;
-  --accent: #123f6d;
-  --accent-hover: #0d3157;
+  --card: #f3ede8;
+  --ink: #141821;
+  --ink-soft: #4c5160;
+  /* 4,67 de contraste sur le crème : ce jeton porte des mentions que l'on
+     doit pouvoir lire (rassurances sous les boutons, sources, dates), il ne
+     descend donc jamais sous le seuil AA. */
+  --ink-faint: #6b7080;
+  --line: #e9e2dc;
+  --line-strong: #c5bdb6;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
   --accent-ink: #ffffff;
-  --accent-wash: #e7edf4;
+  --accent-wash: #f1e9ff;
+
+  /* ---- Vocabulaire des tarifs ----------------------------------------
+     Trois jetons dédiés aux cartes de formules, parce qu'ils ne servent
+     nulle part ailleurs et n'ont pas à polluer la palette générale.
+
+     --cta-sombre : l'appel à l'action des formules NON recommandées. Une
+     seconde teinte pleine, et non un bouton fantôme : trois cartes côte à
+     côte doivent proposer trois cibles également cliquables, sinon deux
+     d'entre elles se lisent comme désactivées. C'est le violet qui désigne
+     la recommandée, pas le vide qui disqualifie les autres.
+
+     --coche : le vert des puces de fonctions. #15803d et non #22c55e —
+     4,28 de contraste sur l'aplat lavande de la carte vedette, contre 2,3
+     pour le vert vif, qui s'y effaçait. */
+  --cta-sombre: #1b2130;
+  --cta-sombre-ink: #ffffff;
+  --cta-sombre-hover: #2a3244;
+  --coche: #15803d;
+  --plan-vedette: #f3e9ff;
 
   /* En-tête et pied de page : ils doivent se détacher du fond de la page.
      Des jetons dédiés, et non `--accent` : en mode sombre celui-ci devient un
      bleu CLAIR, et un pied de page qui l'emploierait comme fond deviendrait
      illisible avec du texte blanc. */
   --entete-fond: #ffffff;
-  --pdp-fond: #123f6d;
+  --pdp-fond: #1b1430;
   --pdp-texte: #ffffff;
   --pdp-texte-doux: rgba(255, 255, 255, 0.72);
   --pdp-ligne: rgba(255, 255, 255, 0.16);
@@ -76,28 +103,29 @@
 
      Le bouton etait bleu nuit et le texte blanc en mode clair, bleu clair et
      texte fonce en mode sombre. Deux traitements opposes pour le meme role.
+     Ce principe est conserve : le bouton est desormais le violet d'accent,
+     avec du blanc, partout.
 
-     #4a86c4 est la seule teinte qui tienne les trois contraintes a la fois :
-       texte noir sur le bouton      4,90   (seuil AA texte : 4,5)
-       detache de la page claire     3,44   (seuil element d'interface : 3)
-       detache de la page sombre     4,85
+       blanc sur #7c3aed ............ 5,70   (seuil AA texte : 4,5)
+       detache de la page claire .... 5,30   (seuil element d'interface : 3)
+       detache de la page sombre .... 3,35
 
-     Un bleu plus clair porte mieux le noir mais disparait sur la page claire ;
-     un bleu plus fonce se detache mieux mais ne supporte plus le noir. Les
-     deux courbes se croisent ici. */
+     Seul le SURVOL se dedouble, et il le faut : #6d28d9 assombri porte tres
+     bien le blanc (7,11) mais tombe a 2,69 sur la page sombre, ou il
+     disparaitrait. Le theme sombre survole donc vers le CLAIR (#a78bfa,
+     encre #1a1030 a 6,65) — voir les blocs sombres plus bas. */
   /* Hauteur de l'en-tete colle. Mesuree sur la page en ligne : 74 px.
      Elle sert au decalage des ancres — voir la regle [id] plus bas. */
   --entete-hauteur: 74px;
 
-  --bouton: #4a86c4;
-  --bouton-ink: #0b1220;
+  --bouton: #7c3aed;
+  --bouton-ink: #ffffff;
   /* Le survol assombrit ET fait passer le texte au blanc. Les deux vont
      ensemble : garder l'encre noire sur un fond assombri donnait du fonce sur
      du fonce, et le libelle disparaissait sous le pointeur — constate sur
      « Connecter ma fiche ».
-     #356ea6 : blanc a 5,34, detache de la page claire a 4,81 et de la sombre
-     a 3,47. Les trois seuils tenus a la fois. */
-  --bouton-hover: #356ea6;
+     #6d28d9 : blanc a 7,11, detache de la page claire a 6,74. */
+  --bouton-hover: #6d28d9;
   --bouton-hover-ink: #ffffff;
 
   --t-2xs: 0.75rem;
@@ -115,7 +143,10 @@
   --s-5: 1.5rem;  --s-6: 2rem;    --s-7: 3rem;    --s-8: 4rem;
 
   /* ---- Rayons et élévation -------------------------------------------- */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-full: 999px;
+  /* --r-xl : le rayon des cartes de formules. 24 px n'est pas une coquetterie
+     — c'est ce qui distingue une carte que l'on CHOISIT d'un panneau de
+     tableau de bord que l'on consulte. Le reste de l'echelle ne bouge pas. */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-full: 999px;
   --e-1: 0 1px 2px rgb(23 26 24 / 0.05);
   --e-2: 0 2px 4px rgb(23 26 24 / 0.05), 0 8px 20px -10px rgb(23 26 24 / 0.15);
   --e-3: 0 4px 8px rgb(23 26 24 / 0.06), 0 16px 36px -14px rgb(23 26 24 / 0.22);
@@ -123,22 +154,35 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #121412;
-    --paper-raised: #1b1e1b;
-    --card: #23271f;
-    --ink: #e8eae5;
-    --ink-soft: #afb4ad;
-    --ink-faint: #868b85;
-    --line: #2d322c;
-    --line-strong: #464c46;
-    --accent: #8fb6df;
-    --accent-hover: #a8c7e8;
-    --accent-ink: #0b1220;
-    --accent-wash: #182634;
+    --paper: #100f14;
+    --paper-raised: #191822;
+    --card: #211f2c;
+    --ink: #eae8f0;
+    --ink-soft: #b0adbd;
+    --ink-faint: #8a879a;
+    --line: #2c2a38;
+    --line-strong: #474457;
+    --accent: #a78bfa;
+    --accent-hover: #c4b5fd;
+    --accent-ink: #1a1030;
+    --accent-wash: #241d3a;
+    /* Le survol part vers le CLAIR en theme sombre — #6d28d9 y tomberait a
+       2,69 de detachement. #a78bfa porte l'encre #1a1030 a 6,65 et se
+       detache de la page sombre a 7,02. */
+    --bouton-hover: #a78bfa;
+    --bouton-hover-ink: #1a1030;
+    /* Sur fond sombre, l'appel a l'action « discret » ne peut plus etre
+       presque noir : il se confondrait avec la carte. Il devient une plaque
+       claire a encre sombre — meme role, meme poids, contraste inverse. */
+    --cta-sombre: #e7e3f2;
+    --cta-sombre-ink: #16121f;
+    --cta-sombre-hover: #ffffff;
+    --coche: #4ade80;
+    --plan-vedette: #241a3d;
     /* Bleu-gris profond : distinct du fond de page (#121412) sans virer au
        clair comme le ferait --accent en mode sombre. */
     --entete-fond: #1b1e1b;
-    --pdp-fond: #16212c;
+    --pdp-fond: #241d3a;
     --pdp-texte: #e8eae5;
     --pdp-texte-doux: rgba(232, 234, 229, 0.68);
     --pdp-ligne: rgba(232, 234, 229, 0.12);
@@ -155,18 +199,25 @@
   }
 }
 :root[data-theme="dark"] {
-    --paper: #121412;
-  --paper-raised: #1b1e1b;
-  --card: #23271f;
-  --ink: #e8eae5;
-  --ink-soft: #afb4ad;
-  --ink-faint: #868b85;
-  --line: #2d322c;
-  --line-strong: #464c46;
-  --accent: #8fb6df;
-  --accent-hover: #a8c7e8;
-  --accent-ink: #0b1220;
-  --accent-wash: #182634;
+    --paper: #100f14;
+  --paper-raised: #191822;
+  --card: #211f2c;
+  --ink: #eae8f0;
+  --ink-soft: #b0adbd;
+  --ink-faint: #8a879a;
+  --line: #2c2a38;
+  --line-strong: #474457;
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-ink: #1a1030;
+  --accent-wash: #241d3a;
+  --bouton-hover: #a78bfa;
+  --bouton-hover-ink: #1a1030;
+  --cta-sombre: #e7e3f2;
+  --cta-sombre-ink: #16121f;
+  --cta-sombre-hover: #ffffff;
+  --coche: #4ade80;
+  --plan-vedette: #241a3d;
   --status-good: #7cbf9a;
   --status-good-bg: #17271f;
   --status-warn: #d8b558;
@@ -258,7 +309,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .card {
   background: var(--paper-raised);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   padding: 1rem 1.1rem;
 }
 
@@ -492,7 +543,9 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-size: 0.9rem;
   padding: 0.6rem 1.1rem;
   min-height: 44px;
-  border-radius: 8px;
+  /* En pilule, partout. Un rayon plein sur un bouton et 12 px sur la carte
+     qui le porte : la difference de forme dit lequel des deux se clique. */
+  border-radius: var(--r-full);
   border: none;
   background: var(--bouton);
   color: var(--bouton-ink);
@@ -862,50 +915,228 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-size: var(--t-xs); color: var(--ink-faint); line-height: 1.45; margin: 0.9rem 0 0;
 }
 
-/* ---------- Abonnement ---------- */
-.plans { display: flex; flex-direction: column; gap: 1rem; }
-.plan-card { display: flex; flex-direction: column; position: relative; }
-/* Le palier recommandé se distingue par un cerne accent, pas par une taille
-   différente : sur une colonne unique, l'agrandir décalerait tout le reste. */
-.plan-card.featured { border-color: var(--accent); border-width: 2px; }
-.plan-flag, .plan-current {
-  position: absolute; top: -0.6rem; left: 1.1rem;
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 0.2rem 0.55rem; border-radius: 999px;
+/* ---------- Abonnement ----------
+   La page des tarifs ne se lit pas comme le reste de l'application.
+
+   Le tableau de bord est un outil : on y consulte des chiffres dans une
+   colonne etroite, sur un telephone, entre deux chantiers. La page des
+   formules est une DECISION : on la compare, et comparer suppose de voir
+   les trois paliers en meme temps. D'ou une largeur propre a cette page,
+   au-dela de 900 px, et le retour a la colonne unique en dessous.
+   ================================================================= */
+
+/* Cette page seule s'affranchit des 460 px de `.app`. Le jeton n'est pose
+   que sur `/abonnement` : le reste de l'application garde sa colonne. */
+.tarifs-app { max-width: 460px; }
+
+.plans { display: flex; flex-direction: column; gap: 1.6rem; }
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  /* 24 px : une carte que l'on choisit, pas un panneau que l'on consulte. */
+  border-radius: var(--r-xl);
+  padding: 2.1rem 1.5rem 1.7rem;
 }
-.plan-flag { background: var(--accent); color: var(--accent-ink); }
-.plan-current { background: var(--status-good-bg); color: var(--status-good); border: 1px solid var(--status-good); }
-.plan-card.featured .plan-current { left: auto; right: 1.1rem; }
+
+/* Le palier recommande se distingue par un APLAT, pas par une taille
+   differente : sur une colonne unique, l'agrandir decalerait tout le reste,
+   et sur trois colonnes il romprait l'alignement des prix — or c'est la
+   ligne des prix qui se compare en premier. */
+.plan-card.featured {
+  border: 2px solid var(--accent);
+  background: linear-gradient(180deg, var(--plan-vedette) 0%, var(--paper-raised) 58%);
+  padding: 2.1rem 1.5rem 1.7rem;
+}
+
+/* Etiquettes de carte — centrees a cheval sur le bord superieur.
+   Elles etaient calees a gauche : sur une carte dont tout le contenu est
+   centre, une etiquette de coin se lit comme une pastille de rangement.
+   Au centre, elle devient le titre de la carte. */
+.plan-badge, .plan-flag, .plan-current, .lp-plan-flag {
+  position: absolute;
+  top: -0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: var(--t-2xs);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--r-full);
+  box-shadow: var(--e-1);
+}
+.plan-badge, .plan-flag, .lp-plan-flag {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.plan-current {
+  background: var(--status-good-bg);
+  color: var(--status-good);
+  border: 1px solid var(--status-good);
+}
+/* L'etoile de l'etiquette « le plus choisi ». Purement decorative : le
+   libelle porte deja le sens, l'etoile ne fait que l'attraper de loin. */
+.plan-badge::before, .lp-plan-flag::before {
+  content: "★";
+  font-size: 0.85em;
+  line-height: 1;
+}
 
 .plan-name {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 1.15rem; letter-spacing: 0.01em;
-  margin-top: 0.3rem;
-}
-.plan-price {
-  font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 2.2rem; line-height: 1; color: var(--accent);
-  font-variant-numeric: tabular-nums; margin-top: 0.2rem;
-}
-.plan-cur { font-size: 1.1rem; }
-.plan-per {
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 1.85rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-align: center;
+  margin: 0.2rem 0 0;
 }
 .plan-audience {
-  font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45; margin: 0.6rem 0 0;
+  font-size: var(--t-sm);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  text-align: center;
+  margin: 0.5rem auto 0;
+  max-width: 30ch;
 }
+
+/* Le prix en encre pleine, et non en accent : trois prix colores cote a cote
+   se neutralisent, et l'accent ne designe plus rien. Il reste au badge et au
+   bouton — c'est-a-dire au palier recommande et a l'action. */
+.plan-price {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 3.4rem;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  margin-top: 1.3rem;
+}
+.plan-cur { font-size: 1.5rem; }
+.plan-per {
+  display: block;
+  margin-top: 0.45rem;
+  font-family: var(--font-barlow), sans-serif;
+  font-size: var(--t-sm);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-faint);
+}
+
 .plan-highlight {
-  font-size: var(--t-sm); color: var(--ink); line-height: 1.45;
-  background: var(--card); border-radius: 7px; padding: 0.55rem 0.7rem;
-  margin-top: 0.8rem;
+  font-size: var(--t-sm);
+  color: var(--ink);
+  line-height: 1.5;
+  background: var(--accent-wash);
+  border-radius: var(--r-md);
+  padding: 0.7rem 0.85rem;
+  margin-top: 1.2rem;
 }
-.plan-list {
-  margin: 1rem 0 0; padding-left: 1.2rem;
-  font-size: var(--t-sm); line-height: 1.65; color: var(--ink);
+
+/* Un intertitre au-dessus de la liste. Sans lui, « Tout ce que contient
+   Basique » se noyait au milieu des fonctions comme si c'en etait une —
+   alors que c'est la cle de lecture de toutes les autres. */
+.plan-list-titre {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin: 1.4rem 0 0;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
 }
-.plan-cta { align-self: stretch; margin-top: 1.2rem; }
+
+/* Les puces deviennent des coches. Une puce ronde enumere ; une coche verte
+   dit « inclus ». Sur une page ou l'on decide quoi acheter, la difference
+   n'est pas decorative. Dessinee en CSS : aucune icone a charger, et elle
+   suit la couleur du theme. */
+.plan-list, .lp-plan-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.plan-list li, .lp-plan-list li {
+  position: relative;
+  padding-left: 1.7rem;
+}
+.plan-list li + li, .lp-plan-list li + li { margin-top: 0.65rem; }
+.plan-list li::before, .lp-plan-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.3em;
+  width: 0.72rem;
+  height: 0.4rem;
+  border-left: 2.5px solid var(--coche);
+  border-bottom: 2.5px solid var(--coche);
+  transform: rotate(-45deg);
+}
+
+/* L'appel a l'action : pleine largeur, en pilule, et PLEIN dans les deux
+   cas. Un bouton fantome sur les paliers non recommandes les faisait lire
+   comme desactives — trois cartes cote a cote doivent offrir trois cibles
+   egalement cliquables. C'est le violet qui designe la recommandee, pas le
+   vide qui disqualifie les autres. */
+.plan-cta, .lp-plan-cta {
+  align-self: stretch;
+  width: 100%;
+  margin-top: 1.6rem;
+  border-radius: var(--r-full);
+  min-height: 52px;
+  font-size: 1rem;
+}
+.plan-cta.secondary, .lp-plan-cta.ghost {
+  background: var(--cta-sombre);
+  color: var(--cta-sombre-ink);
+  border: none;
+}
+.plan-cta.secondary:hover:not(:disabled), .lp-plan-cta.ghost:hover {
+  background: var(--cta-sombre-hover);
+  color: var(--cta-sombre-ink);
+  border: none;
+}
+.plan-cta:disabled { background: var(--card); color: var(--ink-soft); }
+
+/* Trois colonnes des que la page peut les porter. `align-items: start`
+   evite que la carte la plus courte s'etire a la hauteur de la plus longue
+   sans son contenu — chaque carte garde sa hauteur propre, et `margin-top:
+   auto` sur le bouton aligne malgre tout les trois appels a l'action. */
+@media (min-width: 900px) {
+  .tarifs-app { max-width: 1140px; }
+  .tarifs-app .ob-main { padding: 2.4rem 2rem 3.5rem; }
+  .tarifs-app .ob-title { font-size: 2.6rem; text-align: center; }
+  .tarifs-app .ob-lede { text-align: center; max-width: 62ch; margin-inline: auto; }
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.4rem;
+    align-items: stretch;
+    margin-top: 2.6rem;
+  }
+  .plan-card, .plan-card.featured { padding: 2.4rem 1.7rem 1.9rem; }
+  /* La liste absorbe la hauteur restante : les trois boutons se retrouvent
+     sur la meme ligne, sans quoi ils flottent a trois hauteurs differentes
+     et l'oeil ne sait plus lequel comparer. */
+  .plan-list { flex: 1; }
+  .tarifs-app .faq, .tarifs-app .plan-faq-title { max-width: 760px; margin-inline: auto; }
+  .tarifs-app .plan-faq-title { text-align: center; font-size: 1.9rem; }
+  .tarifs-app .plan-back { max-width: 420px; margin-inline: auto; }
+}
 .plan-secure {
   font-size: var(--t-xs); color: var(--ink-faint); line-height: 1.45;
   margin: 0.8rem 0 0; text-align: center;
@@ -1086,7 +1317,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-weight: 600; font-size: 0.9rem;
   padding: 0.55rem 1.1rem; min-height: 44px;
   display: inline-flex; align-items: center;
-  border-radius: 8px; background: var(--bouton); color: var(--bouton-ink);
+  border-radius: var(--r-full); background: var(--bouton); color: var(--bouton-ink);
   text-decoration: none;
 }
 
@@ -1277,7 +1508,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: 0.95rem;
   background: var(--bouton); color: var(--bouton-ink);
-  border-radius: 9px; text-decoration: none; white-space: nowrap;
+  border-radius: var(--r-full); text-decoration: none; white-space: nowrap;
 }
 .lp-btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
 
@@ -1334,42 +1565,47 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 }
 .lp-step-d { font-size: 0.92rem; line-height: 1.5; color: var(--ink-soft); margin: 0; }
 
-/* Tarifs */
-.lp-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; align-items: start; }
+/* Tarifs — meme vocabulaire que la page /abonnement.
+   C'est la MEME grille tarifaire : deux dessins differents pour les memes
+   trois formules faisaient douter qu'il s'agisse du meme produit. Les
+   selecteurs partages (etiquette, coches, bouton) sont declares plus haut,
+   avec le bloc Abonnement ; il ne reste ici que ce qui est propre a la page
+   d'accueil. */
+.lp-plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.4rem;
+  align-items: stretch;
+}
 .lp-plan-fade { height: 100%; }
 .lp-plan {
   position: relative; height: 100%;
   display: flex; flex-direction: column;
   background: var(--paper-raised); border: 1px solid var(--line);
-  border-radius: 16px; padding: 1.6rem;
+  border-radius: var(--r-xl); padding: 2.3rem 1.7rem 1.9rem;
 }
-.lp-plan.featured { border-color: var(--accent); border-width: 2px; }
-.lp-plan-flag {
-  position: absolute; top: -0.65rem; left: 1.4rem;
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
-  letter-spacing: 0.06em; text-transform: uppercase;
-  background: var(--accent); color: var(--accent-ink);
-  padding: 0.2rem 0.6rem; border-radius: 999px;
+.lp-plan.featured {
+  border: 2px solid var(--accent);
+  background: linear-gradient(180deg, var(--plan-vedette) 0%, var(--paper-raised) 58%);
 }
 .lp-plan-name {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 1.2rem; margin-top: 0.2rem;
+  font-weight: 700; font-size: 1.85rem; line-height: 1.1;
+  letter-spacing: -0.01em; text-align: center; margin-top: 0.2rem;
 }
 .lp-plan-price {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 700; font-size: 2.4rem; line-height: 1; color: var(--accent);
-  margin: 0.3rem 0 0; font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: 3.4rem; line-height: 1; color: var(--ink);
+  text-align: center; margin: 1.2rem 0 0; font-variant-numeric: tabular-nums;
 }
-.lp-plan-price span {
-  font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
-  color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em;
+/* Pas de `.lp-plan-price span` : le selecteur descendant attrapait aussi
+   `.plan-cur` et renvoyait « CHF » a la ligne, sous le nombre. Les deux
+   mentions portent desormais les memes classes que sur /abonnement. */
+.lp-plan-aud {
+  font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.5;
+  text-align: center; margin: 0.6rem auto 0; max-width: 30ch;
 }
-.lp-plan-aud { font-size: var(--t-sm); color: var(--ink-soft); line-height: 1.45; margin: 0.7rem 0 0; }
-.lp-plan-list {
-  margin: 1rem 0 1.4rem; padding-left: 1.2rem;
-  font-size: var(--t-sm); line-height: 1.7; flex: 1;
-}
-.lp-plan-cta { width: 100%; }
+.lp-plan-list { flex: 1; }
 
 /* FAQ */
 .lp-faq { display: flex; flex-direction: column; gap: 0.9rem; }
@@ -1521,11 +1757,37 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   background: var(--card); border-color: var(--line-strong);
 }
 
+/* Exception aux deux regles ci-dessus, pour les seules cartes de formules.
+   L'appel a l'action d'un palier non recommande est PLEIN, pas fantome :
+   trois cartes cote a cote doivent offrir trois cibles egalement
+   cliquables. Declaree ici parce que `.btn.secondary:hover` l'est aussi et
+   a la meme specificite — plus haut dans le fichier, elle serait perdue. */
+
+/* Meme raison pour la hauteur : `.lp-btn` fixe 48 px et est declare apres le
+   bloc Abonnement, si bien que le bouton de la page d'accueil retombait a
+   48 px quand celui de /abonnement en faisait 52. Meme carte, meme bouton. */
+.plan-cta, .lp-plan-cta { min-height: 52px; }
+
+.plan-cta.secondary, .lp-plan-cta.ghost {
+  background: var(--cta-sombre);
+  color: var(--cta-sombre-ink);
+  border: none;
+  box-shadow: var(--e-1);
+}
+.plan-cta.secondary:hover:not(:disabled), .lp-plan-cta.ghost:hover {
+  background: var(--cta-sombre-hover);
+  color: var(--cta-sombre-ink);
+  border: none;
+  box-shadow: var(--e-2);
+}
+.plan-cta:disabled { background: var(--card); color: var(--ink-soft); box-shadow: none; }
+
 /* Cartes : une ombre d'un seul cran. Au-delà, on obtient un empilement de
    boîtes flottantes qui fatigue la lecture. */
 .card, .lp-plan, .lp-step, .lp-faq-item, .lp-stat, .lp-grid-demo {
   box-shadow: var(--e-1);
 }
+.plan-card, .lp-plan { box-shadow: var(--e-2); }
 
 /* Anneau de focus unifié : même dessin partout, y compris sur les liens,
    qui en étaient dépourvus. */
