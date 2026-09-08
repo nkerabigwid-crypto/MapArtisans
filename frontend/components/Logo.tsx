@@ -43,7 +43,7 @@ export function LogoMark({ taille = 1.15 }: { taille?: number }) {
       />
       {/* Le creux central prend la couleur du fond : le repère reste lisible
           aussi bien sur clair que sur foncé, sans seconde version. */}
-      <circle cx="16" cy="11.7" r="3.6" fill="var(--paper, #f4f3ef)" />
+      <circle cx="16" cy="11.7" r="3.6" fill="var(--paper, #fdf8f4)" />
     </svg>
   );
 }

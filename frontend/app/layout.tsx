@@ -88,9 +88,21 @@ export const viewport: Viewport = {
    * Deux valeurs, une par thème : la couleur claire sur un téléphone en mode
    * sombre produirait une bande éblouissante en haut de l'écran.
    */
+  /*
+   * MISE A JOUR — la barre suit desormais le FOND DE PAGE, plus l'en-tete.
+   *
+   * Le raisonnement ci-dessus valait tant que l'en-tete etait une bande
+   * blanche pleine largeur : la barre du navigateur la prolongeait. L'en-tete
+   * est devenu une pilule flottante, et ce qui touche le haut de l'ecran n'est
+   * plus le blanc de la barre mais le creme de la page. Garder #ffffff creait
+   * la cassure que ce reglage devait supprimer.
+   *
+   * #fdf8f4 et #100f14 : les deux valeurs de --paper. Le sombre corrige au
+   * passage un #1b1e1b verdatre, reste de l'ancienne palette.
+   */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1b1e1b" },
+    { media: "(prefers-color-scheme: light)", color: "#fdf8f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#100f14" },
   ],
 };
 

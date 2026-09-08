@@ -27,7 +27,7 @@ export default function manifest(): MetadataRoute.Manifest {
     // écran d'accueil ne voit plus de navigateur, seulement son tableau de bord.
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f4f3ef",
+    background_color: "#fdf8f4",
     theme_color: "#7c3aed",
     lang: "fr-CH",
     categories: ["business", "productivity"],
