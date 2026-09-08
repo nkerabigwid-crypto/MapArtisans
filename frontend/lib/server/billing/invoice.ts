@@ -140,7 +140,10 @@ export function genererFacturePdf(donnees: DonneesFacture): Promise<Buffer> {
     let logoPose = false;
     if (donnees.emetteur.marque) {
       try {
-        const chemin = join(process.cwd(), "public", "logo-facture.png");
+        // Version TRANSPARENTE : la facture est posee sur du blanc, mais un
+        // aplat blanc dans le PNG se verrait des que le PDF est annote ou
+        // imprime sur un papier qui ne l'est pas tout a fait.
+        const chemin = join(process.cwd(), "public", "logo-mapartisans-transparent.png");
         if (existsSync(chemin)) {
           doc.image(chemin, MARGE, MARGE, { width: LARGEUR_LOGO });
           basLogo = MARGE + HAUTEUR_LOGO;
