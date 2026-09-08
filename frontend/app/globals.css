@@ -33,10 +33,17 @@
   --card: #f3ede8;
   --ink: #141821;
   --ink-soft: #4c5160;
-  /* 4,67 de contraste sur le crème : ce jeton porte des mentions que l'on
-     doit pouvoir lire (rassurances sous les boutons, sources, dates), il ne
-     descend donc jamais sous le seuil AA. */
-  --ink-faint: #6b7080;
+  /* Ce jeton porte des mentions que l'on doit POUVOIR LIRE — rassurances sous
+     les boutons, sources, dates, légendes de la Geo-Grid.
+
+     Le commentaire d'avant ne mesurait qu'un fond sur trois. 4,67 sur le crème
+     de la page, oui ; mais 4,25 sur le fond de carte #f3ede8, c'est-à-dire
+     SOUS le seuil AA, et c'est précisément là que vivent la moitié de ces
+     mentions. Un jeton se juge sur le fond le plus défavorable où on l'emploie,
+     pas sur le plus flatteur.
+
+     #5d6373 : carte 5,17 · page 5,69 · blanc 6,00. Conforme sur les trois. */
+  --ink-faint: #5d6373;
   --line: #e9e2dc;
   --line-strong: #c5bdb6;
   --accent: #7c3aed;
@@ -89,7 +96,14 @@
      derniers crans, ceux qui portent les etiquettes et les mentions, sont
      remontes. */
   /* PLANCHER ABSOLU — 12 px.
-     Reserve aux micro-etiquettes en capitales espacees : les capitales et
+     Reserve aux micro-etiquettes en capitales espacees, ET RIEN D'AUTRE.
+     Cinq declarations y logeaient de la prose en bas de casse — legende de la
+     Geo-Grid, indices du tableau de bord, pied de page — c'est-a-dire des
+     phrases qu'on lit, pas des etiquettes qu'on reconnait. Elles sont remontees
+     a --t-xs. La regle ci-dessous n'avait jamais ete fausse, seulement pas
+     tenue.
+
+     Reserve, donc, aux micro-etiquettes en capitales espacees : les capitales et
      l'interlettrage les font lire plus grandes que leur taille nominale.
      Aucune prose ne descend ici ; pour elle, le plancher est --t-xs.
 
@@ -135,8 +149,14 @@
   --bouton-hover-ink: #ffffff;
 
   --t-2xs: 0.75rem;
-  --t-xs: 0.8rem;
-  --t-sm: 0.9rem;
+  /* Les deux crans du bas remontent : 12,8 -> 14 px et 14,4 -> 15,2 px.
+     Ils portent 104 déclarations à eux deux — notes, descriptions, libellés de
+     champs, réponses de la FAQ — c'est-à-dire l'essentiel de ce qu'on lit
+     vraiment sur le site, et ce que l'exploitant a signalé comme illisible sur
+     son téléphone. Les crans au-dessus de --t-base ne bougent pas : le rapport
+     de 1,25 de l'échelle y reste intact. */
+  --t-xs: 0.875rem;
+  --t-sm: 0.95rem;
   --t-base: 1rem;
   --t-md: 1.2rem;
   --t-lg: 1.44rem;
@@ -164,8 +184,15 @@
     --paper-raised: #191822;
     --card: #211f2c;
     --ink: #eae8f0;
-    --ink-soft: #b0adbd;
-    --ink-faint: #8a879a;
+    /* Relevés tous les deux. Le contraste n'était pourtant pas fautif
+       (8,00 pour --ink-soft sur une carte, au-dessus même du seuil AAA) : ce
+       qui se lisait mal, c'était l'ÉCART avec les titres en #eae8f0, à 14,48.
+       L'œil ne lit pas un rapport absolu, il lit la différence entre deux
+       textes voisins — et un paragraphe deux fois moins contrasté que son
+       titre passe pour une note de bas de page.
+       --ink-soft : 8,00 -> 10,15 · --ink-faint : 5,03 -> 6,40 (fond élevé). */
+    --ink-soft: #c6c3d1;
+    --ink-faint: #9d9aac;
     --line: #2c2a38;
     --line-strong: #474457;
     --accent: #a78bfa;
@@ -212,8 +239,8 @@
   --paper-raised: #191822;
   --card: #211f2c;
   --ink: #eae8f0;
-  --ink-soft: #b0adbd;
-  --ink-faint: #8a879a;
+  --ink-soft: #c6c3d1;
+  --ink-faint: #9d9aac;
   --line: #2c2a38;
   --line-strong: #474457;
   --accent: #a78bfa;
@@ -407,14 +434,14 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   margin-top: 0.15rem;
 }
 .geo-hint {
-  font-size: var(--t-2xs);
+  font-size: var(--t-xs);
   color: var(--ink-faint); margin: 0.55rem 0 0;
 }
 .geo-legend {
   display: flex;
   gap: 1rem;
   margin-top: 0.8rem;
-  font-size: var(--t-2xs);
+  font-size: var(--t-xs);
   color: var(--ink-faint);
 }
 .geo-legend span { display: flex; align-items: center; gap: 0.3rem; }
@@ -830,8 +857,10 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-weight: 700; font-size: 1.7rem; line-height: 1.1;
   margin: 0 0 0.5rem; text-wrap: balance;
 }
+/* Aligne sur .lp-lede, qui joue le meme role et avait deja ete promu : le
+   paragraphe qui suit le titre porte l'argument, il ne le commente pas. */
 .ob-lede {
-  margin: 0 0 1.5rem; font-size: 0.92rem; line-height: 1.5; color: var(--ink-soft);
+  margin: 0 0 1.5rem; font-size: 1rem; line-height: 1.6; color: var(--ink);
 }
 .ob-next { align-self: stretch; margin-top: 1.4rem; }
 .ob-actions { display: flex; gap: 0.6rem; margin-top: 1.4rem; }
@@ -1514,11 +1543,11 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
 .geo-pin.bad  { color: var(--status-bad); }
 .lp-grid-legend {
   display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin-top: 1.1rem;
-  font-size: var(--t-2xs); color: var(--ink-faint);
+  font-size: var(--t-xs); color: var(--ink-faint);
 }
 .lp-grid-legend span { display: flex; align-items: center; gap: 0.4rem; }
 .lp-grid-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.lp-grid-note { font-size: var(--t-sm); color: var(--ink-soft); margin: 1rem 0 0; }
+.lp-grid-note { font-size: 1rem; color: var(--ink-soft); margin: 1rem 0 0; }
 
 /* Bandeau d'appel à l'action intercalé */
 .lp-inline-cta {
@@ -1531,7 +1560,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.15rem;
 }
-.lp-inline-d { font-size: var(--t-sm); color: var(--ink-soft); margin-top: 0.15rem; }
+.lp-inline-d { font-size: 1rem; color: var(--ink-soft); margin-top: 0.15rem; }
 .lp-btn {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 48px; padding: 0 1.4rem;
@@ -1555,7 +1584,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-variant-numeric: tabular-nums;
 }
 .lp-ticker { font: inherit; color: inherit; }
-.lp-stat-l { font-size: var(--t-sm); line-height: 1.45; color: var(--ink-soft); margin-top: 0.6rem; }
+.lp-stat-l { font-size: 1rem; line-height: 1.45; color: var(--ink-soft); margin-top: 0.6rem; }
 .lp-stats-src {
   font-family: var(--font-mono), monospace; font-size: var(--t-2xs);
   color: var(--ink-faint); margin: 1rem 0 0;
@@ -1572,7 +1601,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   padding: 0 1.6rem; white-space: nowrap;
 }
 .lp-marquee-note {
-  text-align: center; font-size: var(--t-sm); color: var(--ink-soft);
+  text-align: center; font-size: 1rem; color: var(--ink-soft);
   margin: 1.4rem auto 0; padding: 0 1.5rem;
 }
 
@@ -1593,7 +1622,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.2rem; margin-bottom: 0.25rem;
 }
-.lp-step-d { font-size: 0.92rem; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+.lp-step-d { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
 
 /* Tarifs — meme vocabulaire que la page /abonnement.
    C'est la MEME grille tarifaire : deux dessins differents pour les memes
@@ -1649,7 +1678,7 @@ main { flex: 1; padding: 1.1rem 1.1rem 1.5rem; overflow-y: auto; }
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.08rem; margin-bottom: 0.35rem;
 }
-.lp-faq-a { font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.lp-faq-a { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
 
 /* --- Page « Questions » -------------------------------------------------
    Elle emploie des <details> natifs : le contenu est dans le HTML des le
@@ -1905,7 +1934,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.15rem; margin-bottom: 0.4rem;
 }
-.lp-pain-d { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+.lp-pain-d { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
 
 /* Fonctionnalités numérotées — la numérotation encode une progression
    réelle : on connecte, on mesure, on agit, on collecte. */
@@ -1924,7 +1953,11 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 700; font-size: 1.2rem; margin-bottom: 0.3rem;
 }
-.lp-feature-d { font-size: 0.93rem; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+/* Le paragraphe entouré par l'exploitant sur sa capture. Il passe à --ink et
+   à 1rem : sous un titre blanc et gras, un gris à 0,93rem se lit comme une
+   légende alors qu'il porte l'explication de la fonctionnalité. Même geste que
+   pour .lp-lede, pour la même raison. */
+.lp-feature-d { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
 
 /* Bandeau agences — inversé pour marquer le changement d'interlocuteur :
    ce n'est plus l'artisan qu'on adresse, mais son revendeur. */
@@ -1949,7 +1982,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .sim-field { display: flex; flex-direction: column; }
 .sim-label {
   font-family: var(--font-barlow-condensed), sans-serif;
-  font-weight: 600; font-size: 0.92rem; margin-bottom: 0.4rem;
+  font-weight: 600; font-size: var(--t-sm); margin-bottom: 0.4rem;
 }
 .sim-input-wrap { position: relative; display: flex; align-items: center; }
 .sim-input-wrap .field-control { padding-right: 3.4rem; }
@@ -2039,7 +2072,8 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: 1.05rem; margin-top: 0.2rem;
 }
-.audit-verdict-d { font-size: 0.9rem; line-height: 1.55; color: var(--ink-soft); margin: 0.7rem 0 0; }
+/* La phrase qui porte le verdict de l'audit : c'est ce qu'on vient lire. */
+.audit-verdict-d { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0.7rem 0 0; }
 
 .audit-block { margin-bottom: 1.8rem; break-inside: avoid; }
 .audit-h2 {
@@ -2086,13 +2120,16 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   font-family: var(--font-barlow-condensed), sans-serif;
   font-weight: 600; font-size: var(--t-sm); margin: 0.25rem 0 0.4rem;
 }
-.audit-card p { font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft); margin: 0; }
+/* Meme traitement que .lp-feature-d : de la prose dans une carte, sous un
+   titre. Elle etait restee grise a 12,8 px pendant que son equivalent de
+   l'accueil passait a 1 rem — deux pages publiques, un seul produit. */
+.audit-card p { font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0; }
 .audit-note {
   font-size: var(--t-sm); line-height: 1.5; color: var(--ink-soft);
   margin: 1rem 0 0; padding-top: 0.8rem; border-top: 1px solid var(--line);
 }
 
-.audit-steps { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; line-height: 1.65; }
+.audit-steps { margin: 0; padding-left: 1.2rem; font-size: 1rem; line-height: 1.65; }
 .audit-steps li { margin-bottom: 0.5rem; }
 .audit-legal {
   font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft);
@@ -2102,7 +2139,7 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 .audit-foot {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   border-top: 1px solid var(--line); padding-top: 0.9rem; margin-top: 2rem;
-  font-size: var(--t-2xs); color: var(--ink-faint);
+  font-size: var(--t-xs); color: var(--ink-faint);
 }
 
 @media (max-width: 700px) {
@@ -2332,7 +2369,7 @@ a:has(button) { color: inherit; text-decoration: none; }
 /* 46ch au lieu de 34 : la phrase tient sur deux lignes au lieu de trois, et
    c'est elle qui fixait la hauteur de toute la colonne de marque. */
 .pdp-baseline {
-  font-size: var(--t-xs); color: var(--pdp-texte-doux); line-height: 1.4; margin: 0; max-width: 46ch;
+  font-size: var(--t-sm); color: var(--pdp-texte-doux); line-height: 1.5; margin: 0; max-width: 46ch;
 }
 .pdp-colonnes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
 .pdp-col { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -2363,7 +2400,7 @@ a:has(button) { color: inherit; text-decoration: none; }
   max-width: 1040px; margin: 0 auto; padding: 0.7rem 1.5rem 1rem;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 0.6rem;
-  font-size: var(--t-2xs);
+  font-size: var(--t-xs);
   color: var(--pdp-texte-doux); letter-spacing: 0.04em;
 }
 /* Une seule ligne : c'est une mention, pas un paragraphe. Le `max-width: 44ch`
