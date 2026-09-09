@@ -353,6 +353,20 @@ export interface ReviewRecord {
   status: "pending" | "approved" | "failed";
 }
 
+/** Ce qu'il faut savoir d'une fiche pour lui produire une vidéo. */
+export interface FichePourVideo {
+  googleProfileId: string;
+  companyId: string;
+  businessName: string;
+  city: string;
+  tradeType: string;
+  /** Fixe la cadence — voir lib/server/video/cadence.ts. */
+  planId: string | null;
+  subscriptionStatus: string;
+  trialEndsAt: Date | null;
+  gracePeriodEndsAt: Date | null;
+}
+
 export interface Repo {
   findUserByEmail(email: string): Promise<UserRecord | null>;
   findUserById(id: string): Promise<UserRecord | null>;
@@ -623,6 +637,30 @@ export interface Repo {
   /** Incrémente le compteur du mois. Appelé APRÈS un envoi réussi. */
   incrementerSmsDuMois(companyId: string): Promise<void>;
 
+  // --- Posts vidéo. Voir db/migrations/030_posts_video.sql.
+  /** Fiches éligibles à un post vidéo, avec le palier qui fixe la cadence. */
+  listerFichesPourVideo(): Promise<FichePourVideo[]>;
+
+  /**
+   * Réserve la vidéo de cette période, ou renvoie `null` si elle existe déjà.
+   *
+   * L'INSERT EST LE VERROU. La contrainte d'unicité (google_profile_id,
+   * period_key) fait que deux planificateurs concurrents ne peuvent pas
+   * réserver la même période : le second reçoit `null` et passe son chemin.
+   * Une vidéo coûte 2,25 $ — on ne se fie pas à un SELECT préalable, qui
+   * laisserait une fenêtre entre la lecture et l'écriture.
+   */
+  reserverPostVideo(googleProfileId: string, clePeriode: string): Promise<string | null>;
+
+  /** La génération a abouti : on enregistre le résultat ET son coût. */
+  marquerVideoGeneree(
+    id: string,
+    input: { personnage: string; script: string; videoUrl: string; coutUsd: number },
+  ): Promise<void>;
+
+  /** La génération a échoué. Le motif est conservé : il se lit, il ne se devine pas. */
+  marquerVideoEchouee(id: string, motif: string): Promise<void>;
+
   // --- Publications Google.
   /** Brouillons et publications d'une fiche, la plus récente d'abord. */
   listerPosts(profileId: string, limite?: number): Promise<PostRecord[]>;
@@ -752,6 +790,13 @@ const usageAssistant = new Map<string, number>();
 const rendezVous = new Map<string, RendezVousRecord>();
 const posts = new Map<string, PostRecord>();
 const usageSms = new Map<string, number>();
+/**
+ * Posts vidéo, clés par `profil:période`.
+ *
+ * Ce Map tient le rôle que la contrainte d'unicité tient en base : il est ce
+ * qui empêche de produire — donc de payer — deux fois la même vidéo.
+ */
+const postsVideo = new Map<string, Record<string, unknown> & { id: string }>();
 /** Mots-cles suivis, cle = `${profileId}:${motCle}`. */
 const motsClesSuivis = new Map<string, { profileId: string; motCle: string; dernierReleve: Date | null }>();
 const releves: { profileId: string; motCle: string; points: unknown; le: Date }[] = [];
@@ -1503,6 +1548,57 @@ export const memoryRepo: Repo = {
     await seed();
     const cle = `${companyId}:${new Date().toISOString().slice(0, 7)}`;
     usageSms.set(cle, (usageSms.get(cle) ?? 0) + 1);
+  },
+
+  async listerFichesPourVideo() {
+    await seed();
+    const sorties: FichePourVideo[] = [];
+    for (const p of profiles.values()) {
+      const entreprise = companies.get(p.companyId);
+      if (!entreprise) continue;
+      sorties.push({
+        googleProfileId: p.id,
+        companyId: p.companyId,
+        businessName: p.businessName,
+        city: p.city ?? "",
+        tradeType: entreprise.tradeType,
+        planId: entreprise.planId ?? null,
+        subscriptionStatus: entreprise.subscriptionStatus,
+        trialEndsAt: entreprise.trialEndsAt ?? null,
+        gracePeriodEndsAt: entreprise.gracePeriodEndsAt ?? null,
+      });
+    }
+    return sorties;
+  },
+
+  async reserverPostVideo(googleProfileId, clePeriode) {
+    await seed();
+    const cle = `${googleProfileId}:${clePeriode}`;
+    // Le Map joue ici le rôle de la contrainte d'unicité de PostgreSQL.
+    if (postsVideo.has(cle)) return null;
+    const id = `video-${postsVideo.size + 1}`;
+    postsVideo.set(cle, { id, statut: "pending" });
+    return id;
+  },
+
+  async marquerVideoGeneree(id, input) {
+    await seed();
+    for (const enregistrement of postsVideo.values()) {
+      if (enregistrement.id === id) {
+        Object.assign(enregistrement, { statut: "generated", ...input });
+        return;
+      }
+    }
+  },
+
+  async marquerVideoEchouee(id, motif) {
+    await seed();
+    for (const enregistrement of postsVideo.values()) {
+      if (enregistrement.id === id) {
+        Object.assign(enregistrement, { statut: "failed", motif });
+        return;
+      }
+    }
   },
 
   async listerPosts(profileId, limite = 20) {

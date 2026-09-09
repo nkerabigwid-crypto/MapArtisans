@@ -12,6 +12,7 @@ import { composeRappelEssai, rappelFitsOneSegment } from "@/lib/server/sms/finEs
 import { resolveSmsSender } from "@/lib/server/sms/twilio";
 import { enqueuePendingReviews } from "@/lib/server/queue/reviewQueue";
 import { enqueueWeeklyReports } from "@/lib/server/queue/reportQueue";
+import { enqueueDueVideoPosts } from "@/lib/server/queue/videoQueue";
 import { releverGrille } from "@/lib/server/tracking/releve";
 import { summarizeScan, classifyScan } from "@/lib/server/tracking/geoGrid";
 import {
@@ -148,6 +149,24 @@ async function tick() {
         console.log(`[planificateur] ${rapports} rapports hebdomadaires mis en file`);
       }
     }
+
+    /*
+     * Les posts vidéo, en dernier et sans fenêtre horaire.
+     *
+     * Pas de fenêtre parce que la déduplication n'est pas temporelle mais
+     * transactionnelle : la contrainte (fiche, période) en base tranche, quel
+     * que soit le moment du passage. Une fenêtre n'ajouterait qu'un risque —
+     * celui de manquer la période si le planificateur redémarre au mauvais
+     * moment.
+     *
+     * En dernier parce que c'est le plus cher : si un incident interrompt le
+     * tick, mieux vaut qu'il ait interrompu ce qui se rattrape au passage
+     * suivant plutôt que les avis, qu'un client attend.
+     */
+    const videos = await enqueueDueVideoPosts(repo);
+    // Zéro est le cas normal une fois la période servie — même raison que pour
+    // les rapports, on ne journalise que ce qui arrive vraiment.
+    if (videos > 0) console.log(`[planificateur] ${videos} posts vidéo mis en file`);
   } catch (erreur) {
     /*
      * On journalise sans relancer : une base momentanément injoignable ne doit

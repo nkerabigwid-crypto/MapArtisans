@@ -1021,6 +1021,64 @@ export const pgRepo: Repo = {
     await q("UPDATE companies SET trial_reminder_sent_at = now() WHERE id = $1", [companyId]);
   },
 
+  async listerFichesPourVideo() {
+    // Le filtre d'éligibilité (essai, grâce, abonnement) n'est PAS fait ici :
+    // il est déjà tenu par accesAutorise(), une seule règle pour tout le
+    // produit. Cette requête rassemble seulement ce qu'il faut pour décider.
+    return q(
+      `SELECT gp.id                    AS "googleProfileId",
+              gp.company_id            AS "companyId",
+              gp.business_name         AS "businessName",
+              COALESCE(gp.city, '')    AS city,
+              c.trade_type             AS "tradeType",
+              c.plan_id                AS "planId",
+              c.subscription_status    AS "subscriptionStatus",
+              c.trial_ends_at          AS "trialEndsAt",
+              c.grace_period_ends_at   AS "gracePeriodEndsAt"
+         FROM google_profiles gp
+         JOIN companies c ON c.id = gp.company_id`,
+    );
+  },
+
+  async reserverPostVideo(googleProfileId, clePeriode) {
+    /*
+     * ON CONFLICT DO NOTHING sur (google_profile_id, period_key) : c'est
+     * l'insertion elle-même qui fait office de verrou. Deux planificateurs
+     * concurrents peuvent tenter la même période — un seul obtient un id, le
+     * second reçoit zéro ligne et s'arrête là.
+     *
+     * Un SELECT préalable laisserait une fenêtre entre la lecture et
+     * l'écriture, et cette fenêtre coûte 2,25 $.
+     */
+    const r = await q<{ id: string }>(
+      `INSERT INTO video_posts (google_profile_id, period_key)
+       VALUES ($1, $2)
+       ON CONFLICT (google_profile_id, period_key) DO NOTHING
+       RETURNING id`,
+      [googleProfileId, clePeriode],
+    );
+    return r[0]?.id ?? null;
+  },
+
+  async marquerVideoGeneree(id, input) {
+    await q(
+      `UPDATE video_posts
+          SET status = 'generated', personnage = $2, script = $3,
+              video_url = $4, cost_usd = $5, generated_at = now()
+        WHERE id = $1`,
+      [id, input.personnage, input.script, input.videoUrl, input.coutUsd],
+    );
+  },
+
+  async marquerVideoEchouee(id, motif) {
+    await q(
+      `UPDATE video_posts SET status = 'failed', failure_reason = $2 WHERE id = $1`,
+      // Tronqué : le corps d'erreur de fal.ai peut être volumineux, et la
+      // colonne sert à comprendre, pas à archiver.
+      [id, motif.slice(0, 1000)],
+    );
+  },
+
   async compterSmsDuMois(companyId) {
     const r = await q<{ envoyes: string }>(
       `SELECT envoyes::text AS envoyes FROM sms_usage

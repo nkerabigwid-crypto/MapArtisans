@@ -186,6 +186,30 @@ services:
       redis: { condition: service_healthy }
     networks: [interne]
 
+  # Posts video. Separe des deux autres workers parce qu'il est le seul dont
+  # chaque travail coute de l'argent : une video se facture 2,25 $, et un
+  # redemarrage en boucle ici se lit sur le releve fal.ai. Isole, il se coupe
+  # sans rien interrompre d'autre.
+  worker-video:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    command: ["npm", "run", "worker:video:prod"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      # Le script parle : meme cle que les reponses aux avis et les posts.
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # La video. Absente, le worker demarre et echoue proprement sur chaque
+      # job en marquant la ligne — il ne boucle pas.
+      FAL_KEY: ${FAL_KEY:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [interne]
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
