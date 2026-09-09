@@ -57,9 +57,9 @@ export interface OptionsVoix {
  * Produit le MP3 du script parlé.
  *
  * Renvoie un Buffer et non un fichier : rien n'est écrit sur le disque. Le
- * son part directement dans la requête à fal.ai sous forme de data URI, ce qui
- * évite d'avoir à l'héberger quelque part le temps de l'appel — et évite
- * surtout de laisser traîner la voix d'un client dans un dossier public.
+ * son est téléversé directement chez fal.ai par `televerser`, ce qui évite de
+ * laisser traîner la voix d'un client dans un dossier public le temps d'un
+ * appel.
  */
 export async function genererVoix(
   texte: string,
@@ -82,17 +82,6 @@ export async function genererVoix(
   });
 
   return Buffer.from(await reponse.arrayBuffer());
-}
-
-/**
- * Emballe le MP3 en data URI, la forme que `audio_url` accepte chez fal.ai.
- *
- * C'est ce qui permet de tester depuis un poste de développement : fal.ai ne
- * peut évidemment pas aller chercher un fichier sur `localhost`, mais il lit
- * sans difficulté un son qu'on lui envoie dans la requête.
- */
-export function enDataUri(mp3: Buffer): string {
-  return `data:audio/mpeg;base64,${mp3.toString("base64")}`;
 }
 
 /**

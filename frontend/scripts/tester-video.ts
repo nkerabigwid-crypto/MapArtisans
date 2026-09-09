@@ -25,8 +25,13 @@ import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { extname, join } from "node:path";
 
-import { coutVideoUsd, genererVideo, type Resolution } from "../lib/server/video/fal";
-import { coutVoixUsd, enDataUri, genererVoix } from "../lib/server/video/voix";
+import {
+  coutVideoUsd,
+  genererVideo,
+  televerser,
+  type Resolution,
+} from "../lib/server/video/fal";
+import { coutVoixUsd, genererVoix } from "../lib/server/video/voix";
 
 const SCRIPT_DEFAUT =
   "Chez Dupont Plomberie, on intervient à Lyon sept jours sur sept. " +
@@ -37,20 +42,19 @@ function argument(nom: string): string | undefined {
   return i === -1 ? undefined : process.argv[i + 1];
 }
 
-/**
- * Une image locale part en data URI, une URL passe telle quelle.
- *
- * En développement, le data URI n'est pas un confort mais une nécessité :
- * fal.ai ne peut évidemment pas aller chercher un fichier sur `localhost`.
- */
+/** Une image locale est téléversée chez fal.ai ; une URL passe telle quelle. */
 async function versUrlImage(source: string): Promise<string> {
   if (/^https?:\/\//.test(source)) return source;
   if (!existsSync(source)) {
     throw new Error(`Image introuvable : ${source}`);
   }
   const octets = await readFile(source);
-  const type = extname(source).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
-  return `data:${type};base64,${octets.toString("base64")}`;
+  const png = extname(source).toLowerCase() === ".png";
+  return televerser(
+    octets,
+    png ? "personnage.png" : "personnage.jpg",
+    png ? "image/png" : "image/jpeg",
+  );
 }
 
 async function main(): Promise<void> {
@@ -102,13 +106,15 @@ async function main(): Promise<void> {
   const mp3 = await genererVoix(texte);
   console.log(`   ${mp3.length} octets en ${Date.now() - debutVoix} ms`);
 
+  console.log("\n→ Téléversement chez fal.ai");
+  const imageUrl = await versUrlImage(image);
+  const audioUrl = await televerser(mp3, "voix.mp3", "audio/mpeg");
+  console.log(`   image : ${imageUrl.slice(0, 72)}…`);
+  console.log(`   audio : ${audioUrl.slice(0, 72)}…`);
+
   console.log("\n→ Génération vidéo (fal.ai / VEED Fabric 1.0)");
   const url = await genererVideo(
-    {
-      imageUrl: await versUrlImage(image),
-      audioUrl: enDataUri(mp3),
-      resolution,
-    },
+    { imageUrl, audioUrl, resolution },
     {
       surProgression: (statut, ecoule) =>
         console.log(`   ${statut.padEnd(12)} ${Math.round(ecoule / 1000)} s`),

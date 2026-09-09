@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Sortie du script d'essai video — un MP4 de 17 Mo n'a rien a faire dans l'historique.
+video-test.mp4

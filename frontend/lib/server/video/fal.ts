@@ -71,9 +71,62 @@ function entetes(): Record<string, string> {
   return { Authorization: `Key ${cle}`, "Content-Type": "application/json" };
 }
 
+const STOCKAGE = "https://rest.alpha.fal.ai/storage/upload/initiate";
+
+/**
+ * Téléverse un fichier chez fal.ai et renvoie son URL.
+ *
+ * POURQUOI PAS UN DATA URI, PUISQUE LA DOC LES ANNONCE
+ *
+ * Parce qu'ils ne passent pas. La documentation dit « URL publique ou data
+ * URI » ; le champ est en réalité plafonné à 2083 caractères — la longueur
+ * maximale d'une URL. Une image de 768x1024 en base64 en fait cent fois plus,
+ * et l'appel est rejeté en 422 `url_too_long` APRES avoir traversé la file.
+ * Constaté, pas supposé.
+ *
+ * Deuxième raison, moins visible : servir l'image depuis mapartisans.com
+ * marcherait en production mais jamais en développement, fal.ai ne pouvant
+ * atteindre `localhost`. Le téléversement, lui, fonctionne des deux côtés.
+ */
+export async function televerser(
+  octets: Buffer,
+  nomFichier: string,
+  typeMime: string,
+): Promise<string> {
+  const amorce = await withBackoff(async () => {
+    const r = await fetch(`${STOCKAGE}?storage_type=fal-cdn-v3`, {
+      method: "POST",
+      headers: entetes(),
+      body: JSON.stringify({ content_type: typeMime, file_name: nomFichier }),
+    });
+    return classifyFetchResponse(r);
+  });
+
+  const { file_url: fileUrl, upload_url: uploadUrl } = (await amorce.json()) as {
+    file_url?: string;
+    upload_url?: string;
+  };
+  if (!fileUrl || !uploadUrl) {
+    throw new VideoIndisponible("Le stockage fal.ai n'a pas renvoyé d'URL de dépôt.");
+  }
+
+  await withBackoff(async () => {
+    // L'URL de dépôt porte déjà sa signature : surtout pas d'en-tête
+    // d'autorisation ici, il ferait échouer la requête signée.
+    const r = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": typeMime },
+      body: new Uint8Array(octets),
+    });
+    return classifyFetchResponse(r);
+  });
+
+  return fileUrl;
+}
+
 export interface DemandeVideo {
-  /** URL publique ou data URI. En développement, seul le data URI fonctionne :
-   *  fal.ai ne peut pas atteindre `localhost`. */
+  /** URL renvoyée par `televerser`, ou toute URL publiquement atteignable.
+   *  PAS un data URI : voir la note ci-dessus. */
   imageUrl: string;
   audioUrl: string;
   resolution?: Resolution;
