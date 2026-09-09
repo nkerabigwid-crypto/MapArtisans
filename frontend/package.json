@@ -13,7 +13,8 @@
     "worker:reviews:prod": "node --import tsx workers/reviewWorker.ts",
     "worker:reports:prod": "node --import tsx workers/reportWorker.ts",
     "planificateur": "node --import tsx workers/planificateur.ts",
-    "planificateur:prod": "node --import tsx workers/planificateur.ts"
+    "planificateur:prod": "node --import tsx workers/planificateur.ts",
+    "video:test": "node --env-file=.env.local --import tsx scripts/tester-video.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

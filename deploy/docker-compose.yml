@@ -55,6 +55,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      FAL_KEY: ${FAL_KEY:-}
       # OAuth Google Business Profile. Vides tant que l'acces API n'est pas
       # accorde : la route de connexion renvoie alors un motif lisible au
       # lieu d'une erreur 500.
@@ -115,6 +116,7 @@ services:
       REDIS_URL: redis://redis:6379
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      FAL_KEY: ${FAL_KEY:-}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
