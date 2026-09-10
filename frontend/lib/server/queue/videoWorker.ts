@@ -6,9 +6,17 @@ import { getRepo, type Repo } from "@/lib/server/repo";
 import { SUJETS, type SujetPost } from "@/lib/server/ai/posts";
 import { genererPostVideo, type DependancesVideo } from "@/lib/server/video/generer";
 import { estEchecDeConfiguration } from "@/lib/server/video/fal";
+import {
+  alerterSolde,
+  seuilFranchi,
+  FENETRE_ANTI_REPETITION_S,
+  type DependancesAlerte,
+} from "@/lib/server/video/alerte";
 
-export interface VideoWorkerDeps extends DependancesVideo {
+export interface VideoWorkerDeps extends DependancesVideo, DependancesAlerte {
   repo?: Repo;
+  /** Enveloppe mensuelle declaree, en dollars. 0 = aucune alerte preventive. */
+  enveloppeUsd?: number;
   /** Injectable pour que le test n'ait pas à composer avec le hasard. */
   choisirSujet?: (profileId: string) => SujetPost;
 }
@@ -80,6 +88,21 @@ export async function processVideoPostJob(
     console.log(
       `[video] ${data.businessName} — ${post.personnage}, ${post.coutUsd.toFixed(3)} $`,
     );
+
+    /*
+     * L'alerte PRÉVENTIVE, après la réussite et non avant.
+     *
+     * Avant, elle porterait sur une dépense qui n'a pas encore eu lieu. Après,
+     * elle mesure ce qui est réellement engagé — et elle ne peut plus faire
+     * échouer la vidéo, puisque celle-ci est déjà produite.
+     */
+    const enveloppe = deps.enveloppeUsd ?? Number(process.env.FAL_BUDGET_USD ?? 0);
+    if (enveloppe > 0) {
+      const depenseUsd = await repo.coutVideoDuMois();
+      if (seuilFranchi({ depenseUsd, enveloppeUsd: enveloppe })) {
+        await alerterSolde("seuil", { depenseUsd, enveloppeUsd: enveloppe }, alerteDeps(deps));
+      }
+    }
   } catch (erreur) {
     const motif = erreur instanceof Error ? erreur.message : String(erreur);
 
@@ -88,6 +111,13 @@ export async function processVideoPostJob(
       console.error(
         `[video] ${data.businessName} — période RENDUE (configuration) : ${motif}`,
       );
+      /*
+       * L'alerte RÉACTIVE. Elle ne prévient plus, elle constate — mais elle ne
+       * dépend d'aucun réglage, et c'est justement ce qui la rend fiable : une
+       * alerte qui repose sur une enveloppe correctement renseignée ne protège
+       * pas de l'oubli humain.
+       */
+      await alerterSolde("epuise", { depenseUsd: 0, enveloppeUsd: 0 }, alerteDeps(deps));
     } else {
       await repo.marquerVideoEchouee(data.videoPostId, motif);
       console.error(`[video] ${data.businessName} en échec :`, motif);
@@ -108,4 +138,39 @@ export function startVideoPostWorker(deps: VideoWorkerDeps = {}): Worker<VideoPo
       concurrency: 1,
     },
   );
+}
+
+/**
+ * Anti-répétition adossé à Redis.
+ *
+ * Sans lui, un solde vide enverrait un SMS par vidéo refusée : plusieurs par
+ * heure, à cinq centimes pièce, le jour précis où l'on ne veut plus dépenser.
+ *
+ * Redis est déjà là pour la file ; s'il est indisponible, on laisse passer
+ * l'alerte plutôt que de l'avaler. Un SMS en trop vaut mieux qu'un silence.
+ */
+function alerteDeps(deps: VideoWorkerDeps): DependancesAlerte {
+  if (deps.dejaEnvoyee || deps.marquerEnvoyee) return deps;
+
+  const cle = (motif: string) =>
+    `video:alerte:${motif}:${new Date().toISOString().slice(0, 10)}`;
+
+  return {
+    sender: deps.sender,
+    destinataire: deps.destinataire,
+    async dejaEnvoyee(motif) {
+      try {
+        return (await getRedisConnection().get(cle(motif))) !== null;
+      } catch {
+        return false;
+      }
+    },
+    async marquerEnvoyee(motif) {
+      try {
+        await getRedisConnection().set(cle(motif), "1", "EX", FENETRE_ANTI_REPETITION_S);
+      } catch {
+        /* Une alerte non mémorisée sera renvoyée demain : sans gravité. */
+      }
+    },
+  };
 }

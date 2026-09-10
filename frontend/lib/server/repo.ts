@@ -670,6 +670,16 @@ export interface Repo {
    */
   libererPostVideo(id: string): Promise<void>;
 
+  /**
+   * Dépense fal.ai du mois en cours, en dollars.
+   *
+   * Somme réelle des `cost_usd` enregistrés, pas une estimation : c'est elle
+   * qui déclenche l'alerte de solde. Voir lib/server/video/alerte.ts — fal
+   * n'expose son solde qu'à une clé de portée ADMIN, qu'on ne veut pas poser
+   * sur un serveur de production.
+   */
+  coutVideoDuMois(): Promise<number>;
+
   // --- Publications Google.
   /** Brouillons et publications d'une fiche, la plus récente d'abord. */
   listerPosts(profileId: string, limite?: number): Promise<PostRecord[]>;
@@ -1608,6 +1618,15 @@ export const memoryRepo: Repo = {
         return;
       }
     }
+  },
+
+  async coutVideoDuMois() {
+    await seed();
+    let somme = 0;
+    for (const e of postsVideo.values()) {
+      if (typeof e.coutUsd === "number") somme += e.coutUsd;
+    }
+    return somme;
   },
 
   async libererPostVideo(id) {

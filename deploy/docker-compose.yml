@@ -211,6 +211,17 @@ services:
       # La video. Absente, le worker demarre et echoue proprement sur chaque
       # job en marquant la ligne — il ne boucle pas.
       FAL_KEY: ${FAL_KEY:-}
+      # Alerte de solde. Sans Twilio ni numero, elle est simplement muette :
+      # alerterSolde ne leve jamais, pour qu'un avertissement en panne ne
+      # devienne pas une panne de generation.
+      ADMIN_PHONE: ${ADMIN_PHONE:-}
+      FAL_BUDGET_USD: ${FAL_BUDGET_USD:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_API_KEY_SID: ${TWILIO_API_KEY_SID}
+      TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

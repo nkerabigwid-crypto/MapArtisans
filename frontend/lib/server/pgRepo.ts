@@ -1079,6 +1079,15 @@ export const pgRepo: Repo = {
     );
   },
 
+  async coutVideoDuMois() {
+    const r = await q<{ total: string | null }>(
+      `SELECT COALESCE(SUM(cost_usd), 0)::text AS total
+         FROM video_posts
+        WHERE generated_at >= date_trunc('month', now())`,
+    );
+    return Number(r[0]?.total ?? 0);
+  },
+
   async libererPostVideo(id) {
     // DELETE et non UPDATE : c'est la LIGNE qui verrouille la période, via la
     // contrainte d'unicité. La marquer d'un statut quelconque la laisserait
