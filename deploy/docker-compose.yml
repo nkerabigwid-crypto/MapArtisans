@@ -150,6 +150,12 @@ services:
       # Relevé de position Geo-Grid. Palier « Text Search (IDs Only) »,
       # facturé zéro par Google — voir lib/server/tracking/places.ts.
       GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      # Le planificateur ne genere aucune video, mais il LIT cette variable :
+      # sans elle, il ne reserve aucune periode. C'est deliberé — une periode
+      # reservee puis echouee faute de cle serait consommee definitivement.
+      # Absente ici, la fonction resterait donc muette meme une fois la cle
+      # posee pour le worker.
+      FAL_KEY: ${FAL_KEY:-}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
