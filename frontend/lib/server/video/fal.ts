@@ -269,6 +269,43 @@ export async function genererVideo(
   return url;
 }
 
+/**
+ * L'échec vient-il de la CONFIGURATION plutôt que du contenu ?
+ *
+ * POURQUOI CETTE DISTINCTION VAUT DE L'ARGENT
+ *
+ * Une période réservée puis marquée `failed` est CONSOMMÉE : la contrainte
+ * (fiche, période) l'empêche d'être reprise. Si l'échec vient d'un solde vide
+ * ou d'une clé révoquée, le client ne recevra jamais sa vidéo du mois — même
+ * une fois le compte rechargé.
+ *
+ * LA LISTE EST VOLONTAIREMENT ÉTROITE
+ *
+ * Ne sont retenues que les causes qui surviennent AVANT le moindre appel
+ * facturable : clé absente, authentification refusée, paiement requis, quota.
+ * Dans ces cas, libérer la période ne peut rien coûter puisque rien n'a été
+ * produit.
+ *
+ * Tout le reste — y compris une panne réseau au milieu de la génération —
+ * reste `failed`. Une vidéo peut avoir été facturée sans que la réponse nous
+ * soit parvenue ; la reprendre paierait deux fois. Entre perdre une période et
+ * payer deux fois, on perd la période.
+ */
+export function estEchecDeConfiguration(erreur: unknown): boolean {
+  const message = erreur instanceof Error ? erreur.message : String(erreur);
+  // Les TROIS formes que prennent les messages de ce dépôt, et rien d'autre.
+  // Un `/\b403\b/` permissif attraperait un « 403 » cité au hasard dans un
+  // corps d'erreur, et libérerait une période qui a peut-être été facturée.
+  const codes = "401|402|403|429";
+  return (
+    /FAL_KEY absente/i.test(message) ||
+    /TOP_UP|User is locked/i.test(message) ||
+    new RegExp(`Échec définitif \\((${codes})\\)`).test(message) ||
+    new RegExp(`Réponse (${codes})\\b`).test(message) ||
+    new RegExp(`a répondu (${codes})\\b`).test(message)
+  );
+}
+
 /** Coût estimé d'une vidéo, en dollars. */
 export function coutVideoUsd(secondes: number, resolution: Resolution = "720p"): number {
   return secondes * TARIF_USD_PAR_SECONDE[resolution];

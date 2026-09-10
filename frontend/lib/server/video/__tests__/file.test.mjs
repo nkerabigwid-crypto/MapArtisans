@@ -32,6 +32,7 @@ register(
 );
 
 const { processVideoPostJob, sujetParDefaut } = await import("../../queue/videoWorker.ts");
+const { estEchecDeConfiguration } = await import("../fal.ts");
 const { clePeriode } = await import("../cadence.ts");
 
 /** Dépôt factice reproduisant la contrainte d'unicité (fiche, période). */
@@ -56,6 +57,13 @@ function depotFactice(fiches) {
     },
     async marquerVideoEchouee(id, motif) {
       lignes.set(id, { statut: "failed", motif });
+    },
+    async libererPostVideo(id) {
+      lignes.delete(id);
+      // La reservation est rendue : la periode redevient disponible.
+      for (const cle of reservees) {
+        if (cle.endsWith(`:${id}`)) reservees.delete(cle);
+      }
     },
   };
 }
@@ -131,19 +139,22 @@ describe("Traitement d'un job", () => {
     const repo = depotFactice([FICHE]);
     repo.lignes.set("v1", { statut: "pending" });
 
+    // Une erreur de CONTENU, pas de configuration : un 403 serait desormais
+    // traite comme un solde vide et libererait la periode — c'est le sujet du
+    // bloc « Echec de configuration contre echec de contenu » plus bas.
     await assert.rejects(
       processVideoPostJob(job, {
         ...depsOk(repo),
         video: async () => {
-          throw new Error("fal.ai a répondu 403");
+          throw new Error("Échec définitif (500) : internal error");
         },
       }),
-      /403/,
+      /500/,
     );
 
     const ligne = repo.lignes.get("v1");
     assert.equal(ligne.statut, "failed", "la ligne ne doit jamais rester en pending");
-    assert.match(ligne.motif, /403/, "le motif se lit, il ne se devine pas");
+    assert.match(ligne.motif, /500/, "le motif se lit, il ne se devine pas");
   });
 });
 
@@ -160,5 +171,85 @@ describe("Choix du sujet", () => {
     const a = sujetParDefaut("fiche-courte", new Date(2026, 8, 10));
     const b = sujetParDefaut("fiche-beaucoup-plus-longue", new Date(2026, 8, 10));
     assert.notEqual(a, b);
+  });
+});
+
+describe("Echec de configuration contre echec de contenu", () => {
+  const job = {
+    videoPostId: "v1",
+    profileId: "fiche-1",
+    businessName: "Dupont Plomberie",
+    city: "Genève",
+    tradeType: "plombier",
+  };
+  const base = (repo) => ({
+    repo,
+    scriptGenerator: { generate: async () => "On se déplace à Genève." },
+    voix: async () => Buffer.from("mp3"),
+    lireImage: async () => Buffer.from("png"),
+    televerser: async (_o, nom) => `https://v3b.fal.media/${nom}`,
+  });
+
+  test("un solde vide REND la periode au lieu de la bruler", async () => {
+    /*
+     * Le defaut que ce test ferme. Sans lui, un compte fal.ai epuise marquait
+     * la ligne `failed` — et la contrainte (fiche, periode) l'empechait d'etre
+     * reprise. Le client n'aurait jamais eu sa video du mois, meme apres
+     * rechargement.
+     */
+    const repo = depotFactice([FICHE]);
+    repo.lignes.set("v1", { statut: "pending" });
+
+    await assert.rejects(
+      processVideoPostJob(job, {
+        ...base(repo),
+        video: async () => {
+          throw new Error('fal.ai a répondu 403 : {"detail":"User is locked. Reason: TOP_UP."}');
+        },
+      }),
+    );
+
+    assert.equal(repo.lignes.has("v1"), false, "la ligne doit avoir disparu");
+    // Et la periode doit etre a nouveau reservable.
+    assert.ok(await repo.reserverPostVideo("fiche-1", "2026-09"));
+  });
+
+  test("une panne en pleine generation CONSERVE l'echec", async () => {
+    // La video peut avoir ete facturee sans que la reponse parvienne : la
+    // reprendre paierait deux fois. On perd la periode plutot que l'argent.
+    const repo = depotFactice([FICHE]);
+    repo.lignes.set("v1", { statut: "pending" });
+
+    await assert.rejects(
+      processVideoPostJob(job, {
+        ...base(repo),
+        video: async () => {
+          throw new Error("socket hang up");
+        },
+      }),
+    );
+
+    assert.equal(repo.lignes.get("v1").statut, "failed");
+  });
+
+  test("la liste des causes liberables reste etroite", () => {
+    for (const liberable of [
+      new Error("FAL_KEY absente. Aucun repli n'est prévu"),
+      new Error('403 : {"detail":"User is locked. Reason: TOP_UP."}'),
+      new Error("Échec définitif (401) : clé invalide"),
+      new Error("Échec définitif (402) : payment required"),
+      new Error("Réponse 429 — quota"),
+    ]) {
+      assert.equal(estEchecDeConfiguration(liberable), true, liberable.message);
+    }
+    // Tout ce qui peut avoir ete facture reste un echec definitif.
+    for (const definitif of [
+      new Error("socket hang up"),
+      new Error("Échec définitif (422) : url_too_long"),
+      new Error("Échec définitif (500) : internal"),
+      new Error("Génération terminée mais aucune URL trouvée"),
+    ]) {
+      assert.equal(estEchecDeConfiguration(definitif), false, definitif.message);
+    }
   });
 });

@@ -1079,6 +1079,13 @@ export const pgRepo: Repo = {
     );
   },
 
+  async libererPostVideo(id) {
+    // DELETE et non UPDATE : c'est la LIGNE qui verrouille la période, via la
+    // contrainte d'unicité. La marquer d'un statut quelconque la laisserait
+    // occuper la place.
+    await q(`DELETE FROM video_posts WHERE id = $1`, [id]);
+  },
+
   async compterSmsDuMois(companyId) {
     const r = await q<{ envoyes: string }>(
       `SELECT envoyes::text AS envoyes FROM sms_usage

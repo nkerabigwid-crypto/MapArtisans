@@ -5,6 +5,7 @@ import { VIDEO_POST_QUEUE, type VideoPostJobData } from "./videoQueue";
 import { getRepo, type Repo } from "@/lib/server/repo";
 import { SUJETS, type SujetPost } from "@/lib/server/ai/posts";
 import { genererPostVideo, type DependancesVideo } from "@/lib/server/video/generer";
+import { estEchecDeConfiguration } from "@/lib/server/video/fal";
 
 export interface VideoWorkerDeps extends DependancesVideo {
   repo?: Repo;
@@ -33,8 +34,19 @@ export function sujetParDefaut(profileId: string, quand = new Date()): SujetPost
  *
  * Une exception qui remonte à BullMQ laisse la ligne en `pending`, et le
  * passage suivant la croirait libre — donc la régénérerait, donc la
- * repaierait. Le `catch` marque `failed` AVANT de relever : c'est ce qui
- * garantit qu'un échec coûte une fois, pas indéfiniment.
+ * repaierait. Le `catch` tranche AVANT de relever.
+ *
+ * DEUX ÉCHECS, DEUX TRAITEMENTS OPPOSÉS
+ *
+ * · CONFIGURATION — solde vide, clé révoquée, quota. Survenu avant tout appel
+ *   facturable, donc rien n'a été produit ni payé. La période est LIBÉRÉE :
+ *   la marquer `failed` la consommerait, et le client n'aurait jamais sa vidéo
+ *   du mois, même une fois le compte rechargé.
+ *
+ * · TOUT LE RESTE — y compris une panne réseau en pleine génération. Marqué
+ *   `failed`. Une vidéo peut avoir été facturée sans que la réponse nous
+ *   parvienne ; la reprendre paierait deux fois. Entre perdre une période et
+ *   payer deux fois, on perd la période.
  *
  * Exportée séparément du Worker BullMQ pour être testable sans Redis, comme
  * les autres workers.
@@ -70,8 +82,16 @@ export async function processVideoPostJob(
     );
   } catch (erreur) {
     const motif = erreur instanceof Error ? erreur.message : String(erreur);
-    await repo.marquerVideoEchouee(data.videoPostId, motif);
-    console.error(`[video] ${data.businessName} en échec :`, motif);
+
+    if (estEchecDeConfiguration(erreur)) {
+      await repo.libererPostVideo(data.videoPostId);
+      console.error(
+        `[video] ${data.businessName} — période RENDUE (configuration) : ${motif}`,
+      );
+    } else {
+      await repo.marquerVideoEchouee(data.videoPostId, motif);
+      console.error(`[video] ${data.businessName} en échec :`, motif);
+    }
     throw erreur;
   }
 }

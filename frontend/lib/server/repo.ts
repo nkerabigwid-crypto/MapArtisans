@@ -661,6 +661,15 @@ export interface Repo {
   /** La génération a échoué. Le motif est conservé : il se lit, il ne se devine pas. */
   marquerVideoEchouee(id: string, motif: string): Promise<void>;
 
+  /**
+   * Rend la période au client : la ligne est SUPPRIMÉE, pas marquée.
+   *
+   * Réservée aux échecs de configuration — solde vide, clé révoquée — qui
+   * surviennent avant tout appel facturable. Marquer `failed` consommerait la
+   * période définitivement, et le client n'aurait jamais sa vidéo du mois.
+   */
+  libererPostVideo(id: string): Promise<void>;
+
   // --- Publications Google.
   /** Brouillons et publications d'une fiche, la plus récente d'abord. */
   listerPosts(profileId: string, limite?: number): Promise<PostRecord[]>;
@@ -1596,6 +1605,16 @@ export const memoryRepo: Repo = {
     for (const enregistrement of postsVideo.values()) {
       if (enregistrement.id === id) {
         Object.assign(enregistrement, { statut: "failed", motif });
+        return;
+      }
+    }
+  },
+
+  async libererPostVideo(id) {
+    await seed();
+    for (const [cle, enregistrement] of postsVideo.entries()) {
+      if (enregistrement.id === id) {
+        postsVideo.delete(cle);
         return;
       }
     }
