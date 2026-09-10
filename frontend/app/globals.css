@@ -2131,6 +2131,35 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
 
 .audit-steps { margin: 0; padding-left: 1.2rem; font-size: 1rem; line-height: 1.65; }
 .audit-steps li { margin-bottom: 0.5rem; }
+/* Formulaire de l'audit public.
+   Bornée à 30rem : trois champs alignés sur toute la largeur d'un écran de
+   bureau se lisent comme un questionnaire administratif, alors qu'il s'agit de
+   trois mots à taper. */
+.audit-form {
+  display: flex; flex-direction: column; gap: 1.1rem;
+  max-width: 30rem; margin: 2rem 0 2.5rem;
+}
+.audit-form-ligne { display: flex; flex-direction: column; gap: 0.35rem; }
+.audit-form-ligne label {
+  font-family: var(--font-barlow-condensed), sans-serif;
+  font-weight: 600; font-size: var(--t-sm);
+}
+.audit-form input {
+  font: inherit; font-size: var(--t-base);
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  background: var(--paper-raised); color: var(--ink);
+  /* 16px minimum : en deçà, iOS zoome à la mise au point et la page saute. */
+  min-height: 48px;
+}
+.audit-form input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+  border-color: var(--accent);
+}
+/* Le formulaire ne s'imprime pas : une feuille d'audit remise à un artisan
+   n'a pas à porter les champs qui l'ont produite. */
+@media print { .audit-form { display: none; } }
+
 .audit-legal {
   font-size: var(--t-xs); line-height: 1.45; color: var(--ink-soft);
   background: var(--card); border-radius: 8px; padding: 0.7rem 0.9rem; margin: 1rem 0 0;

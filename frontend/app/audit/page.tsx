@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Logo from "@/components/Logo";
-import { geoGrid, getGridStatus, googleProfile, company, resolveCompetitorName } from "@/lib/data";
+import { getGridStatus } from "@/lib/data";
+import { auditPublic, QuotaAuditDepasse } from "@/lib/server/tracking/audit";
+import { EtablissementIntrouvable } from "@/lib/server/tracking/resoudre";
+import FormulaireAudit from "@/components/FormulaireAudit";
+
+/** node:crypto et Redis : cette page fait un vrai relevé côté serveur. */
+export const runtime = "nodejs";
+/** Jamais mise en cache par Next : le cache utile est celui de Redis, qui
+ *  porte aussi le quota. Un cache de page court-circuiterait le compteur. */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Audit de visibilité — MapArtisans",
@@ -33,11 +43,72 @@ const STATUS_TEXT: Record<string, string> = {
   bad: "Hors radar",
 };
 
-export default function AuditPage() {
-  const points = geoGrid.points.map((p) => ({
-    ...p,
+/**
+ * Deux usages, une seule page.
+ *
+ * Sans paramètres, elle présente un formulaire : l'artisan tape son nom et
+ * voit sa position. Avec paramètres, elle affiche le relevé — c'est cette
+ * forme que le commercial imprime, l'URL déjà remplie.
+ *
+ * Le repli sur les données de démonstration n'est PAS un décor : il permet de
+ * montrer à quoi ressemble un audit sans consommer d'appel facturé, et sert de
+ * gabarit d'impression.
+ */
+export default async function AuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const lire = (c: string) => {
+    const v = params[c];
+    return (Array.isArray(v) ? v[0] : v)?.trim() || "";
+  };
+  const nom = lire("nom");
+  const ville = lire("ville");
+
+  if (!nom || !ville) return <FormulaireAudit />;
+
+  // L'adresse du visiteur porte le quota. Derrière Caddy, c'est
+  // `x-forwarded-for` qui la donne ; en son absence on retombe sur une valeur
+  // commune, ce qui rend le quota global — plus strict, jamais plus laxiste.
+  const entetes = await headers();
+  const empreinte = entetes.get("x-forwarded-for")?.split(",")[0].trim() || "inconnu";
+
+  let releve;
+  try {
+    releve = await auditPublic(
+      { nom, ville, motCle: lire("motcle") || undefined, pays: lire("pays") || undefined },
+      empreinte,
+    );
+  } catch (erreur) {
+    const attendue =
+      erreur instanceof EtablissementIntrouvable || erreur instanceof QuotaAuditDepasse;
+    // Une erreur attendue s'explique à l'artisan ; le reste part au journal et
+    // ne s'affiche pas — un message brut de Google n'aiderait personne.
+    if (!attendue) console.error("[audit] relevé en échec :", erreur);
+    return (
+      <FormulaireAudit
+        nom={nom}
+        ville={ville}
+        erreur={
+          attendue
+            ? (erreur as Error).message
+            : "Le relevé n'a pas abouti. Réessayez dans un moment."
+        }
+      />
+    );
+  }
+
+  const points = releve.points.map((p) => ({
+    label: p.label,
+    area: p.area,
+    position: p.position,
     status: getGridStatus(p.position),
-    rival: resolveCompetitorName(p.top_competitor_place_id),
+    // Le nom du concurrent n'est PAS résolu ici. La conformité l'interdit hors
+    // du produit — voir §Conformité dans geoGrid.ts. Un audit public nomme
+    // encore moins un tiers qu'un tableau de bord client.
+    rival: null as string | null,
   }));
 
   const visibles = points.filter((p) => p.status === "top1" || p.status === "top3").length;
@@ -64,9 +135,9 @@ export default function AuditPage() {
       <header className="audit-head">
         <div>
           <div className="audit-eyebrow">Audit de visibilité Google Maps</div>
-          <h1 className="audit-title">{googleProfile.business_name}</h1>
+          <h1 className="audit-title">{releve.etablissement.nom}</h1>
           <div className="audit-sub">
-            <span className="audit-trade">{company.trade_type}</span> · {googleProfile.city} ·
+            <span className="audit-trade">{releve.motCle}</span> · {ville} ·
             relevé du {aujourdhui}
           </div>
         </div>
@@ -93,7 +164,7 @@ export default function AuditPage() {
       <section className="audit-block">
         <h2 className="audit-h2">Relevé point par point</h2>
         <p className="audit-lede">
-          Mot-clé analysé : « {geoGrid.keyword} ». Chaque ligne correspond à une recherche
+          Mot-clé analysé : « {releve.motCle} ». Chaque ligne correspond à une recherche
           effectuée depuis un endroit précis de votre zone d&apos;intervention.
         </p>
         <table className="audit-table">
