@@ -59,6 +59,20 @@ export function getVideoPostQueue(): Queue<VideoPostJobData> {
  * `pending` et se voit ; si l'ordre était inverse, on aurait payé sans trace.
  */
 export async function enqueueDueVideoPosts(repo: Repo, when = new Date()): Promise<number> {
+  /*
+   * RIEN N'EST RESERVE SI LA FONCTION N'EST PAS CONFIGUREE.
+   *
+   * Sans FAL_KEY, chaque generation echouerait — et une periode marquee
+   * `failed` est CONSOMMEE : la contrainte d'unicite l'empeche d'etre reprise.
+   * Le client ne recevrait alors jamais sa video, meme une fois la cle
+   * ajoutee, parce que la ligne de septembre existerait deja.
+   *
+   * Ne rien reserver est donc le seul comportement rattrapable. Le controle
+   * est ici plutot que dans le worker : c'est la reservation qui brule la
+   * periode, pas la generation.
+   */
+  if (!process.env.FAL_KEY?.trim()) return 0;
+
   const q = getVideoPostQueue();
   let mises = 0;
 
