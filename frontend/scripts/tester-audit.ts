@@ -85,6 +85,20 @@ async function main(): Promise<void> {
 }
 
 main().catch((erreur) => {
-  console.error("\nÉCHEC :", erreur instanceof Error ? erreur.message : erreur);
+  const message = erreur instanceof Error ? erreur.message : String(erreur);
+  console.error("\nÉCHEC :", message);
+
+  // Le cas le plus probable depuis un poste de developpement, et il n'a rien
+  // d'une panne : la cle Places est restreinte a l'adresse IP du serveur.
+  // C'est un bon reglage, pas un defaut — il empeche qu'une cle qui fuite soit
+  // exploitee depuis n'importe ou. Le dire evite de chercher un bug ailleurs.
+  if (/IP address restriction|API_KEY_IP_ADDRESS_BLOCKED/.test(message)) {
+    console.error(
+      "\n  La cle est restreinte a l'adresse IP du serveur — c'est voulu.\n" +
+        "  Pour un essai local, ajoutez temporairement votre adresse dans\n" +
+        "  Google Cloud > Identifiants > la cle > Restrictions d'application,\n" +
+        "  ou lancez cet essai depuis le serveur.",
+    );
+  }
   process.exit(1);
 });

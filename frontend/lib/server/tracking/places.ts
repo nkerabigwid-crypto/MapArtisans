@@ -29,11 +29,32 @@ export class ConfigurationPlacesAbsente extends Error {
   }
 }
 
-/** Injectable : les tests fournissent leur propre transport. */
+/**
+ * Injectable : les tests fournissent leur propre transport.
+ *
+ * `text` est FACULTATIF pour que les transports factices existants n'aient pas
+ * à le fournir — mais il n'est pas décoratif : c'est lui qui porte le
+ * diagnostic quand Google refuse. Un 403 nu ne distingue pas une restriction
+ * de clé d'une API non activée ou d'une facturation absente ; trois causes,
+ * trois remèdes opposés, et Google les explique dans le corps de sa réponse.
+ */
 export type Transport = (
   url: string,
   init: { method: string; headers: Record<string, string>; body: string },
-) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
+) => Promise<{
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+  text?: () => Promise<string>;
+}>;
+
+/** Le corps de l'erreur, quand le transport sait le rendre. */
+export async function detailErreur(reponse: {
+  text?: () => Promise<string>;
+}): Promise<string> {
+  if (!reponse.text) return "";
+  return (await reponse.text().catch(() => "")).slice(0, 400);
+}
 
 export interface ResultatPoint {
   /** Rang de la fiche pour ce point. `null` = absente des résultats. */
@@ -102,7 +123,10 @@ export async function interrogerPoint(
   });
 
   if (!reponse.ok) {
-    throw new Error(`Places a refusé la requête (${reponse.status}).`);
+    // Le corps, pas seulement le code — voir la note sur `Transport`.
+    throw new Error(
+      `Places a refusé la requête (${reponse.status}) : ${await detailErreur(reponse)}`,
+    );
   }
 
   const corps = (await reponse.json()) as { places?: { id?: string }[] };

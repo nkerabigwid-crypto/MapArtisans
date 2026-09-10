@@ -1,5 +1,5 @@
 // PAS de `import "server-only"` : importé par workers/, hors du bundler Next.
-import { ConfigurationPlacesAbsente, type Transport } from "./places";
+import { ConfigurationPlacesAbsente, detailErreur, type Transport } from "./places";
 
 /**
  * Retrouve un établissement par son nom et sa ville.
@@ -86,7 +86,10 @@ export async function resoudreEtablissement(
   });
 
   if (!reponse.ok) {
-    throw new Error(`Places a refusé la requête (${reponse.status}).`);
+    // Le corps, pas seulement le code — voir la note sur `Transport`.
+    throw new Error(
+      `Places a refusé la requête (${reponse.status}) : ${await detailErreur(reponse)}`,
+    );
   }
 
   const corps = (await reponse.json()) as {
