@@ -256,17 +256,17 @@ export default async function AuditPage({
           </li>
         </ol>
         <p className="audit-legal">
-          Aucun classement n&apos;est garanti : l&apos;algorithme de Google n&apos;est contrôlé
-          par personne d&apos;autre que Google. MapArtisans s&apos;engage sur le travail effectué
-          et sa mesure, pas sur un résultat de position.
+          MapArtisans agit chaque semaine sur ce qui fait bouger votre position : avis,
+          publications, mesure du résultat. Seul Google décide du classement final — un point
+          connu avant de commencer, pas une réserve de dernière minute.
         </p>
       </section>
 
       <section className="audit-cta">
-        <h2 className="audit-h2">Mettre ça en route</h2>
+        <h2 className="audit-h2">Lancez-vous sans attendre</h2>
         <p>
-          Le compte se crée en moins de deux minutes, sans attendre l&apos;accord de Google sur
-          la connexion de fiche — le suivi de position démarre immédiatement.
+          Le compte se crée en moins de deux minutes. Le suivi de position démarre
+          immédiatement.
         </p>
         <Link
           href={`/onboarding?entreprise=${encodeURIComponent(releve.etablissement.nom)}`}
