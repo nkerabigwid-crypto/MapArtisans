@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { headers } from "next/headers";
 import Logo from "@/components/Logo";
 import { getGridStatus } from "@/lib/data";
@@ -258,6 +259,23 @@ export default async function AuditPage({
           Aucun classement n&apos;est garanti : l&apos;algorithme de Google n&apos;est contrôlé
           par personne d&apos;autre que Google. MapArtisans s&apos;engage sur le travail effectué
           et sa mesure, pas sur un résultat de position.
+        </p>
+      </section>
+
+      <section className="audit-cta">
+        <h2 className="audit-h2">Mettre ça en route</h2>
+        <p>
+          Le compte se crée en moins de deux minutes, sans attendre l&apos;accord de Google sur
+          la connexion de fiche — le suivi de position démarre immédiatement.
+        </p>
+        <Link
+          href={`/onboarding?entreprise=${encodeURIComponent(releve.etablissement.nom)}`}
+          className="btn no-print"
+        >
+          Créer mon compte MapArtisans
+        </Link>
+        <p className="audit-cta-print">
+          Pour démarrer : mapartisans.com/onboarding
         </p>
       </section>
 

@@ -2165,6 +2165,24 @@ a:focus-visible, .lp-btn:focus-visible, .lp-nav-cta:focus-visible {
   background: var(--card); border-radius: 8px; padding: 0.7rem 0.9rem; margin: 1rem 0 0;
 }
 
+/* La seule action possible sur cette page. Sans elle, un audit dévastateur
+   (0/9) se referme sur lui-même : le visiteur repart avec la preuve du
+   problème, sans un seul endroit où cliquer pour le régler. */
+.audit-cta {
+  text-align: center;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 1.6rem 1.4rem;
+  margin-top: 1.8rem;
+  background: var(--card);
+}
+.audit-cta h2 { margin: 0 0 0.5rem; }
+.audit-cta p { margin: 0 0 1.1rem; color: var(--ink-soft); font-size: 1rem; }
+/* Un bouton ne clique pas sur du papier : la version imprimée retombe sur une
+   ligne de texte à recopier plutôt que sur un lien mort. */
+.audit-cta-print { display: none; font-size: var(--t-sm); color: var(--ink-soft); }
+@media print { .audit-cta-print { display: block; margin-top: 0.8rem; } }
+
 .audit-foot {
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   border-top: 1px solid var(--line); padding-top: 0.9rem; margin-top: 2rem;

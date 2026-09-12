@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import OnboardingStepper from "@/components/onboarding/OnboardingStepper";
 import StepBusiness, { type BusinessDraft } from "@/components/onboarding/StepBusiness";
 import StepContact, { type ContactDraft } from "@/components/onboarding/StepContact";
@@ -25,10 +26,30 @@ const STEPS = ["Entreprise", "Contact", "Google"];
  * sur une étape dont la date d'ouverture ne dépend pas de nous.
  */
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<EntetePublic />}>
+      <OnboardingForm />
+    </Suspense>
+  );
+}
+
+/**
+ * `useSearchParams` exige une frontière Suspense au-dessus d'elle — sans quoi
+ * Next désactive le rendu statique de toute la page. Le repli n'affiche que
+ * l'en-tête : l'hydratation est trop rapide pour qu'un artisan voie autre
+ * chose qu'un clignement.
+ */
+function OnboardingForm() {
+  const searchParams = useSearchParams();
+  // Préremplissage depuis l'audit public : un artisan qui vient de voir sa
+  // fiche à 0/9 ne devrait pas retaper son propre nom d'entreprise trois
+  // clics plus tard.
+  const entreprisePrefilled = searchParams.get("entreprise")?.trim() || "";
+
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [business, setBusiness] = useState<BusinessDraft>({
-    company_name: "",
+    company_name: entreprisePrefilled,
     trade_type: null,
     country: "CH",
   });
