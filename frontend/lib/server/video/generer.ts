@@ -77,7 +77,7 @@ export async function genererPostVideo(
   deps: DependancesVideo = {},
 ): Promise<PostVideo> {
   const resolution = deps.resolution ?? "720p";
-  const personnage = choisirPersonnage(ctx.profilId, ctx.personnagesPris ?? []);
+  const personnage = choisirPersonnage(ctx.profilId, ctx.tradeType, ctx.personnagesPris ?? []);
 
   const script = await (deps.scriptGenerator ?? openAiScriptGenerator).generate({
     businessName: ctx.businessName,

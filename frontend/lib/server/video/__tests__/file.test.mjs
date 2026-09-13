@@ -126,7 +126,7 @@ describe("Traitement d'un job", () => {
     const ligne = repo.lignes.get("v1");
     assert.equal(ligne.statut, "generated");
     assert.equal(ligne.videoUrl, "https://v3b.fal.media/ok.mp4");
-    assert.match(ligne.personnage, /^0[1-6]\.png$/);
+    assert.match(ligne.personnage, /^plombier-0[1-6]\.png$/);
     assert.ok(ligne.coutUsd > 0, "le coût doit être enregistré, pas seulement calculé");
   });
 

@@ -30,45 +30,70 @@ register(
   pathToFileURL("./"),
 );
 
-const { PERSONNAGES, choisirPersonnage, empreinte, urlPersonnage } = await import(
-  "../personnages.ts"
-);
+const { PERSONNAGES, choisirPersonnage, empreinte, urlPersonnage, bibliothequeComplete } =
+  await import("../personnages.ts");
+const { TRADES } = await import("@/lib/trades");
 
 describe("Attribution des personnages", () => {
   test("le même profil reçoit toujours le même visage", () => {
-    const premier = choisirPersonnage("profil-abc");
+    const premier = choisirPersonnage("profil-abc", "plombier");
     for (let i = 0; i < 50; i++) {
-      assert.equal(choisirPersonnage("profil-abc"), premier);
+      assert.equal(choisirPersonnage("profil-abc", "plombier"), premier);
     }
   });
 
   test("deux profils du même couple ville/métier ne se ressemblent pas", () => {
     // Cas réel : trois plombiers genevois. Chacun voit les visages déjà pris.
-    const a = choisirPersonnage("plombier-geneve-1", []);
-    const b = choisirPersonnage("plombier-geneve-2", [a]);
-    const c = choisirPersonnage("plombier-geneve-3", [a, b]);
+    const a = choisirPersonnage("plombier-geneve-1", "plombier", []);
+    const b = choisirPersonnage("plombier-geneve-2", "plombier", [a]);
+    const c = choisirPersonnage("plombier-geneve-3", "plombier", [a, b]);
     assert.equal(new Set([a, b, c]).size, 3, "trois visages distincts attendus");
+  });
+
+  test("deux métiers différents ne partagent pas la même bibliothèque", () => {
+    // Un chauffeur de taxi ne doit jamais hériter d'un visage en tenue de
+    // plombier — la raison d'être du découpage par métier.
+    const plombier = choisirPersonnage("profil-x", "plombier");
+    const taxi = choisirPersonnage("profil-x", "taxi");
+    assert.ok(PERSONNAGES.plombier.includes(plombier));
+    assert.ok(PERSONNAGES.taxi.includes(taxi));
+    assert.ok(!PERSONNAGES.taxi.includes(plombier));
+  });
+
+  test("un métier inconnu retombe sur « autre » plutôt que d'échouer", () => {
+    const personnage = choisirPersonnage("profil-legacy", "metier-disparu");
+    assert.ok(PERSONNAGES.autre.includes(personnage));
   });
 
   test("au-delà de la bibliothèque, on republie plutôt que d'échouer", () => {
     // Sept plombiers pour six visages : le septième doit obtenir un doublon,
     // pas une exception. Un post non publié coûte plus qu'un visage réutilisé.
-    const tous = [...PERSONNAGES];
-    const septieme = choisirPersonnage("plombier-geneve-7", tous);
-    assert.ok(PERSONNAGES.includes(septieme));
+    const tous = [...PERSONNAGES.plombier];
+    const septieme = choisirPersonnage("plombier-geneve-7", "plombier", tous);
+    assert.ok(PERSONNAGES.plombier.includes(septieme));
   });
 
-  test("la répartition n'écrase pas un visage sur les autres", () => {
+  test("la répartition n'écrase pas un visage sur les autres, au sein d'un métier", () => {
     const compte = new Map();
     for (let i = 0; i < 600; i++) {
-      const p = choisirPersonnage(`profil-${i}`);
+      const p = choisirPersonnage(`profil-${i}`, "plombier");
       compte.set(p, (compte.get(p) ?? 0) + 1);
     }
-    assert.equal(compte.size, PERSONNAGES.length, "les six doivent servir");
+    assert.equal(compte.size, PERSONNAGES.plombier.length, "les six doivent servir");
     for (const [personnage, n] of compte) {
       // 100 attendus en moyenne. Une borne large suffit : on vérifie qu'aucun
       // visage n'est quasi jamais tiré, pas que la loi soit uniforme.
       assert.ok(n > 40 && n < 200, `${personnage} tiré ${n} fois sur 600`);
+    }
+  });
+
+  test("chaque métier du catalogue a sa bibliothèque de personnages", () => {
+    assert.ok(bibliothequeComplete());
+    for (const t of TRADES) {
+      assert.ok(
+        Array.isArray(PERSONNAGES[t.value]) && PERSONNAGES[t.value].length > 0,
+        `bibliothèque manquante pour ${t.value}`,
+      );
     }
   });
 

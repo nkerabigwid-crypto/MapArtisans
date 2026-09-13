@@ -102,7 +102,7 @@ describe("Chaîne de génération", () => {
     const post = await genererPostVideo(CONTEXTE, d);
 
     assert.equal(post.videoUrl, "https://v3b.fal.media/resultat.mp4");
-    assert.match(post.personnage, /^0[1-6]\.png$/);
+    assert.match(post.personnage, /^plombier-0[1-6]\.png$/);
     assert.equal(vus.resolution, "720p");
     // L'image téléversée est bien celle du personnage attribué.
     assert.equal(vus.image, `https://v3b.fal.media/${post.personnage}`);
